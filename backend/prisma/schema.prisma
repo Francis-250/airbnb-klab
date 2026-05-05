@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id               String    @id @default(cuid())
+  name             String
+  email            String    @unique
+  username         String    @unique
+  phone            String?   @unique
+  role             Role
+  avatar           String?
+  bio              String?
+  password         String
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  listings         Listing[]
+  bookings         Booking[]
+   reviews  Review[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+model Listing {
+  id            String      @id @default(cuid())
+  title         String
+  description   String
+  location      String
+  pricePerNight Float
+  guests        Int
+  type          ListingType
+  amenities     String[]
+  photos        String[]
+  rating        Float?
+  hostId        String
+  host          User        @relation(fields: [hostId], references: [id])
+  bookings      Booking[]
+   reviews  Review[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model Booking {
+  id         String        @id @default(cuid())
+  checkIn    DateTime
+  checkOut   DateTime
+  totalPrice Float
+  status     BookingStatus @default(pending)
+  createdAt  DateTime      @default(now())
+  guest      User          @relation(fields: [guestId], references: [id])
+  guestId    String
+  listing    Listing       @relation(fields: [listingId], references: [id])
+  listingId  String
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Float
+  comment   String
+  createdAt DateTime @default(now())
+  guest     User     @relation(fields: [guestId], references: [id])
+  guestId   String
+  listing   Listing  @relation(fields: [listingId], references: [id])
+  listingId String
+}
+
+enum Role {
+  host
+  guest
+}
+
+enum ListingType {
+  apartment
+  house
+  villa
+  cabin
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  cancelled
+}
