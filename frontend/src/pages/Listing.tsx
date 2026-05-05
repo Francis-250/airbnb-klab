@@ -26,72 +26,8 @@ export default function Listing() {
   };
 
   return (
-    <div
-      style={{ fontFamily: "'DM Sans', sans-serif" }}
-      className="min-h-screen"
-    >
-      <div className="fixed top-0 left-0 right-0 z-30 px-8 pt-5 pb-4 bg-white dark:bg-[#111111]">
-        <div className="flex items-stretch bg-[#F7F7F7] dark:bg-[#1E1E1E] rounded-2xl overflow-hidden p-1.5 gap-0 w-full">
-          <div className="flex flex-col flex-1 px-4 py-2.5 border-r border-[#EBEBEB] dark:border-[#2A2A2A] min-w-0">
-            <span className="text-[10px] font-semibold tracking-widest uppercase text-[#AAAAAA] mb-1">
-              Search
-            </span>
-            <div className="flex items-center gap-2">
-              <Search className="w-3.5 h-3.5 text-[#CCCCCC] shrink-0" />
-              <input
-                type="text"
-                placeholder="Landmark, place…"
-                className="w-full text-[13px] text-[#111] dark:text-white placeholder-[#CCCCCC] bg-transparent outline-none font-normal"
-              />
-            </div>
-          </div>
-
-          <div className="flex flex-col flex-1 px-4 py-2.5 border-r border-[#EBEBEB] dark:border-[#2A2A2A] min-w-0">
-            <span className="text-[10px] font-semibold tracking-widest uppercase text-[#AAAAAA] mb-1">
-              Location
-            </span>
-            <div className="flex items-center gap-2">
-              <MapPin className="w-3.5 h-3.5 text-[#CCCCCC] shrink-0" />
-              <select className="w-full text-[13px] text-[#111] dark:text-white bg-transparent outline-none appearance-none cursor-pointer font-normal">
-                <option value="" disabled selected>
-                  Select city…
-                </option>
-                <option>Kigali, Rwanda</option>
-                <option>Nairobi, Kenya</option>
-                <option>Kampala, Uganda</option>
-                <option>Dar es Salaam, TZ</option>
-                <option>Addis Ababa, ET</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="flex flex-col flex-1 px-4 py-2.5 min-w-0">
-            <span className="text-[10px] font-semibold tracking-widest uppercase text-[#AAAAAA] mb-1">
-              Price range
-            </span>
-            <div className="flex items-center gap-2">
-              <DollarSign className="w-3.5 h-3.5 text-[#CCCCCC] shrink-0" />
-              <select className="w-full text-[13px] text-[#111] dark:text-white bg-transparent outline-none appearance-none cursor-pointer font-normal">
-                <option value="" disabled selected>
-                  Any price
-                </option>
-                <option>Free</option>
-                <option>Under $25</option>
-                <option>$25 – $50</option>
-                <option>$50 – $100</option>
-                <option>$100+</option>
-              </select>
-            </div>
-          </div>
-
-          <button className="flex items-center gap-2 px-6 bg-(--color-primary) text-white text-[13px] font-semibold tracking-wide rounded-xl shrink-0 transition-opacity hover:opacity-90">
-            <Search className="w-3.5 h-3.5" />
-            Search
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-[260px_1fr] gap-6 px-8 pt-25 pb-10">
+    <div className="min-h-screen">
+      <div className="grid grid-cols-[260px_1fr] gap-6">
         <aside className="sticky top-25 h-fit bg-white dark:bg-[#1A1A1A] rounded-2xl p-6">
           <div className="flex items-center gap-2 mb-6">
             <SlidersHorizontal className="w-4 h-4 text-(--color-primary)" />
@@ -130,6 +66,25 @@ export default function Listing() {
           </div>
 
           <div className="h-px bg-[#EBEBEB] dark:bg-[#2A2A2A] mb-6" />
+          <div>
+            <p className="text-[13px] font-semibold text-[#111] dark:text-white mb-1">
+              Your Wish
+            </p>
+            <p className="text-[12px] text-[#AAAAAA] mb-4">
+              Search for your dream destination
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="w-4 h-4 rounded flex items-center justify-center shrink-0 transition-colors bg-[#EBEBEB] dark:bg-[#2A2A2A] group-hover:bg-[#DDDDDD] dark:group-hover:bg-[#333]">
+                <Search className="w-3 h-3" />
+              </span>
+              <input
+                type="text"
+                placeholder="Search your wish"
+                className="w-full bg-[#EBEBEB] dark:bg-[#2A2A2A] py-2 px-3 text-[13px] text-[#333] dark:text-[#CCCCCC] outline-none transition-colors"
+              />
+            </div>
+          </div>
+          <div className="h-px bg-[#EBEBEB] dark:bg-[#2A2A2A] mb-6" />
 
           <div>
             <p className="text-[13px] font-semibold text-[#111] dark:text-white mb-1">
@@ -148,7 +103,7 @@ export default function Listing() {
                   >
                     <span
                       onClick={() => toggleCategory(category.title)}
-                      className={`w-4 h-4 rounded flex items-center justify-center shrink-0 transition-colors ${
+                      className={`w-4 h-4 rounded flex items-center justify-center flex-shrink-0 transition-colors ${
                         checked
                           ? "bg-(--color-primary)"
                           : "bg-[#EBEBEB] dark:bg-[#2A2A2A] group-hover:bg-[#DDDDDD] dark:group-hover:bg-[#333]"
