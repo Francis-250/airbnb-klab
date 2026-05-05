@@ -41,11 +41,13 @@ export default function Navbar() {
       <div className="fixed top-0 left-0 right-0 bg-white dark:bg-[#1e242d] z-50 md:hidden">
         <div className="px-4 py-3">
           <div className="flex items-center justify-between mb-2.5">
-            <img
-              src={isDark ? "/image/logo-white.png" : "/image/logo.png"}
-              alt="Logo"
-              className="h-6 w-auto"
-            />
+            <Link to="/">
+              <img
+                src={isDark ? "/image/logo-white.png" : "/image/logo.png"}
+                alt="Logo"
+                className="h-6 w-auto"
+              />
+            </Link>
             <div className="flex items-center gap-2">
               <ThemeToggle />
               <button className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600">
@@ -65,11 +67,13 @@ export default function Navbar() {
       </div>
       <div className="hidden md:block fixed top-0 left-0 right-0 bg-white dark:bg-[#1e242d] z-50">
         <div className="flex items-center justify-between h-16 px-[6vw] lg:px-[9vw]">
-          <img
-            src={isDark ? "/image/logo-white.png" : "/image/logo.png"}
-            alt="Logo"
-            className="h-7 w-auto"
-          />
+          <Link to="/">
+            <img
+              src={isDark ? "/image/logo-white.png" : "/image/logo.png"}
+              alt="Logo"
+              className="h-6 w-auto"
+            />
+          </Link>
           <nav className="flex gap-8">
             {["Places to stay", "Experiences", "Online Experiences"].map(
               (label) => (

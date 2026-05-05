@@ -11,6 +11,7 @@ import { ProtectedRoute } from "./lib/ProtectedRoute";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import ThemeToggle from "./components/ThemeToggle";
 import Listing from "./pages/Listing";
+import Footer from "./components/layout/Footer";
 
 const ListingDetail = lazy(() => import("./pages/ListingDetail"));
 const Dashboard = lazy(() => import("./pages/admin/Dashboard"));
@@ -49,6 +50,7 @@ export default function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
+        {!isHiddenNavbar && <Footer />}
       </div>
       <div className="fixed bottom-4 right-4">
         <ThemeToggle />

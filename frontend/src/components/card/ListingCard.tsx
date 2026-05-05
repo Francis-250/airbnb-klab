@@ -1,6 +1,8 @@
 import { Heart, Star, Phone, Navigation, BadgeCheck } from "lucide-react";
 import type { Listing } from "../../types";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
+import { useState } from "react";
 
 export default function ListingCard({
   listing,
@@ -9,9 +11,17 @@ export default function ListingCard({
   listing: Listing;
   type: "grid" | "list";
 }) {
+  const [isLiked, setIsLiked] = useState(false);
+
   if (type === "list") {
     return (
-      <div className="flex rounded-2xl overflow-hidden bg-white dark:bg-[#1e242d] mt-2">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileHover={{ y: -4 }}
+        transition={{ duration: 0.3 }}
+        className="flex rounded-2xl overflow-hidden bg-white dark:bg-[#1e242d] mt-2"
+      >
         <Link
           to={`/listings/${listing.id}`}
           style={{
@@ -19,16 +29,30 @@ export default function ListingCard({
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
-          className="relative w-[200px] shrink-0"
+          className="relative w-50 shrink-0 overflow-hidden"
         >
-          <div className="absolute inset-0 bg-black/20" />
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileHover={{ opacity: 0.3 }}
+            className="absolute inset-0 bg-black/20"
+          />
           <div className="relative z-10 flex flex-col gap-1.5 p-2.5">
-            <span className="self-start text-[11px] font-medium text-white bg-black/40 rounded px-2 py-0.5">
+            <motion.span
+              initial={{ x: -10, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="self-start text-[11px] font-medium text-white bg-black/40 rounded px-2 py-0.5"
+            >
               ★ Featured
-            </span>
-            <span className="self-start text-[11px] font-medium text-white bg-black/40 rounded px-2 py-0.5">
+            </motion.span>
+            <motion.span
+              initial={{ x: -10, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="self-start text-[11px] font-medium text-white bg-black/40 rounded px-2 py-0.5"
+            >
               $100 off ${listing.price}: eblwc
-            </span>
+            </motion.span>
           </div>
         </Link>
 
@@ -36,7 +60,12 @@ export default function ListingCard({
           <div>
             <div className="flex items-start justify-between gap-2 mb-1">
               <div>
-                <div className="flex items-center gap-1.5 mb-0.5">
+                <motion.div
+                  initial={{ x: -10, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.1 }}
+                  className="flex items-center gap-1.5 mb-0.5"
+                >
                   <Star className="w-3.5 h-3.5 fill-red-500 stroke-none" />
                   <span className="text-[13px] font-semibold text-red-500">
                     ({listing.rating})
@@ -44,42 +73,83 @@ export default function ListingCard({
                   <span className="text-[13px] text-red-500">
                     {listing.reviews?.toLocaleString() ?? "2,391"}
                   </span>
-                </div>
-                <div className="flex items-center gap-1.5">
+                </motion.div>
+                <motion.div
+                  initial={{ x: -10, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="flex items-center gap-1.5"
+                >
                   <h2 className="text-[15px] font-semibold text-gray-900 dark:text-gray-100">
                     {listing.title}
                   </h2>
                   <BadgeCheck className="w-4 h-4 text-green-500 fill-green-500 stroke-white" />
-                </div>
+                </motion.div>
               </div>
-              <button className="shrink-0 mt-0.5">
-                <Heart className="w-5 h-5 text-red-400" />
-              </button>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setIsLiked(!isLiked)}
+                className="shrink-0 mt-0.5"
+              >
+                <motion.div
+                  animate={isLiked ? { scale: [1, 1.2, 1] } : {}}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Heart
+                    className={`w-5 h-5 transition-colors ${
+                      isLiked ? "fill-red-500 text-red-500" : "text-red-400"
+                    }`}
+                  />
+                </motion.div>
+              </motion.button>
             </div>
 
-            <p className="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2 mt-2">
+            <motion.p
+              initial={{ y: 10, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2 mt-2"
+            >
               {listing.description ??
                 "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout."}
-            </p>
+            </motion.p>
           </div>
 
-          <div className="flex items-center gap-5 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
-            <span className="flex items-center gap-1.5 text-[13px] text-gray-500 dark:text-gray-400">
+          <motion.div
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="flex items-center gap-5 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700"
+          >
+            <motion.span
+              whileHover={{ x: 2 }}
+              className="flex items-center gap-1.5 text-[13px] text-gray-500 dark:text-gray-400"
+            >
               <Phone className="w-3.5 h-3.5" />
               {listing.phone ?? "(123) 456-7890"}
-            </span>
-            <span className="flex items-center gap-1.5 text-[13px] text-gray-500 dark:text-gray-400">
+            </motion.span>
+            <motion.span
+              whileHover={{ x: 2 }}
+              className="flex items-center gap-1.5 text-[13px] text-gray-500 dark:text-gray-400"
+            >
               <Navigation className="w-3.5 h-3.5" />
               Directions
-            </span>
-          </div>
+            </motion.span>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="flex flex-col mt-2">
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      whileHover={{ y: -4 }}
+      transition={{ duration: 0.3 }}
+      className="flex flex-col mt-2"
+    >
       <Link
         to={`/listings/${listing.id}`}
         style={{
@@ -89,17 +159,48 @@ export default function ListingCard({
         }}
         className="relative rounded-[10px] overflow-hidden aspect-4/3 w-full"
       >
-        <div className="absolute inset-0 bg-black/38" />
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileHover={{ opacity: 0.5 }}
+          className="absolute inset-0 bg-black/38"
+        />
         <div className="relative z-10 flex items-center justify-between px-2.5 pt-2.5">
-          <span className="text-[11px] font-medium tracking-wide text-white border border-white/30 bg-white/15 rounded-full px-2.5 py-0.5">
+          <motion.span
+            initial={{ x: -10, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.1 }}
+            className="text-[11px] font-medium tracking-wide text-white border border-white/30 bg-white/15 rounded-full px-2.5 py-0.5"
+          >
             Guest Favorite
-          </span>
-          <button className="w-7 h-7 flex items-center justify-center rounded-full border border-white/30 bg-white/15">
-            <Heart className="w-3.5 h-3.5 text-white" />
-          </button>
+          </motion.span>
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={(e) => {
+              e.preventDefault();
+              setIsLiked(!isLiked);
+            }}
+            className="w-7 h-7 flex items-center justify-center rounded-full border border-white/30 bg-white/15"
+          >
+            <motion.div
+              animate={isLiked ? { scale: [1, 1.2, 1] } : {}}
+              transition={{ duration: 0.3 }}
+            >
+              <Heart
+                className={`w-3.5 h-3.5 transition-colors ${
+                  isLiked ? "fill-red-500 text-red-500" : "text-white"
+                }`}
+              />
+            </motion.div>
+          </motion.button>
         </div>
       </Link>
-      <div className="pt-2.5 min-w-0">
+      <motion.div
+        initial={{ y: 10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.2 }}
+        className="pt-2.5 min-w-0"
+      >
         <div className="flex items-baseline justify-between gap-2 mb-0.5">
           <h2 className="text-[13px] font-medium text-gray-900 dark:text-gray-100 truncate">
             {listing.title}
@@ -118,7 +219,7 @@ export default function ListingCard({
             <span className="font-normal text-gray-400">/night</span>
           </span>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

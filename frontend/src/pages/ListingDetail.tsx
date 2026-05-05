@@ -1,87 +1,243 @@
 import { useParams } from "react-router-dom";
 import { listings } from "../data/listings";
-import { Heart, Share2, Users } from "lucide-react";
+import { Heart, Share2, Users, MapPin } from "lucide-react";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function ListingDetail() {
   const { id } = useParams<{ id: string }>();
   const listing = listings.find((l) => l.id === Number(id));
+  const [mainImage, setMainImage] = useState(listing?.image[0] || "");
+  const [isSaved, setIsSaved] = useState(false);
+  const [isShared, setIsShared] = useState(false);
+
+  if (!listing) return null;
+
+  const allImages = [
+    listing.image[0],
+    listing.image[1],
+    listing.image[2],
+    listing.image[3],
+  ];
+
+  const mapUrl = `https://www.google.com/maps/embed/v1/place?key=YOUR_GOOGLE_MAPS_API_KEY&q=${encodeURIComponent(listing.location)}`;
 
   return (
-    <div className="min-h-screen">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="min-h-screen"
+    >
       <header className="flex justify-between items-start mb-5">
-        <h1
+        <motion.h1
+          initial={{ x: -20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
           style={{ fontFamily: "'Playfair Display', serif" }}
           className="text-2xl font-semibold leading-snug max-w-xl"
         >
-          {listing?.title} · {listing?.location}
-        </h1>
-        <div className="flex gap-4">
-          <button className="flex items-center gap-1.5 bg-transparent border-none text-sm font-medium underline cursor-pointer hover:text-(--color-primary)">
+          {listing.title} · {listing.location}
+        </motion.h1>
+        <motion.div
+          initial={{ x: 20, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="flex gap-4"
+        >
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsShared(!isShared)}
+            className="flex items-center gap-1.5 bg-transparent border-none text-sm font-medium underline cursor-pointer hover:text-(--color-primary)"
+          >
             <Share2 className="w-4 h-4" />
             Share
-          </button>
-          <button className="flex items-center gap-1.5 bg-transparent border-none text-sm font-medium underline cursor-pointer hover:text-(--color-primary)">
-            <Heart className="w-4 h-4" />
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsSaved(!isSaved)}
+            className="flex items-center gap-1.5 bg-transparent border-none text-sm font-medium underline cursor-pointer hover:text-(--color-primary)"
+          >
+            <motion.div
+              animate={{ scale: isSaved ? [1, 1.2, 1] : 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Heart
+                className={`w-4 h-4 transition-colors ${
+                  isSaved ? "fill-(--color-primary) text-(--color-primary)" : ""
+                }`}
+              />
+            </motion.div>
             Save
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
       </header>
-      <div className="grid grid-cols-5 gap-1.5 rounded-2xl overflow-hidden mb-9 h-120">
-        <img
-          src={listing?.image[0]}
-          alt={listing?.title}
-          className="col-span-3 w-full h-full object-cover"
+
+      <motion.div
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        className="grid grid-cols-5 gap-1.5 rounded-2xl overflow-hidden mb-9 h-120"
+      >
+        <motion.img
+          key={mainImage}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.4 }}
+          src={mainImage}
+          alt={listing.title}
+          className="col-span-3 w-full h-full object-cover cursor-pointer"
+          onClick={() => {
+            const currentIndex = allImages.indexOf(mainImage);
+            const nextIndex = (currentIndex + 1) % allImages.length;
+            setMainImage(allImages[nextIndex]);
+          }}
         />
         <div className="col-span-2 grid grid-rows-2 gap-1.5">
-          <img
-            src={listing?.image[1]}
-            alt={listing?.title}
-            className="w-full h-full object-cover"
+          <motion.img
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            src={listing.image[1]}
+            alt={listing.title}
+            className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => setMainImage(listing.image[1])}
           />
           <div className="grid grid-cols-2 gap-1.5">
-            <img
-              src={listing?.image[2]}
-              alt={listing?.title}
-              className="w-full h-full object-cover"
+            <motion.img
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              src={listing.image[2]}
+              alt={listing.title}
+              className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => setMainImage(listing.image[2])}
             />
-            <img
-              src={listing?.image[3]}
-              alt={listing?.title}
-              className="w-full h-full object-cover"
+            <motion.img
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              src={listing.image[3]}
+              alt={listing.title}
+              className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => setMainImage(listing.image[3])}
             />
           </div>
         </div>
-      </div>
+      </motion.div>
+
       <div className="grid grid-cols-[1fr_340px] gap-16 items-start">
-        <div>
-          <h2
+        <motion.div
+          initial={{ x: -30, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ delay: 0.4 }}
+        >
+          <motion.h2
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.5 }}
             style={{ fontFamily: "'Playfair Display', serif" }}
             className="text-xl font-semibold mb-4"
           >
-            {listing?.title} in {listing?.location}
-          </h2>
+            {listing.title} in {listing.location}
+          </motion.h2>
 
-          <div className="flex items-center gap-3 mb-6">
-            <img
-              src={listing?.host?.image || "/default-avatar.png"}
-              alt={listing?.host?.name || "Host"}
+          <motion.div
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="flex items-center gap-3 mb-6"
+          >
+            <motion.img
+              whileHover={{ scale: 1.1 }}
+              src={listing.host?.image || "/default-avatar.png"}
+              alt={listing.host?.name || "Host"}
               className="w-11 h-11 rounded-full object-cover bg-[#EBEBEB]"
             />
             <div>
               <p className="text-sm font-semibold">
-                Hosted by {listing?.host?.name}
+                Hosted by {listing.host?.name}
               </p>
-              <p className="text-sm text-[#717171]">{listing?.host?.phone}</p>
+              <p className="text-sm text-[#717171]">{listing.host?.phone}</p>
             </div>
-          </div>
+          </motion.div>
 
-          <div className="h-px bg-[#EBEBEB] my-6" />
-          <p className="text-[15px] leading-7 text-[#333]">
-            {listing?.description}
-          </p>
+          <motion.div
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ delay: 0.7 }}
+            className="h-px bg-[#EBEBEB] dark:bg-[#333] my-6"
+          />
 
-          <div className="h-px bg-[#EBEBEB] my-6" />
-          <div>
+          <motion.p
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.8 }}
+            className="text-[15px] leading-7 text-[#333]"
+          >
+            {listing.description}
+          </motion.p>
+
+          <motion.div
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ delay: 0.9 }}
+            className="h-px bg-[#EBEBEB] dark:bg-[#333] my-6"
+          />
+
+          <motion.div
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 1 }}
+          >
+            <h3
+              style={{ fontFamily: "'Playfair Display', serif" }}
+              className="text-lg font-semibold mb-4"
+            >
+              Location
+            </h3>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1.1 }}
+              className="mb-6 rounded-xl overflow-hidden h-64 bg-[#EBEBEB] dark:bg-[#333]"
+            >
+              <iframe
+                title="Property Location"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                loading="lazy"
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+                src={`https://www.google.com/maps/embed/v1/place?key=YOUR_GOOGLE_MAPS_API_KEY&q=${encodeURIComponent(listing.location)}`}
+              />
+            </motion.div>
+
+            <motion.a
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(listing.location)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              whileHover={{ x: 2 }}
+              className="flex items-center gap-2 text-sm text-(--color-primary) hover:underline mb-6"
+            >
+              <MapPin className="w-4 h-4" />
+              Get directions
+            </motion.a>
+          </motion.div>
+
+          <motion.div
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ delay: 1.2 }}
+            className="h-px bg-[#EBEBEB] dark:bg-[#333] my-6"
+          />
+
+          <motion.div
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 1.3 }}
+          >
             <h3
               style={{ fontFamily: "'Playfair Display', serif" }}
               className="text-lg font-semibold mb-4"
@@ -91,50 +247,96 @@ export default function ListingDetail() {
 
             <div className="flex items-center gap-2 text-sm text-[#717171] mb-4">
               <Users className="w-4 h-4" />
-              <span>Up to {listing?.guests} guests</span>
+              <span>Up to {listing.guests} guests</span>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              {listing?.amenities?.map((a, i) => (
-                <div key={i} className="flex items-center gap-2.5 text-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-(--color-primary) shrink-0" />
-                  {a}
-                </div>
-              ))}
+              <AnimatePresence>
+                {listing.amenities?.map((a, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ x: -10, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 1.3 + i * 0.05 }}
+                    className="flex items-center gap-2.5 text-sm"
+                  >
+                    <motion.span
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ delay: 1.3 + i * 0.05 }}
+                      className="w-1.5 h-1.5 rounded-full bg-(--color-primary) shrink-0"
+                    />
+                    {a}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl p-7 sticky top-6">
-          <div className="flex items-baseline gap-1.5 mb-5">
+          </motion.div>
+        </motion.div>
+
+        <motion.div
+          initial={{ x: 30, opacity: 0, y: 20 }}
+          animate={{ x: 0, opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, type: "spring", stiffness: 100 }}
+          className="rounded-2xl p-7 sticky top-6"
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.5, type: "spring" }}
+            className="flex items-baseline gap-1.5 mb-5"
+          >
             <span
               style={{ fontFamily: "'Playfair Display', serif" }}
               className="text-2xl font-semibold"
             >
-              ${listing?.price}
+              ${listing.price}
             </span>
             <span className="text-sm text-[#717171]">per night</span>
-          </div>
+          </motion.div>
 
-          <div className="flex items-center gap-2 text-sm text-[#717171] bg-[#F7F7F7] rounded-lg px-3 py-2.5 mb-5">
-            <span
+          <motion.div
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="flex items-center gap-2 text-sm rounded-lg px-3 py-2.5 mb-5"
+          >
+            <motion.span
+              animate={{
+                scale: [1, 1.2, 1],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                repeatDelay: 3,
+              }}
               className={`w-2 h-2 rounded-full shrink-0 ${
-                listing?.available ? "bg-green-500" : "bg-(--color-primary)"
+                listing.available ? "bg-green-500" : "bg-(--color-primary)"
               }`}
             />
-            {listing?.available
+            {listing.available
               ? "Available for booking"
               : "Rare find! This place is usually booked"}
-          </div>
+          </motion.div>
 
-          <button className="w-full bg-(--color-primary) text-white py-3.5 rounded-xl text-[15px] font-semibold tracking-wide hover:opacity-90 transition-opacity">
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full bg-(--color-primary) text-white py-3.5 rounded-xl text-[15px] font-semibold tracking-wide hover:opacity-90 transition-opacity"
+          >
             Book Now
-          </button>
+          </motion.button>
 
-          <p className="text-center text-xs text-[#717171] mt-2.5">
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.7 }}
+            className="text-center text-xs text-[#717171] mt-2.5"
+          >
             You won't be charged yet
-          </p>
-        </div>
+          </motion.p>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }

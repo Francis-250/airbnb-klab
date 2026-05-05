@@ -24,13 +24,12 @@ export default function Sidebar({
 
   return (
     <>
-      {/* Desktop Sidebar */}
       <div
-        className={`h-screen fixed top-0 left-0 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white transition-all duration-500 hidden md:flex flex-col z-20 shadow-sm ${
+        className={`h-screen fixed top-0 left-0 bg-white dark:bg-gray-900 text-gray-800 dark:text-white transition-all duration-500 hidden md:flex flex-col z-20 ${
           collapsed ? "w-16" : "w-64"
         }`}
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
+        <div className="flex items-center justify-between p-4">
           {!collapsed && (
             <h2 className="text-xl font-bold text-gray-800 dark:text-white">
               Admin
@@ -38,7 +37,7 @@ export default function Sidebar({
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <ChevronLeft
@@ -61,8 +60,8 @@ export default function Sidebar({
                   key={index}
                   className={`flex items-center p-3 rounded-lg transition-all duration-200 ${
                     isActive
-                      ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-r-2 border-blue-500"
-                      : "hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-600 dark:text-gray-300"
+                      ? "bg-(--color-primary) text-white"
+                      : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300"
                   } ${collapsed ? "justify-center" : ""}`}
                   title={collapsed ? link.title : ""}
                 >
@@ -79,25 +78,24 @@ export default function Sidebar({
         </nav>
 
         {!collapsed && (
-          <div className="p-4 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700">
-            © {new Date().getFullYear()} Stock Management System
+          <div className="p-4 text-xs text-gray-500 dark:text-gray-500">
+            © {new Date().getFullYear()} Airbnb
           </div>
         )}
       </div>
 
-      {/* Mobile Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-screen bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white z-30 transition-all duration-300 md:hidden transform ${
+        className={`fixed top-0 left-0 h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-white z-30 transition-all duration-300 md:hidden transform ${
           closed ? "-translate-x-full" : "translate-x-0"
-        } w-64 shadow-lg`}
+        } w-64`}
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-100 dark:border-gray-700">
+        <div className="flex items-center justify-between p-4">
           <h2 className="text-xl font-bold text-gray-800 dark:text-white">
             Navigation
           </h2>
           <button
             onClick={() => setIsOpen(!closed)}
-            className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+            className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             aria-label="Close menu"
           >
             <X className="w-5 h-5" />
@@ -117,8 +115,8 @@ export default function Sidebar({
                   onClick={() => setIsOpen(!closed)}
                   className={`flex items-center p-3 rounded-lg transition-all duration-200 ${
                     isActive
-                      ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border-r-2 border-blue-500"
-                      : "hover:bg-gray-100 dark:hover:bg-gray-700/50 text-gray-600 dark:text-gray-300"
+                      ? "bg-(--color-primary) text-white"
+                      : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300"
                   }`}
                 >
                   <Icon className="w-5 h-5 shrink-0" />
@@ -129,23 +127,21 @@ export default function Sidebar({
           </div>
         </nav>
 
-        <div className="p-4 text-xs text-gray-500 dark:text-gray-400 border-t border-gray-100 dark:border-gray-700">
-          © {new Date().getFullYear()} Stock Management System
+        <div className="p-4 text-xs text-gray-500 dark:text-gray-500">
+          © {new Date().getFullYear()} Airbnb
         </div>
       </div>
 
-      {/* Mobile Overlay */}
       {!closed && (
         <div
-          className="fixed inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm z-20 md:hidden"
+          className="fixed inset-0 bg-black/20 dark:bg-black/40 z-20 md:hidden"
           onClick={() => setIsOpen(true)}
         />
       )}
 
-      {/* Mobile Menu Button */}
       <button
         onClick={() => setIsOpen(false)}
-        className="fixed bottom-4 right-4 p-3 bg-blue-600 dark:bg-blue-700 rounded-full shadow-lg md:hidden z-20 hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+        className="fixed bottom-4 right-4 p-3 bg-(--color-primary) rounded-full md:hidden z-20 hover:bg-(--color-primary)/90 transition-colors"
         aria-label="Open menu"
       >
         <Menu className="w-6 h-6 text-white" />
