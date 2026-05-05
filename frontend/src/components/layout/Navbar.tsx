@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import ThemeToggle from "../ThemeToggle";
 import { Heart, Home, Search, User, Menu } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function Navbar() {
   const [isDark, setIsDark] = useState(false);
@@ -72,13 +73,13 @@ export default function Navbar() {
           <nav className="flex gap-8">
             {["Places to stay", "Experiences", "Online Experiences"].map(
               (label) => (
-                <a
+                <Link
                   key={label}
-                  href="#"
+                  to="/all-listings"
                   className="text-[11px] font-medium tracking-widest uppercase text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white border-b border-transparent hover:border-gray-900 dark:hover:border-white pb-0.5 transition-all duration-200"
                 >
                   {label}
-                </a>
+                </Link>
               ),
             )}
           </nav>
