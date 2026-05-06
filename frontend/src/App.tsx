@@ -5,8 +5,8 @@ import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Spinner from "./components/Spinner";
-import Booking from "./pages/admin/Booking";
-import DashboardListing from "./pages/admin/Listing";
+import Booking from "./pages/host/Booking";
+import DashboardListing from "./pages/host/Listing";
 import { ProtectedRoute } from "./lib/ProtectedRoute";
 import DashboardLayout from "./components/layout/DashboardLayout";
 import ThemeToggle from "./components/ThemeToggle";
@@ -14,7 +14,7 @@ import Listing from "./pages/Listing";
 import Footer from "./components/layout/Footer";
 
 const ListingDetail = lazy(() => import("./pages/ListingDetail"));
-const Dashboard = lazy(() => import("./pages/admin/Dashboard"));
+const Dashboard = lazy(() => import("./pages/host/Dashboard"));
 
 export default function App() {
   const location = useLocation();
@@ -26,7 +26,7 @@ export default function App() {
     <div>
       {!isHiddenNavbar && <Navbar />}
       <div
-        className={`${!isHiddenNavbar ? "lg:pt-20 px-4 md:px-[6vw] lg:px-[9vw]" : ""}`}
+        className={`${!isHiddenNavbar ? "lg:pt-3 px-4 md:px-[6vw] lg:px-[9vw]" : ""}`}
       >
         <Suspense fallback={<Spinner />}>
           <Routes>

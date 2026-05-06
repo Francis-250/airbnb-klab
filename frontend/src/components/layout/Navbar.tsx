@@ -64,9 +64,12 @@ export default function Navbar() {
                     1
                   </span>
                 </button>
-                <button className="w-9 h-9 flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <Link
+                  to="/login"
+                  className="w-9 h-9 flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
                   <User className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                </button>
+                </Link>
               </div>
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -117,12 +120,15 @@ export default function Navbar() {
                     1
                   </span>
                 </button>
-                <button className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                <Link
+                  to="/login"
+                  className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
                   <User className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                   <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Login
                   </span>
-                </button>
+                </Link>
               </div>
             </div>
           </div>
