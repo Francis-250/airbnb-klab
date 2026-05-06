@@ -1,59 +1,60 @@
 import { Search, MapPin, DollarSign } from "lucide-react";
+import { searchLocation, searchPriceRange } from "../data";
 
 export default function SearchBar() {
   return (
-    <div className="flex items-stretch bg-white rounded-xl shadow-2xl overflow-hidden p-1.5 gap-0">
-      <div className="flex flex-col flex-1 px-3 py-2.5 border-r border-gray-200 min-w-0">
-        <span className="text-[10px] font-medium tracking-widest uppercase text-gray-400 mb-1">
+    <div className="flex flex-col md:flex-row items-stretch bg-white rounded-xl shadow-xl overflow-hidden p-1.5 gap-1.5 md:gap-0">
+      <div className="flex flex-col flex-1 px-4 py-3 border-b md:border-b-0 md:border-r border-gray-200 min-w-0">
+        <span className="text-[11px] font-semibold tracking-wider uppercase text-gray-500 mb-1.5">
           Search
         </span>
-        <div className="flex items-center gap-2">
-          <Search className="w-3.5 h-3.5 text-gray-300 shrink-0" />
+        <div className="flex items-center gap-2.5">
+          <Search className="w-4 h-4 text-gray-400 shrink-0" />
           <input
             type="text"
             placeholder="Landmark, place…"
-            className="w-full text-[13px] text-gray-800 placeholder-gray-300 bg-transparent outline-none font-light"
+            className="w-full text-sm text-gray-900 placeholder-gray-400 bg-transparent outline-none font-medium"
           />
         </div>
       </div>
-      <div className="flex flex-col flex-1 px-3 py-2.5 border-r border-gray-200 min-w-0">
-        <span className="text-[10px] font-medium tracking-widest uppercase text-gray-400 mb-1">
+      <div className="flex flex-col flex-1 px-4 py-3 border-b md:border-b-0 md:border-r border-gray-200 min-w-0">
+        <span className="text-[11px] font-semibold tracking-wider uppercase text-gray-500 mb-1.5">
           Location
         </span>
-        <div className="flex items-center gap-2">
-          <MapPin className="w-3.5 h-3.5 text-gray-300 shrink-0" />
-          <select className="w-full text-[13px] text-gray-800 bg-transparent outline-none appearance-none cursor-pointer font-light">
+        <div className="flex items-center gap-2.5">
+          <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
+          <select className="w-full text-sm text-gray-900 bg-transparent outline-none appearance-none cursor-pointer font-medium">
             <option value="" disabled selected>
               Select city…
             </option>
-            <option>Kigali, Rwanda</option>
-            <option>Nairobi, Kenya</option>
-            <option>Kampala, Uganda</option>
-            <option>Dar es Salaam, TZ</option>
-            <option>Addis Ababa, ET</option>
+            {searchLocation.map((location) => (
+              <option key={location} value={location}>
+                {location}
+              </option>
+            ))}
           </select>
         </div>
       </div>
-      <div className="flex flex-col flex-1 px-3 py-2.5 min-w-0">
-        <span className="text-[10px] font-medium tracking-widest uppercase text-gray-400 mb-1">
+      <div className="flex flex-col flex-1 px-4 py-3 border-b md:border-b-0 border-gray-200 min-w-0">
+        <span className="text-[11px] font-semibold tracking-wider uppercase text-gray-500 mb-1.5">
           Price range
         </span>
-        <div className="flex items-center gap-2">
-          <DollarSign className="w-3.5 h-3.5 text-gray-300 shrink-0" />
-          <select className="w-full text-[13px] text-gray-800 bg-transparent outline-none appearance-none cursor-pointer font-light">
+        <div className="flex items-center gap-2.5">
+          <DollarSign className="w-4 h-4 text-gray-400 shrink-0" />
+          <select className="w-full text-sm text-gray-900 bg-transparent outline-none appearance-none cursor-pointer font-medium">
             <option value="" disabled selected>
               Any price
             </option>
-            <option>Free</option>
-            <option>Under $25</option>
-            <option>$25 – $50</option>
-            <option>$50 – $100</option>
-            <option>$100+</option>
+            {searchPriceRange.map((price) => (
+              <option key={price} value={price}>
+                {price}
+              </option>
+            ))}
           </select>
         </div>
       </div>
-      <button className="flex items-center gap-2 px-5 bg-(--color-primary) hover:bg-(--color-primary) active:bg-(--color-primary) text-white text-[13px] font-medium tracking-wide rounded-[10px] shrink-0 transition-colors duration-150">
-        <Search className="w-3.5 h-3.5" />
+      <button className="flex items-center justify-center gap-2.5 px-6 py-3 md:py-0 bg-(--color-primary) hover:bg-(--color-primary-hover) active:bg-(--color-primary-active) text-white text-sm font-semibold tracking-wide rounded-lg shrink-0 transition-all duration-150">
+        <Search className="w-4 h-4" />
         Search
       </button>
     </div>

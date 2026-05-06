@@ -26,7 +26,7 @@ export default function App() {
     <div>
       {!isHiddenNavbar && <Navbar />}
       <div
-        className={`${!isHiddenNavbar ? "pt-20 px-4 md:px-[6vw] lg:px-[9vw]" : ""}`}
+        className={`${!isHiddenNavbar ? "lg:pt-20 px-4 md:px-[6vw] lg:px-[9vw]" : ""}`}
       >
         <Suspense fallback={<Spinner />}>
           <Routes>

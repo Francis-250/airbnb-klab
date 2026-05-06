@@ -46,6 +46,21 @@ export const Categories: CategoryProps[] = [
   },
 ];
 
+export const searchLocation = [
+  "Kigali, Rwanda",
+  "Nairobi, Kenya",
+  "Kampala, Uganda",
+  "Dar es Salaam, TZ",
+  "Addis Ababa, ET",
+];
+
+export const searchPriceRange = [
+  "Under $25",
+  "$25 – $50",
+  "$50 – $100",
+  "$100+",
+];
+
 export const bookingHeader = [
   "Check-in",
   "Check-out",

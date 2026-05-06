@@ -20,8 +20,6 @@ export default function ListingDetail() {
     listing.image[3],
   ];
 
-  const mapUrl = `https://www.google.com/maps/embed/v1/place?key=YOUR_GOOGLE_MAPS_API_KEY&q=${encodeURIComponent(listing.location)}`;
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -29,13 +27,13 @@ export default function ListingDetail() {
       exit={{ opacity: 0 }}
       className="min-h-screen"
     >
-      <header className="flex justify-between items-start mb-5">
+      <header className="flex justify-between items-start mb-5 gap-4">
         <motion.h1
           initial={{ x: -20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ delay: 0.2 }}
           style={{ fontFamily: "'Playfair Display', serif" }}
-          className="text-2xl font-semibold leading-snug max-w-xl"
+          className="text-lg sm:text-xl md:text-2xl font-semibold leading-snug max-w-xl"
         >
           {listing.title} · {listing.location}
         </motion.h1>
@@ -43,7 +41,7 @@ export default function ListingDetail() {
           initial={{ x: 20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="flex gap-4"
+          className="flex gap-3 shrink-0"
         >
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -52,7 +50,7 @@ export default function ListingDetail() {
             className="flex items-center gap-1.5 bg-transparent border-none text-sm font-medium underline cursor-pointer hover:text-(--color-primary)"
           >
             <Share2 className="w-4 h-4" />
-            Share
+            <span className="hidden sm:inline">Share</span>
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -70,7 +68,7 @@ export default function ListingDetail() {
                 }`}
               />
             </motion.div>
-            Save
+            <span className="hidden sm:inline">Save</span>
           </motion.button>
         </motion.div>
       </header>
@@ -79,7 +77,7 @@ export default function ListingDetail() {
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3 }}
-        className="grid grid-cols-5 gap-1.5 rounded-2xl overflow-hidden mb-9 h-120"
+        className="grid grid-cols-1 sm:grid-cols-5 gap-1.5 rounded-2xl overflow-hidden mb-9 h-64 sm:h-80 md:h-120"
       >
         <motion.img
           key={mainImage}
@@ -88,14 +86,14 @@ export default function ListingDetail() {
           transition={{ duration: 0.4 }}
           src={mainImage}
           alt={listing.title}
-          className="col-span-3 w-full h-full object-cover cursor-pointer"
+          className="col-span-1 sm:col-span-3 w-full h-full object-cover cursor-pointer"
           onClick={() => {
             const currentIndex = allImages.indexOf(mainImage);
             const nextIndex = (currentIndex + 1) % allImages.length;
             setMainImage(allImages[nextIndex]);
           }}
         />
-        <div className="col-span-2 grid grid-rows-2 gap-1.5">
+        <div className="hidden sm:grid col-span-2 grid-rows-2 gap-1.5">
           <motion.img
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -123,9 +121,21 @@ export default function ListingDetail() {
             />
           </div>
         </div>
+
+        <div className="flex sm:hidden gap-1.5 overflow-x-auto">
+          {allImages.slice(1).map((img, i) => (
+            <img
+              key={i}
+              src={img}
+              alt={listing.title}
+              className="h-16 w-24 shrink-0 object-cover rounded-lg cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
+              onClick={() => setMainImage(img)}
+            />
+          ))}
+        </div>
       </motion.div>
 
-      <div className="grid grid-cols-[1fr_340px] gap-16 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8 lg:gap-16 items-start">
         <motion.div
           initial={{ x: -30, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
@@ -136,7 +146,7 @@ export default function ListingDetail() {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.5 }}
             style={{ fontFamily: "'Playfair Display', serif" }}
-            className="text-xl font-semibold mb-4"
+            className="text-lg md:text-xl font-semibold mb-4"
           >
             {listing.title} in {listing.location}
           </motion.h2>
@@ -200,7 +210,7 @@ export default function ListingDetail() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 1.1 }}
-              className="mb-6 rounded-xl overflow-hidden h-64 bg-[#EBEBEB] dark:bg-[#333]"
+              className="mb-6 rounded-xl overflow-hidden h-48 sm:h-64 bg-[#EBEBEB] dark:bg-[#333]"
             >
               <iframe
                 title="Property Location"
@@ -250,7 +260,7 @@ export default function ListingDetail() {
               <span>Up to {listing.guests} guests</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <AnimatePresence>
                 {listing.amenities?.map((a, i) => (
                   <motion.div
@@ -278,7 +288,7 @@ export default function ListingDetail() {
           initial={{ x: 30, opacity: 0, y: 20 }}
           animate={{ x: 0, opacity: 1, y: 0 }}
           transition={{ delay: 0.4, type: "spring", stiffness: 100 }}
-          className="rounded-2xl p-7 sticky top-6"
+          className="rounded-2xl p-5 sm:p-7 lg:sticky lg:top-6 border border-[#EBEBEB] dark:border-[#333]"
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
@@ -302,14 +312,8 @@ export default function ListingDetail() {
             className="flex items-center gap-2 text-sm rounded-lg px-3 py-2.5 mb-5"
           >
             <motion.span
-              animate={{
-                scale: [1, 1.2, 1],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                repeatDelay: 3,
-              }}
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
               className={`w-2 h-2 rounded-full shrink-0 ${
                 listing.available ? "bg-green-500" : "bg-(--color-primary)"
               }`}
