@@ -71,7 +71,7 @@ export const login = async (req: Request, res: Response) => {
       where: { email },
     });
     if (!user) {
-      return res.status(404).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
     const isMatch = await comparePassword(password, user.password);
     if (!isMatch) {
@@ -86,12 +86,18 @@ export const login = async (req: Request, res: Response) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+      secure: true,
+      sameSite: "none",
       maxAge: 3600000,
     });
-
-    return res.status(200).json({ message: "Login successful" });
+    return res.status(200).json({
+      message: "Login successful",
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+    });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal server error" });
@@ -119,7 +125,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
     if (!currentUser) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.status(200).json(currentUser);
+    res.status(200).json({ user: currentUser });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal server error" });

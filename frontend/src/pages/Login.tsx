@@ -1,9 +1,12 @@
 import { useState } from "react";
+import { toast } from "sonner";
+import { useAuth } from "../hooks/useAuth";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
 
   const handleGoogleLogin = () => {
     setIsLoading(true);
@@ -12,12 +15,20 @@ export default function Login() {
     }, 1000);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
+
+    try {
+      await login(email, password);
+      toast.success("Login successful!");
+      window.location.href = "/dashboard";
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Login failed";
+      toast.error(message);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (

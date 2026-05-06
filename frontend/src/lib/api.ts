@@ -1,0 +1,41 @@
+import axios from "axios";
+
+export const API_BASE_URL =
+  import.meta.env.VITE_APP_BASE_URL || "http://localhost:4000/api";
+
+export const api = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+api.interceptors.request.use(
+  (config) => {
+    console.log(`Making request to: ${config.url}`);
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
+);
+
+api.interceptors.response.use(
+  (response) => {
+    console.log(`Response from: ${response.config.url}`, response.status);
+    return response;
+  },
+  (error) => {
+    console.error("Request failed:", error.config?.url, error.message);
+    return Promise.reject(error);
+  },
+);
+
+export const apiFormData = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+  headers: {
+    "Content-Type": "multipart/form-data",
+  },
+});

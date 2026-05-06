@@ -14,15 +14,29 @@ import { generalLimiter } from "./middleware/ratelimiter";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+
 const allowedOrigins = [
   "http://localhost:4000",
   "https://airbnb-api-oi1o.onrender.com",
+  "http://localhost:5173",
 ];
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.log(`Blocked origin: ${origin}`);
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Cookie"],
+    exposedHeaders: ["Set-Cookie"],
   }),
 );
 app.use(compression());

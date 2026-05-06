@@ -2,18 +2,12 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-import type { UserProps } from "../../types";
+import { useAuth } from "../../hooks/useAuth";
 
 export default function DashboardLayout() {
   const [isOpen, setIsOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<boolean>(false);
-
-  const user: UserProps = {
-    id: "123",
-    email: "munyankindif0@gmail.com",
-    name: "Munyankindi Francois",
-    image: "https://avatars.githubusercontent.com/u/12345678?v=4",
-  };
+  const { user } = useAuth();
 
   return (
     <div className="flex min-h-screen bg-muted/40">
