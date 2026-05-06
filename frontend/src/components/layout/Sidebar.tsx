@@ -14,6 +14,7 @@ export default function Sidebar({
   collapsed,
   setCollapsed,
   setIsOpen,
+  isOpen,
 }: SidebarProps) {
   const location = useLocation();
   const [activeLink, setActiveLink] = useState(location.pathname);
@@ -24,6 +25,7 @@ export default function Sidebar({
 
   return (
     <>
+      {/* Desktop Sidebar */}
       <div
         className={`h-screen fixed top-0 left-0 bg-white dark:bg-gray-900 text-gray-800 dark:text-white transition-all duration-500 hidden md:flex flex-col z-20 ${
           collapsed ? "w-16" : "w-64"
@@ -84,9 +86,10 @@ export default function Sidebar({
         )}
       </div>
 
+      {/* Mobile Sidebar */}
       <div
         className={`fixed top-0 left-0 h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-white z-30 transition-all duration-300 md:hidden transform ${
-          closed ? "-translate-x-full" : "translate-x-0"
+          isOpen ? "translate-x-0" : "-translate-x-full"
         } w-64`}
       >
         <div className="flex items-center justify-between p-4">
@@ -94,7 +97,7 @@ export default function Sidebar({
             Navigation
           </h2>
           <button
-            onClick={() => setIsOpen(!closed)}
+            onClick={() => setIsOpen(false)}
             className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
             aria-label="Close menu"
           >
@@ -112,7 +115,7 @@ export default function Sidebar({
                 <Link
                   to={link.url}
                   key={index}
-                  onClick={() => setIsOpen(!closed)}
+                  onClick={() => setIsOpen(false)}
                   className={`flex items-center p-3 rounded-lg transition-all duration-200 ${
                     isActive
                       ? "bg-(--color-primary) text-white"
@@ -132,20 +135,24 @@ export default function Sidebar({
         </div>
       </div>
 
-      {!closed && (
+      {/* Overlay - only shows when mobile sidebar is open */}
+      {isOpen && (
         <div
           className="fixed inset-0 bg-black/20 dark:bg-black/40 z-20 md:hidden"
-          onClick={() => setIsOpen(true)}
+          onClick={() => setIsOpen(false)}
         />
       )}
 
-      <button
-        onClick={() => setIsOpen(false)}
-        className="fixed bottom-4 right-4 p-3 bg-(--color-primary) rounded-full md:hidden z-20 hover:bg-(--color-primary)/90 transition-colors"
-        aria-label="Open menu"
-      >
-        <Menu className="w-6 h-6 text-white" />
-      </button>
+      {/* Mobile Menu Button - only show when sidebar is closed */}
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-4 right-4 p-3 bg-(--color-primary) rounded-full md:hidden z-20 hover:bg-(--color-primary)/90 transition-colors shadow-lg"
+          aria-label="Open menu"
+        >
+          <Menu className="w-6 h-6 text-white" />
+        </button>
+      )}
     </>
   );
 }

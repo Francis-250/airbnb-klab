@@ -78,3 +78,12 @@ export const listingHeader = [
   "type",
   "Actions",
 ];
+
+export const AMENITIES = [
+  { key: "wifi", label: "WiFi" },
+  { key: "parking", label: "Parking" },
+  { key: "kitchen", label: "Kitchen" },
+  { key: "ac", label: "Air Conditioning" },
+  { key: "pool", label: "Pool" },
+  { key: "gym", label: "Gym" },
+];

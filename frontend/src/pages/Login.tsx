@@ -23,8 +23,9 @@ export default function Login() {
       await login(email, password);
       toast.success("Login successful!");
       window.location.href = "/dashboard";
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Login failed";
+    } catch (error: any) {
+      const message =
+        error.response?.data?.message || error.message || "Login failed";
       toast.error(message);
     } finally {
       setIsLoading(false);

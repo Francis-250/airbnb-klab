@@ -3,6 +3,7 @@ import type { UserProps } from "../../types";
 import ThemeToggle from "../ThemeToggle";
 import { Link } from "react-router-dom";
 import { useState } from "react";
+import { useAuth } from "../../hooks/useAuth";
 
 interface HeaderProps {
   setIsOpen: (isOpen: boolean) => void;
@@ -11,8 +12,11 @@ interface HeaderProps {
 
 export default function Header({ setIsOpen, user }: HeaderProps) {
   const [profileOpen, setProfileOpen] = useState(false);
+  const { logout } = useAuth();
 
-  const handleLogout = () => {};
+  const handleLogout = async () => {
+    await logout();
+  };
 
   return (
     <div className="flex items-center justify-between bg-white dark:bg-gray-900 p-4 sticky top-0 z-10">

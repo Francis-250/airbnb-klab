@@ -1,18 +1,18 @@
 export interface Listing {
-  id: number;
+  id: string;
   title: string;
+  description: string;
   location: string;
-  price: number;
-  rating: number;
-  superhost: boolean;
-  available: boolean;
-  image: string[];
-  reviews?: string;
-  description?: string;
-  phone?: string;
-  amenities?: string[];
-  guests?: number;
-  host?: UserProps;
+  pricePerNight: number;
+  guests: number;
+  type: ListingType;
+  amenities: string[];
+  photos: string[];
+  rating?: number;
+  hostId: string;
+  host: UserProps;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface UserProps {
@@ -28,3 +28,5 @@ export interface CategoryProps {
   title: string;
   value: number;
 }
+
+export type ListingType = "apartment" | "house" | "villa" | "cabin";

@@ -21,6 +21,7 @@ import {
   Check,
   AlertCircle,
 } from "lucide-react";
+import { api } from "../../lib/api";
 
 type ListingType = "apartment" | "house" | "villa" | "cabin";
 
@@ -53,6 +54,11 @@ interface FormData {
   type: ListingType | "";
   amenities: string[];
   photos: File[];
+}
+
+interface ListingFormProps {
+  onClose: () => void;
+  onSuccess?: () => void;
 }
 
 function Field({
@@ -114,8 +120,10 @@ function ReviewRow({
   );
 }
 
-export default function ListingForm({ onClose }: { onClose?: () => void }) {
+export default function ListingForm({ onClose, onSuccess }: ListingFormProps) {
   const [step, setStep] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>({
     title: "",
     description: "",
@@ -134,6 +142,7 @@ export default function ListingForm({ onClose }: { onClose?: () => void }) {
   const update = (key: keyof FormData, value: unknown) => {
     setForm((f) => ({ ...f, [key]: value }));
     setErrors((e) => ({ ...e, [key]: undefined }));
+    setSubmitError(null);
   };
 
   const toggleAmenity = (key: string) => {
@@ -148,7 +157,8 @@ export default function ListingForm({ onClose }: { onClose?: () => void }) {
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
     const valid = Array.from(files).filter((f) => f.type.startsWith("image/"));
-    update("photos", [...form.photos, ...valid].slice(0, 10));
+    const newPhotos = [...form.photos, ...valid].slice(0, 10);
+    update("photos", newPhotos);
   };
 
   const removePhoto = (i: number) => {
@@ -162,7 +172,11 @@ export default function ListingForm({ onClose }: { onClose?: () => void }) {
     const e: typeof errors = {};
     if (step === 0) {
       if (!form.title.trim()) e.title = "Title is required";
+      if (form.title.length < 5)
+        e.title = "Title must be at least 5 characters";
       if (!form.description.trim()) e.description = "Description is required";
+      if (form.description.length < 20)
+        e.description = "Description must be at least 20 characters";
     }
     if (step === 1) {
       if (!form.location.trim()) e.location = "Location is required";
@@ -176,6 +190,10 @@ export default function ListingForm({ onClose }: { onClose?: () => void }) {
         e.guests = "At least 1 guest";
       if (!form.type) e.type = "Select a type";
     }
+    if (step === 3 && form.photos.length === 0) {
+      setSubmitError("Please add at least one photo of your listing");
+      return false;
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -183,7 +201,51 @@ export default function ListingForm({ onClose }: { onClose?: () => void }) {
   const next = () => {
     if (validateStep()) setStep((s) => Math.min(s + 1, 4));
   };
+
   const prev = () => setStep((s) => Math.max(s - 1, 0));
+
+  const handleSubmit = async () => {
+    if (!validateStep()) return;
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    const formData = new FormData();
+    formData.append("title", form.title.trim());
+    formData.append("description", form.description.trim());
+    formData.append("location", form.location.trim());
+    formData.append("pricePerNight", form.pricePerNight);
+    formData.append("guests", form.guests);
+    formData.append("type", form.type);
+    formData.append("amenities", JSON.stringify(form.amenities));
+    formData.append("rating", "0");
+
+    // Append photos
+    form.photos.forEach((photo) => {
+      formData.append("photos", photo);
+    });
+
+    try {
+      const response = await api.post("/listings", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      if (response.status === 201) {
+        onSuccess?.();
+        onClose();
+      }
+    } catch (error: any) {
+      console.error("Error creating listing:", error);
+      setSubmitError(
+        error.response?.data?.message ||
+          "Failed to create listing. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const inputBase =
     "w-full px-3 py-2.5 bg-[#F7F7F7] dark:bg-[#1a2235] border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-xl text-[13px] text-[#111] dark:text-white placeholder:text-[#AAAAAA] outline-none transition-all focus:border-[#111] dark:focus:border-white focus:ring-2 focus:ring-black/5 dark:focus:ring-white/5";
@@ -229,7 +291,7 @@ export default function ListingForm({ onClose }: { onClose?: () => void }) {
                   {i < step ? <Check size={10} strokeWidth={3} /> : i + 1}
                 </div>
                 <span
-                  className={`text-[11px] font-medium transition-colors
+                  className={`text-[11px] font-medium transition-colors whitespace-nowrap
                     ${i === step ? "text-[#111] dark:text-white" : i < step ? "text-[#717171]" : "text-[#AAAAAA]"}`}
                 >
                   {s}
@@ -243,6 +305,15 @@ export default function ListingForm({ onClose }: { onClose?: () => void }) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-6">
+          {submitError && (
+            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+              <span className="text-sm text-red-700 dark:text-red-300">
+                {submitError}
+              </span>
+            </div>
+          )}
+
           {step === 0 && (
             <div className="flex flex-col gap-5">
               <div>
@@ -320,6 +391,7 @@ export default function ListingForm({ onClose }: { onClose?: () => void }) {
                     placeholder="0.00"
                     type="number"
                     min={0}
+                    step={0.01}
                     value={form.pricePerNight}
                     onChange={(e) => update("pricePerNight", e.target.value)}
                   />
@@ -427,7 +499,12 @@ export default function ListingForm({ onClose }: { onClose?: () => void }) {
                 </p>
               </div>
               <div
-                className="border border-dashed border-[#EBEBEB] dark:border-[#2A2A2A] rounded-2xl px-5 py-8 flex flex-col items-center gap-2 bg-[#F7F7F7] dark:bg-[#1a2235] cursor-pointer hover:border-[#AAAAAA] dark:hover:border-[#555] hover:bg-white dark:hover:bg-[#1a2235] transition-all"
+                className={`border border-dashed rounded-2xl px-5 py-8 flex flex-col items-center gap-2 cursor-pointer transition-all
+                  ${
+                    form.photos.length === 0 && submitError
+                      ? "border-red-400 bg-red-50/50 dark:bg-red-900/10"
+                      : "border-[#EBEBEB] dark:border-[#2A2A2A] bg-[#F7F7F7] dark:bg-[#1a2235] hover:border-[#AAAAAA] dark:hover:border-[#555] hover:bg-white dark:hover:bg-[#1a2235]"
+                  }`}
                 onClick={() => fileRef.current?.click()}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
@@ -503,7 +580,7 @@ export default function ListingForm({ onClose }: { onClose?: () => void }) {
                   Everything look good? You can always edit after publishing.
                 </p>
               </div>
-              <div className="border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-xl overflow-hidden">
+              <div className="border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-xl overflow-hidden max-h-96 overflow-y-auto">
                 <ReviewRow
                   label="Title"
                   value={form.title || "—"}
@@ -564,7 +641,8 @@ export default function ListingForm({ onClose }: { onClose?: () => void }) {
         <div className="flex items-center justify-between px-5 py-3.5 border-t border-[#EBEBEB] dark:border-[#2A2A2A]">
           <button
             onClick={step === 0 ? onClose : prev}
-            className="inline-flex items-center gap-1 px-4 py-2 bg-transparent border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-xl text-[13px] font-medium text-[#717171] hover:border-[#AAAAAA] dark:hover:border-[#555] hover:text-[#111] dark:hover:text-white transition-all cursor-pointer"
+            disabled={isSubmitting}
+            className="inline-flex items-center gap-1 px-4 py-2 bg-transparent border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-xl text-[13px] font-medium text-[#717171] hover:border-[#AAAAAA] dark:hover:border-[#555] hover:text-[#111] dark:hover:text-white transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {step === 0 ? (
               "Cancel"
@@ -575,16 +653,24 @@ export default function ListingForm({ onClose }: { onClose?: () => void }) {
             )}
           </button>
           <button
-            onClick={step === 4 ? undefined : next}
+            onClick={step === 4 ? handleSubmit : next}
+            disabled={isSubmitting}
             className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all active:scale-95 cursor-pointer border
               ${
                 step === 4
                   ? "bg-[#008A05] border-[#008A05] text-white hover:opacity-80"
                   : "bg-[#111] dark:bg-white border-[#111] dark:border-white text-white dark:text-[#111] hover:opacity-80"
-              }`}
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {step === 4 ? (
-              "Publish listing"
+              isSubmitting ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Publishing...
+                </>
+              ) : (
+                "Publish listing"
+              )
             ) : (
               <>
                 Continue <ChevronRight size={14} />

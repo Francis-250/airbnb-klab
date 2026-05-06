@@ -5,7 +5,6 @@ import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Spinner from "./components/Spinner";
-import Booking from "./pages/host/Booking";
 import DashboardListing from "./pages/host/Listing";
 import { ProtectedRoute } from "./lib/ProtectedRoute";
 import DashboardLayout from "./components/layout/DashboardLayout";
