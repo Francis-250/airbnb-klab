@@ -12,6 +12,7 @@ import DashboardLayout from "./components/layout/DashboardLayout";
 import ThemeToggle from "./components/ThemeToggle";
 import Listing from "./pages/Listing";
 import Footer from "./components/layout/Footer";
+import DashboardBooking from "./pages/host/Booking";
 
 const ListingDetail = lazy(() => import("./pages/ListingDetail"));
 const Dashboard = lazy(() => import("./pages/host/Dashboard"));
@@ -43,7 +44,7 @@ export default function App() {
               }
             >
               <Route index element={<Dashboard />} />
-              <Route path="bookings" element={<Booking />} />
+              <Route path="bookings" element={<DashboardBooking />} />
               <Route path="listings" element={<DashboardListing />} />
             </Route>
 
