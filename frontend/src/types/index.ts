@@ -30,3 +30,23 @@ export interface CategoryProps {
 }
 
 export type ListingType = "apartment" | "house" | "villa" | "cabin";
+
+export type AIFilters = {
+  location: string | null;
+  type: ListingType | null;
+  minPrice: number | null;
+  maxPrice: number | null;
+  guests: number | null;
+};
+
+export type AISearchResponse = {
+  filters: AIFilters;
+  data: Listing[];
+  message?: string;
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+};

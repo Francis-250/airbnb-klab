@@ -5,29 +5,12 @@ import ListingCard from "../components/card/ListingCard";
 import { useState, useMemo } from "react";
 import { api } from "../lib/api";
 import { useQuery } from "@tanstack/react-query";
-import type { Listing } from "../types";
-
-type ListingType = "apartment" | "house" | "villa" | "cabin";
-
-type AIFilters = {
-  location: string | null;
-  type: ListingType | null;
-  minPrice: number | null;
-  maxPrice: number | null;
-  guests: number | null;
-};
-
-type AISearchResponse = {
-  filters: AIFilters;
-  data: Listing[];
-  message?: string;
-  meta: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-};
+import type {
+  AIFilters,
+  AISearchResponse,
+  Listing,
+  ListingType,
+} from "../types";
 
 export default function Listing() {
   const [type, setType] = useState<"grid" | "list">("grid");
