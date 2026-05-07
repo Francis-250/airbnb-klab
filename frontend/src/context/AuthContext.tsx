@@ -1,4 +1,5 @@
-import { createContext, useEffect, useState } from "react";
+import { createContext } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 
 type User = {
@@ -26,27 +27,67 @@ export type AuthContextType = {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    const fetchUser = async () => {
+  const { data: user, isLoading: loading } = useQuery({
+    queryKey: ["auth", "me"],
+    queryFn: async () => {
       try {
         const res = await api.get("/auth/me");
-        setUser(res.data.user);
+        return res.data.user;
       } catch {
-        setUser(null);
-      } finally {
-        setLoading(false);
+        return null;
       }
-    };
+    },
+    retry: false,
+    staleTime: 5 * 60 * 1000,
+  });
 
-    fetchUser();
-  }, []);
+  const loginMutation = useMutation({
+    mutationFn: async ({
+      email,
+      password,
+    }: {
+      email: string;
+      password: string;
+    }) => {
+      const res = await api.post("/auth/login", { email, password });
+      return res.data.user;
+    },
+    onSuccess: (userData) => {
+      queryClient.setQueryData(["auth", "me"], userData);
+    },
+  });
+
+  const registerMutation = useMutation({
+    mutationFn: async ({
+      name,
+      username,
+      email,
+      password,
+    }: {
+      name: string;
+      username: string;
+      email: string;
+      password: string;
+    }) => {
+      await api.post("/auth/register", { name, username, email, password });
+    },
+  });
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      await api.post("/auth/logout");
+      return null;
+    },
+    onSuccess: () => {
+      queryClient.setQueryData(["auth", "me"], null);
+      queryClient.clear();
+    },
+  });
 
   const login = async (email: string, password: string) => {
-    const res = await api.post("/auth/login", { email, password });
-    setUser(res.data.user);
+    await loginMutation.mutateAsync({ email, password });
   };
 
   const register = async (
@@ -55,16 +96,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     email: string,
     password: string,
   ) => {
-    await api.post("/auth/register", { name, username, email, password });
+    await registerMutation.mutateAsync({ name, username, email, password });
   };
 
   const logout = async () => {
-    await api.post("/auth/logout");
-    setUser(null);
+    await logoutMutation.mutateAsync();
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, register }}>
+    <AuthContext.Provider
+      value={{ user: user || null, loading, login, logout, register }}
+    >
       {children}
     </AuthContext.Provider>
   );

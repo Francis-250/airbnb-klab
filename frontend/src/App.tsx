@@ -25,10 +25,10 @@ export default function App() {
     location.pathname === "/register";
 
   return (
-    <div>
+    <div className="flex flex-col min-h-screen">
       {!isHiddenNavbar && <Navbar />}
-      <div
-        className={`${!isHiddenNavbar ? "lg:pt-3 px-4 md:px-[6vw] lg:px-[9vw]" : ""}`}
+      <main
+        className={`grow ${!isHiddenNavbar ? "lg:pt-3 px-4 md:px-[6vw] lg:px-[9vw]" : ""}`}
       >
         <Suspense fallback={<Spinner />}>
           <Routes>
@@ -53,8 +53,8 @@ export default function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
-        {!isHiddenNavbar && <Footer />}
-      </div>
+      </main>
+      {!isHiddenNavbar && <Footer />}
       <div className="fixed bottom-4 right-4">
         <ThemeToggle />
       </div>

@@ -10,11 +10,11 @@ const queryClient = new QueryClient();
 
 createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
-    <AuthProvider>
-      <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
         <App />
-      </QueryClientProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </QueryClientProvider>
     <Toaster closeButton richColors position="bottom-left" />
   </BrowserRouter>,
 );

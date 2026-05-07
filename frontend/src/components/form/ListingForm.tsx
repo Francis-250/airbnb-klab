@@ -22,6 +22,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { api } from "../../lib/api";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 type ListingType = "apartment" | "house" | "villa" | "cabin";
 
@@ -121,9 +122,8 @@ function ReviewRow({
 }
 
 export default function ListingForm({ onClose, onSuccess }: ListingFormProps) {
+  const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const [form, setForm] = useState<FormData>({
     title: "",
     description: "",
@@ -139,10 +139,40 @@ export default function ListingForm({ onClose, onSuccess }: ListingFormProps) {
   );
   const fileRef = useRef<HTMLInputElement>(null);
 
+  const createListingMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const data = new FormData();
+      data.append("title", formData.title.trim());
+      data.append("description", formData.description.trim());
+      data.append("location", formData.location.trim());
+      data.append("pricePerNight", formData.pricePerNight);
+      data.append("guests", formData.guests);
+      data.append("type", formData.type);
+      data.append("amenities", JSON.stringify(formData.amenities));
+      data.append("rating", "0");
+
+      formData.photos.forEach((photo) => {
+        data.append("photos", photo);
+      });
+
+      const response = await api.post("/listings", data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["listings"] });
+      queryClient.invalidateQueries({ queryKey: ["listings", "me"] });
+      onSuccess?.();
+      onClose();
+    },
+  });
+
   const update = (key: keyof FormData, value: unknown) => {
     setForm((f) => ({ ...f, [key]: value }));
     setErrors((e) => ({ ...e, [key]: undefined }));
-    setSubmitError(null);
   };
 
   const toggleAmenity = (key: string) => {
@@ -191,7 +221,10 @@ export default function ListingForm({ onClose, onSuccess }: ListingFormProps) {
       if (!form.type) e.type = "Select a type";
     }
     if (step === 3 && form.photos.length === 0) {
-      setSubmitError("Please add at least one photo of your listing");
+      setErrors((prev) => ({
+        ...prev,
+        photos: "Please add at least one photo",
+      }));
       return false;
     }
     setErrors(e);
@@ -206,45 +239,7 @@ export default function ListingForm({ onClose, onSuccess }: ListingFormProps) {
 
   const handleSubmit = async () => {
     if (!validateStep()) return;
-
-    setIsSubmitting(true);
-    setSubmitError(null);
-
-    const formData = new FormData();
-    formData.append("title", form.title.trim());
-    formData.append("description", form.description.trim());
-    formData.append("location", form.location.trim());
-    formData.append("pricePerNight", form.pricePerNight);
-    formData.append("guests", form.guests);
-    formData.append("type", form.type);
-    formData.append("amenities", JSON.stringify(form.amenities));
-    formData.append("rating", "0");
-
-    // Append photos
-    form.photos.forEach((photo) => {
-      formData.append("photos", photo);
-    });
-
-    try {
-      const response = await api.post("/listings", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-
-      if (response.status === 201) {
-        onSuccess?.();
-        onClose();
-      }
-    } catch (error: any) {
-      console.error("Error creating listing:", error);
-      setSubmitError(
-        error.response?.data?.message ||
-          "Failed to create listing. Please try again.",
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+    createListingMutation.mutate(form);
   };
 
   const inputBase =
@@ -305,11 +300,12 @@ export default function ListingForm({ onClose, onSuccess }: ListingFormProps) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-6">
-          {submitError && (
+          {createListingMutation.isError && (
             <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
               <span className="text-sm text-red-700 dark:text-red-300">
-                {submitError}
+                {(createListingMutation.error as any)?.response?.data
+                  ?.message || "Failed to create listing"}
               </span>
             </div>
           )}
@@ -501,7 +497,7 @@ export default function ListingForm({ onClose, onSuccess }: ListingFormProps) {
               <div
                 className={`border border-dashed rounded-2xl px-5 py-8 flex flex-col items-center gap-2 cursor-pointer transition-all
                   ${
-                    form.photos.length === 0 && submitError
+                    form.photos.length === 0 && errors.photos
                       ? "border-red-400 bg-red-50/50 dark:bg-red-900/10"
                       : "border-[#EBEBEB] dark:border-[#2A2A2A] bg-[#F7F7F7] dark:bg-[#1a2235] hover:border-[#AAAAAA] dark:hover:border-[#555] hover:bg-white dark:hover:bg-[#1a2235]"
                   }`}
@@ -641,7 +637,7 @@ export default function ListingForm({ onClose, onSuccess }: ListingFormProps) {
         <div className="flex items-center justify-between px-5 py-3.5 border-t border-[#EBEBEB] dark:border-[#2A2A2A]">
           <button
             onClick={step === 0 ? onClose : prev}
-            disabled={isSubmitting}
+            disabled={createListingMutation.isPending}
             className="inline-flex items-center gap-1 px-4 py-2 bg-transparent border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-xl text-[13px] font-medium text-[#717171] hover:border-[#AAAAAA] dark:hover:border-[#555] hover:text-[#111] dark:hover:text-white transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {step === 0 ? (
@@ -654,7 +650,7 @@ export default function ListingForm({ onClose, onSuccess }: ListingFormProps) {
           </button>
           <button
             onClick={step === 4 ? handleSubmit : next}
-            disabled={isSubmitting}
+            disabled={createListingMutation.isPending}
             className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all active:scale-95 cursor-pointer border
               ${
                 step === 4
@@ -663,7 +659,7 @@ export default function ListingForm({ onClose, onSuccess }: ListingFormProps) {
               } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {step === 4 ? (
-              isSubmitting ? (
+              createListingMutation.isPending ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   Publishing...
