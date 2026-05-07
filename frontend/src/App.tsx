@@ -12,6 +12,7 @@ import ThemeToggle from "./components/ThemeToggle";
 import Listing from "./pages/Listing";
 import Footer from "./components/layout/Footer";
 import DashboardBooking from "./pages/host/Booking";
+import Register from "./pages/Register";
 
 const ListingDetail = lazy(() => import("./pages/ListingDetail"));
 const Dashboard = lazy(() => import("./pages/host/Dashboard"));
@@ -20,7 +21,8 @@ export default function App() {
   const location = useLocation();
   const isHiddenNavbar =
     location.pathname.startsWith("/dashboard") ||
-    location.pathname === "/login";
+    location.pathname === "/login" ||
+    location.pathname === "/register";
 
   return (
     <div>
@@ -33,6 +35,7 @@ export default function App() {
             <Route path="/" element={<Home />} />
             <Route path="/listings/:id" element={<ListingDetail />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
             <Route path="/all-listings" element={<Listing />} />
             <Route
               path="/dashboard"

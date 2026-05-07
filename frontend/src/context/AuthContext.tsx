@@ -15,6 +15,12 @@ export type AuthContextType = {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  register: (
+    name: string,
+    username: string,
+    email: string,
+    password: string,
+  ) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -43,13 +49,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(res.data.user);
   };
 
+  const register = async (
+    name: string,
+    username: string,
+    email: string,
+    password: string,
+  ) => {
+    await api.post("/auth/register", { name, username, email, password });
+  };
+
   const logout = async () => {
     await api.post("/auth/logout");
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, register }}>
       {children}
     </AuthContext.Provider>
   );

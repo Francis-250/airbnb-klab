@@ -7,6 +7,7 @@ import {
   deleteListing,
   searchListings,
   getListingStats,
+  getMyListings,
 } from "../controllers/listings.controller";
 import { isHost, verifyToken } from "../middleware/auth.middleware";
 import { upload } from "../middleware/upload.middleware";
@@ -44,6 +45,8 @@ const router = Router();
  *     responses:
  *       200: { description: Success }
  */
+router.get("/me", getMyListings);
+
 router.get("/", getAllListings);
 
 /**

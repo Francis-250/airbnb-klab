@@ -4,6 +4,17 @@ import { uploadListingPhotos as uploadListingPhotosHelper } from "../lib/helpers
 import { deleteCacheByPrefix, getCache, setCache } from "../lib/cache";
 
 export const getAllListings = async (req: Request, res: Response) => {
+  try {
+    const listings = await prisma.listing.findMany({
+      include: { host: { select: { name: true, email: true } } },
+    });
+    res.status(200).json(listings);
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getMyListings = async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
   const skip = (page - 1) * limit;
@@ -40,16 +51,16 @@ export const getAllListings = async (req: Request, res: Response) => {
 
 export const getListingById = async (req: Request, res: Response) => {
   const { id } = req.params;
-
   try {
     const listing = await prisma.listing.findUnique({
       where: { id: id as string },
-      include: { host: { select: { name: true, email: true } } },
+      include: { host: { select: { name: true, email: true, avatar: true } } },
     });
-    if (!listing) {
-      return res.status(404).json({ message: "Listing not found" });
+    if (listing) {
+      res.status(200).json({ listing });
+    } else {
+      res.status(404).json({ message: "Listing not found" });
     }
-    res.status(200).json(listing);
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
   }

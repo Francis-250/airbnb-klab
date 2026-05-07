@@ -25,7 +25,7 @@ export default function ListingCard({
         <Link
           to={`/listings/${listing.id}`}
           style={{
-            backgroundImage: `url(${listing.image[0]})`,
+            backgroundImage: `url(${listing.photos[0]})`,
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
@@ -51,7 +51,7 @@ export default function ListingCard({
               transition={{ delay: 0.2 }}
               className="self-start text-[11px] font-medium text-white bg-black/40 rounded px-2 py-0.5"
             >
-              $100 off ${listing.price}: eblwc
+              $100 off ${listing.pricePerNight}: eblwc
             </motion.span>
           </div>
         </Link>
@@ -127,7 +127,7 @@ export default function ListingCard({
               className="flex items-center gap-1.5 text-[13px] text-gray-500 dark:text-gray-400"
             >
               <Phone className="w-3.5 h-3.5" />
-              {listing.phone ?? "(123) 456-7890"}
+              {listing.host.phone ?? "(123) 456-7890"}
             </motion.span>
             <motion.span
               whileHover={{ x: 2 }}
@@ -153,7 +153,7 @@ export default function ListingCard({
       <Link
         to={`/listings/${listing.id}`}
         style={{
-          backgroundImage: `url(${listing.image[0]})`,
+          backgroundImage: `url(${listing.photos[0]})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
         }}
@@ -215,7 +215,7 @@ export default function ListingCard({
             {listing.location}
           </span>
           <span className="text-[12px] font-medium text-gray-900 dark:text-gray-100 shrink-0">
-            ${listing.price}
+            ${listing.pricePerNight}
             <span className="font-normal text-gray-400">/night</span>
           </span>
         </div>

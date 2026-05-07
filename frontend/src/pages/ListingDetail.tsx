@@ -1,24 +1,67 @@
 import { useParams } from "react-router-dom";
-import { listings } from "../data/listings";
 import { Heart, Share2, Users, MapPin } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { api } from "../lib/api";
+import type { Listing } from "../types";
+import Spinner from "../components/Spinner";
 
 export default function ListingDetail() {
   const { id } = useParams<{ id: string }>();
-  const listing = listings.find((l) => l.id === Number(id));
-  const [mainImage, setMainImage] = useState(listing?.image[0] || "");
+  const [listing, setListing] = useState<Listing | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [mainImage, setMainImage] = useState("");
   const [isSaved, setIsSaved] = useState(false);
   const [isShared, setIsShared] = useState(false);
 
-  if (!listing) return null;
+  useEffect(() => {
+    const fetchListing = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await api.get(`/listings/${id}`);
+        setListing(res.data.listing);
+        if (res.data.listing.photos && res.data.listing.photos.length > 0) {
+          setMainImage(res.data.listing.photos[0]);
+        }
+      } catch (error) {
+        console.error("Error fetching listing:", error);
+        setError("Failed to load listing. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const allImages = [
-    listing.image[0],
-    listing.image[1],
-    listing.image[2],
-    listing.image[3],
-  ];
+    if (id) {
+      fetchListing();
+    }
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="text-center text-red-500 mt-10">{error}</div>;
+  }
+
+  if (!listing) {
+    return <div className="text-center mt-10">Listing not found</div>;
+  }
+
+  const allImages = listing.photos?.slice(0, 4) || [];
+  if (allImages.length < 4) {
+    for (let i = allImages.length; i < 4; i++) {
+      allImages.push("/placeholder.svg"); // Add placeholders if not enough images
+    }
+  }
+
+  const mapUrl = `https://www.google.com/maps/embed/v1/place?key=${import.meta.env.VITE_GOOGLE_MAP_API_KEY}&q=${encodeURIComponent(listing.location)}`;
 
   return (
     <motion.div
@@ -27,13 +70,13 @@ export default function ListingDetail() {
       exit={{ opacity: 0 }}
       className="min-h-screen"
     >
-      <header className="flex justify-between items-start mb-5 gap-4">
+      <header className="flex justify-between items-start mb-5">
         <motion.h1
           initial={{ x: -20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ delay: 0.2 }}
           style={{ fontFamily: "'Playfair Display', serif" }}
-          className="text-lg sm:text-xl md:text-2xl font-semibold leading-snug max-w-xl"
+          className="text-2xl font-semibold leading-snug max-w-xl"
         >
           {listing.title} · {listing.location}
         </motion.h1>
@@ -41,7 +84,7 @@ export default function ListingDetail() {
           initial={{ x: 20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="flex gap-3 shrink-0"
+          className="flex gap-4"
         >
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -50,7 +93,7 @@ export default function ListingDetail() {
             className="flex items-center gap-1.5 bg-transparent border-none text-sm font-medium underline cursor-pointer hover:text-(--color-primary)"
           >
             <Share2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Share</span>
+            Share
           </motion.button>
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -68,7 +111,7 @@ export default function ListingDetail() {
                 }`}
               />
             </motion.div>
-            <span className="hidden sm:inline">Save</span>
+            Save
           </motion.button>
         </motion.div>
       </header>
@@ -77,7 +120,7 @@ export default function ListingDetail() {
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.3 }}
-        className="grid grid-cols-1 sm:grid-cols-5 gap-1.5 rounded-2xl overflow-hidden mb-9 h-64 sm:h-80 md:h-120"
+        className="grid grid-cols-5 gap-1.5 rounded-2xl overflow-hidden mb-9 h-120"
       >
         <motion.img
           key={mainImage}
@@ -86,56 +129,44 @@ export default function ListingDetail() {
           transition={{ duration: 0.4 }}
           src={mainImage}
           alt={listing.title}
-          className="col-span-1 sm:col-span-3 w-full h-full object-cover cursor-pointer"
+          className="col-span-3 w-full h-full object-cover cursor-pointer"
           onClick={() => {
             const currentIndex = allImages.indexOf(mainImage);
             const nextIndex = (currentIndex + 1) % allImages.length;
             setMainImage(allImages[nextIndex]);
           }}
         />
-        <div className="hidden sm:grid col-span-2 grid-rows-2 gap-1.5">
+        <div className="col-span-2 grid grid-rows-2 gap-1.5">
           <motion.img
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            src={listing.image[1]}
+            src={listing.photos[1]}
             alt={listing.title}
             className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => setMainImage(listing.image[1])}
+            onClick={() => setMainImage(listing.photos[1])}
           />
           <div className="grid grid-cols-2 gap-1.5">
             <motion.img
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              src={listing.image[2]}
+              src={listing.photos[2]}
               alt={listing.title}
               className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => setMainImage(listing.image[2])}
+              onClick={() => setMainImage(listing.photos[2])}
             />
             <motion.img
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              src={listing.image[3]}
+              src={listing.photos[3]}
               alt={listing.title}
               className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => setMainImage(listing.image[3])}
+              onClick={() => setMainImage(listing.photos[3])}
             />
           </div>
         </div>
-
-        <div className="flex sm:hidden gap-1.5 overflow-x-auto">
-          {allImages.slice(1).map((img, i) => (
-            <img
-              key={i}
-              src={img}
-              alt={listing.title}
-              className="h-16 w-24 shrink-0 object-cover rounded-lg cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
-              onClick={() => setMainImage(img)}
-            />
-          ))}
-        </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8 lg:gap-16 items-start">
+      <div className="grid grid-cols-[1fr_340px] gap-16 items-start">
         <motion.div
           initial={{ x: -30, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
@@ -146,7 +177,7 @@ export default function ListingDetail() {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.5 }}
             style={{ fontFamily: "'Playfair Display', serif" }}
-            className="text-lg md:text-xl font-semibold mb-4"
+            className="text-xl font-semibold mb-4"
           >
             {listing.title} in {listing.location}
           </motion.h2>
@@ -159,7 +190,7 @@ export default function ListingDetail() {
           >
             <motion.img
               whileHover={{ scale: 1.1 }}
-              src={listing.host?.image || "/default-avatar.png"}
+              src={listing.host?.avatar || "/default-avatar.png"}
               alt={listing.host?.name || "Host"}
               className="w-11 h-11 rounded-full object-cover bg-[#EBEBEB]"
             />
@@ -210,7 +241,7 @@ export default function ListingDetail() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 1.1 }}
-              className="mb-6 rounded-xl overflow-hidden h-48 sm:h-64 bg-[#EBEBEB] dark:bg-[#333]"
+              className="mb-6 rounded-xl overflow-hidden h-64 bg-[#EBEBEB] dark:bg-[#333]"
             >
               <iframe
                 title="Property Location"
@@ -220,12 +251,14 @@ export default function ListingDetail() {
                 loading="lazy"
                 allowFullScreen
                 referrerPolicy="no-referrer-when-downgrade"
-                src={`https://www.google.com/maps/embed/v1/place?key=YOUR_GOOGLE_MAPS_API_KEY&q=${encodeURIComponent(listing.location)}`}
+                src={mapUrl}
               />
             </motion.div>
 
             <motion.a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(listing.location)}`}
+              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                listing.location,
+              )}`}
               target="_blank"
               rel="noopener noreferrer"
               whileHover={{ x: 2 }}
@@ -260,7 +293,7 @@ export default function ListingDetail() {
               <span>Up to {listing.guests} guests</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <AnimatePresence>
                 {listing.amenities?.map((a, i) => (
                   <motion.div
@@ -288,7 +321,7 @@ export default function ListingDetail() {
           initial={{ x: 30, opacity: 0, y: 20 }}
           animate={{ x: 0, opacity: 1, y: 0 }}
           transition={{ delay: 0.4, type: "spring", stiffness: 100 }}
-          className="rounded-2xl p-5 sm:p-7 lg:sticky lg:top-6 border border-[#EBEBEB] dark:border-[#333]"
+          className="rounded-2xl p-7 sticky top-6"
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
@@ -300,7 +333,7 @@ export default function ListingDetail() {
               style={{ fontFamily: "'Playfair Display', serif" }}
               className="text-2xl font-semibold"
             >
-              ${listing.price}
+              ${listing.pricePerNight}
             </span>
             <span className="text-sm text-[#717171]">per night</span>
           </motion.div>
@@ -312,13 +345,19 @@ export default function ListingDetail() {
             className="flex items-center gap-2 text-sm rounded-lg px-3 py-2.5 mb-5"
           >
             <motion.span
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+              animate={{
+                scale: [1, 1.2, 1],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                repeatDelay: 3,
+              }}
               className={`w-2 h-2 rounded-full shrink-0 ${
-                listing.available ? "bg-green-500" : "bg-(--color-primary)"
+                listing?.hostId ? "bg-green-500" : "bg-(--color-primary)"
               }`}
             />
-            {listing.available
+            {listing?.hostId
               ? "Available for booking"
               : "Rare find! This place is usually booked"}
           </motion.div>

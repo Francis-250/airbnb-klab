@@ -1,11 +1,24 @@
 import { Grid, List, MapPin, Search, SlidersHorizontal } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { Categories } from "../data";
-import { listings } from "../data/listings";
 import ListingCard from "../components/card/ListingCard";
 import { useState } from "react";
+import { api } from "../lib/api";
+import { useQuery } from "@tanstack/react-query";
+import type { Listing } from "../types";
+
+const getListing = async () => {
+  const res = await api.get("/listings");
+  return res.data;
+};
 
 export default function Listing() {
+  const {
+    data: listings,
+    error,
+    isLoading,
+  } = useQuery({ queryKey: ["listings"], queryFn: getListing });
+
   const [type, setType] = useState<"grid" | "list">("grid");
   const [searchParams] = useSearchParams();
   const location = searchParams.get("location");
@@ -19,9 +32,12 @@ export default function Listing() {
     );
   };
 
+  if (isLoading) return <span>Loading...</span>;
+  if (error) return <span>Error: {error.message}</span>;
+
   return (
-    <div className="min-h-screen px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-      <div className="lg:grid lg:grid-cols-[260px_1fr] lg:gap-6">
+    <div className="min-h-screen py-4 sm:py-6">
+      <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-8">
         <button
           onClick={() => setIsFilterOpen(!isFilterOpen)}
           className="lg:hidden flex items-center gap-2 mb-4 px-4 py-2 bg-(--color-primary) text-white rounded-lg"
@@ -32,10 +48,17 @@ export default function Listing() {
 
         <aside
           className={`
-          ${isFilterOpen ? "block" : "hidden"} 
-          lg:block lg:sticky lg:top-25 lg:h-fit
-          fixed inset-0 z-50 bg-white dark:bg-[#1A1A1A] overflow-y-auto p-6 lg:inset-auto lg:bg-transparent lg:p-0
-        `}
+    ${isFilterOpen ? "block" : "hidden"} 
+    lg:block
+    fixed
+    inset-y-0 left-0 z-30
+    lg:top-24 lg:bottom-auto lg:left-[9vw]
+    w-70
+    bg-white dark:bg-[#1A1A1A]
+    overflow-hidden        
+    p-6 lg:p-0
+    shadow-lg lg:shadow-none
+  `}
         >
           <div className="lg:hidden flex justify-between items-center mb-6">
             <h2 className="text-lg font-semibold">Filters</h2>
@@ -162,7 +185,7 @@ export default function Listing() {
           />
         )}
 
-        <div>
+        <div className="lg:col-start-2">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-5">
             <div>
               <h1
@@ -209,9 +232,10 @@ export default function Listing() {
                 : "flex flex-col gap-4"
             }
           >
-            {listings.map((listing) => (
-              <ListingCard key={listing.id} listing={listing} type={type} />
-            ))}
+            {listings &&
+              listings.map((listing: Listing) => (
+                <ListingCard key={listing.id} listing={listing} type={type} />
+              ))}
           </div>
         </div>
       </div>

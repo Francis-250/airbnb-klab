@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import {
   Search,
   SlidersHorizontal,
@@ -29,9 +30,8 @@ const listingHeader = [
 ];
 
 export default function DashboardListing() {
-  const [listings, setListings] = useState<Listing[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
   const [searchText, setSearchText] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [isForm, setIsForm] = useState(false);
@@ -40,50 +40,93 @@ export default function DashboardListing() {
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 10,
-    total: 0,
-    totalPages: 0,
   });
 
-  const fetchListings = async () => {
-    setLoading(true);
-    setError(null);
-    try {
+  const {
+    data: listingsData,
+    isLoading,
+    error,
+    isFetching,
+    refetch,
+  } = useQuery({
+    queryKey: ["listings", "me", pagination.page, pagination.limit],
+
+    queryFn: async () => {
       const res = await api.get(
-        `/listings?page=${pagination.page}&limit=${pagination.limit}`,
+        `/listings/me?page=${pagination.page}&limit=${pagination.limit}`,
       );
-      const responseData = res.data;
-      setListings(responseData.data || []);
-      setPagination((prev) => ({
-        ...prev,
-        total: responseData.meta?.total || 0,
-        totalPages: responseData.meta?.totalPages || 0,
-      }));
-    } catch (error) {
-      console.error("Error fetching listings:", error);
-      setError("Failed to load listings. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+      return {
+        listings: res.data.data || [],
+        meta: res.data.meta || { total: 0, totalPages: 0 },
+      };
+    },
 
-  useEffect(() => {
-    fetchListings();
-  }, [pagination.page, pagination.limit]);
+    placeholderData: (previousData) => previousData,
 
-  const filteredListings = Array.isArray(listings)
-    ? listings.filter((listing) =>
-        listing.title?.toLowerCase().includes(searchText.toLowerCase()),
-      )
-    : [];
+    staleTime: 60 * 1000,
+    gcTime: 5 * 60 * 1000,
+    retry: 2,
+    refetchOnWindowFocus: false,
+  });
 
-  const handleDelete = async (id: string) => {
+  const listings = listingsData?.listings || [];
+  const total = listingsData?.meta?.total || 0;
+  const totalPages = listingsData?.meta?.totalPages || 0;
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/listings/${id}`);
+      return id;
+    },
+    onMutate: async (deletedId) => {
+      await queryClient.cancelQueries({
+        queryKey: ["listings", "me", pagination.page, pagination.limit],
+      });
+      const previousData = queryClient.getQueryData([
+        "listings",
+        "me",
+        pagination.page,
+        pagination.limit,
+      ]);
+      queryClient.setQueryData(
+        ["listings", "me", pagination.page, pagination.limit],
+        (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            listings: old.listings.filter(
+              (listing: Listing) => listing.id !== deletedId,
+            ),
+            meta: {
+              ...old.meta,
+              total: old.meta.total - 1,
+            },
+          };
+        },
+      );
+
+      return { previousData };
+    },
+
+    onError: (err, deletedId, context) => {
+      queryClient.setQueryData(
+        ["listings", "me", pagination.page, pagination.limit],
+        context?.previousData,
+      );
+      console.error("Error deleting listing:", err);
+      alert("Failed to delete listing. Please try again.");
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["listings", "me", pagination.page, pagination.limit],
+      });
+    },
+  });
+
+  const handleDelete = (id: string) => {
     if (confirm("Are you sure you want to delete this listing?")) {
-      try {
-        await api.delete(`/listings/${id}`);
-        fetchListings();
-      } catch (error) {
-        console.error("Error deleting listing:", error);
-      }
+      deleteMutation.mutate(id);
     }
   };
 
@@ -92,13 +135,25 @@ export default function DashboardListing() {
     setIsViewOpen(true);
   };
 
-  // FIXED: Proper error handling return
+  const handleFormSuccess = () => {
+    refetch();
+    setIsForm(false);
+  };
+
+  const filteredListings = Array.isArray(listings)
+    ? listings.filter((listing) =>
+        listing.title?.toLowerCase().includes(searchText.toLowerCase()),
+      )
+    : [];
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
-        <div className="text-red-500 mb-4">{error}</div>
+        <div className="text-red-500 mb-4">
+          {error instanceof Error ? error.message : "Failed to load listings"}
+        </div>
         <button
-          onClick={() => window.location.reload()}
+          onClick={() => refetch()}
           className="px-4 py-2 bg-[#111] dark:bg-white text-white dark:text-[#111] rounded-lg hover:opacity-80 transition-all"
         >
           Try again
@@ -124,6 +179,12 @@ export default function DashboardListing() {
         </div>
 
         <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
+          {isFetching && !isLoading && (
+            <span className="text-xs text-[#717171] animate-pulse">
+              Updating...
+            </span>
+          )}
+
           <div className="relative">
             <button
               onClick={() => setFilterOpen(!filterOpen)}
@@ -142,7 +203,6 @@ export default function DashboardListing() {
                   className="fixed inset-0 z-40 md:hidden"
                   onClick={() => setFilterOpen(false)}
                 />
-
                 <div className="absolute top-full mt-1.5 z-50 bg-white dark:bg-[#111828] border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-xl shadow-lg w-44 md:right-0 left-0 md:left-auto">
                   <ul className="p-2 text-sm font-medium text-[#717171]">
                     {AMENITIES.map((amenity) => (
@@ -171,11 +231,10 @@ export default function DashboardListing() {
         </div>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <Spinner />
       ) : (
         <>
-          {/* Desktop Table View */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm text-left text-[#717171]">
               <thead className="text-sm text-[#717171] bg-[#F7F7F7] dark:bg-[#111828] border-b border-[#EBEBEB] dark:border-[#2A2A2A]">
@@ -215,7 +274,12 @@ export default function DashboardListing() {
                   filteredListings.map((listing) => (
                     <tr
                       key={listing.id}
-                      className="bg-white dark:bg-[#111828] border-b border-[#EBEBEB] dark:border-[#2A2A2A] hover:bg-[#F7F7F7] dark:hover:bg-[#1a2235] transition-colors"
+                      className={`bg-white dark:bg-[#111828] border-b border-[#EBEBEB] dark:border-[#2A2A2A] hover:bg-[#F7F7F7] dark:hover:bg-[#1a2235] transition-colors ${
+                        deleteMutation.isPending &&
+                        deleteMutation.variables === listing.id
+                          ? "opacity-50"
+                          : ""
+                      }`}
                     >
                       <td className="px-6 py-4 font-medium text-[#111] dark:text-white">
                         {listing.title || "Untitled"}
@@ -231,16 +295,21 @@ export default function DashboardListing() {
                           <button
                             onClick={() => handleView(listing)}
                             className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                            disabled={deleteMutation.isPending}
                           >
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(listing.id)}
                             className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                            disabled={deleteMutation.isPending}
                           >
                             <Trash className="w-4 h-4 text-red-600" />
                           </button>
-                          <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors">
+                          <button
+                            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                            disabled={deleteMutation.isPending}
+                          >
                             <Pen className="w-4 h-4" />
                           </button>
                         </div>
@@ -252,7 +321,6 @@ export default function DashboardListing() {
             </table>
           </div>
 
-          {/* Mobile Card View */}
           <div className="block md:hidden space-y-3 mt-4">
             {filteredListings.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-16">
@@ -270,7 +338,12 @@ export default function DashboardListing() {
               filteredListings.map((listing) => (
                 <div
                   key={listing.id}
-                  className="bg-white dark:bg-[#111828] border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-xl p-4 hover:shadow-md transition-shadow"
+                  className={`bg-white dark:bg-[#111828] border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-xl p-4 hover:shadow-md transition-shadow ${
+                    deleteMutation.isPending &&
+                    deleteMutation.variables === listing.id
+                      ? "opacity-50"
+                      : ""
+                  }`}
                 >
                   <div className="flex justify-between items-start mb-3">
                     <h3 className="font-semibold text-[#111] dark:text-white text-lg">
@@ -280,16 +353,21 @@ export default function DashboardListing() {
                       <button
                         onClick={() => handleView(listing)}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        disabled={deleteMutation.isPending}
                       >
                         <Eye className="w-4 h-4 text-[#717171]" />
                       </button>
                       <button
                         onClick={() => handleDelete(listing.id)}
                         className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        disabled={deleteMutation.isPending}
                       >
                         <Trash className="w-4 h-4 text-red-600" />
                       </button>
-                      <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                      <button
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        disabled={deleteMutation.isPending}
+                      >
                         <Pen className="w-4 h-4 text-[#717171]" />
                       </button>
                     </div>
@@ -317,29 +395,28 @@ export default function DashboardListing() {
             )}
           </div>
 
-          {/* Pagination */}
           <div className="px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[#EBEBEB] dark:border-[#2A2A2A]">
             <p className="text-xs text-[#717171] text-center sm:text-left">
-              Showing {filteredListings.length} of {pagination.total} listings
+              Showing {filteredListings.length} of {total} listings
             </p>
             <div className="flex items-center gap-2">
               <button
                 onClick={() =>
                   setPagination((prev) => ({ ...prev, page: prev.page - 1 }))
                 }
-                disabled={pagination.page === 1}
+                disabled={pagination.page === 1 || isFetching}
                 className="text-xs px-3 py-1.5 rounded-lg hover:bg-[#F7F7F7] dark:hover:bg-[#1a2235] text-[#717171] hover:text-[#111] dark:hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
               <span className="text-xs text-[#717171]">
-                Page {pagination.page} of {pagination.totalPages}
+                Page {pagination.page} of {totalPages}
               </span>
               <button
                 onClick={() =>
                   setPagination((prev) => ({ ...prev, page: prev.page + 1 }))
                 }
-                disabled={pagination.page === pagination.totalPages}
+                disabled={pagination.page === totalPages || isFetching}
                 className="text-xs px-3 py-1.5 rounded-lg hover:bg-[#F7F7F7] dark:hover:bg-[#1a2235] text-[#717171] hover:text-[#111] dark:hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Next
@@ -352,7 +429,7 @@ export default function DashboardListing() {
       {isForm && (
         <ListingForm
           onClose={() => setIsForm(false)}
-          onSuccess={fetchListings}
+          onSuccess={handleFormSuccess}
         />
       )}
 

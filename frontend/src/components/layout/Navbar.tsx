@@ -35,11 +35,14 @@ export default function Navbar() {
         <div className="px-4 sm:px-6 lg:px-[6vw] xl:px-[9vw]">
           <div className="flex items-center justify-between h-16">
             <Link to="/" className="shrink-0">
-              <img
+              {/* <img
                 src={isDark ? "/image/logo-white.png" : "/image/logo.png"}
                 alt="Logo"
                 className="h-6 w-auto"
-              />
+              /> */}
+              <h1 className="text-2xl font-bold">
+                Air<span className="text-(--color-primary)">b</span>nb
+              </h1>
             </Link>
             <nav className="hidden md:flex gap-6 lg:gap-8">
               {["Places to stay", "Experiences", "Online Experiences"].map(
