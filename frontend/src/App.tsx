@@ -19,10 +19,19 @@ const Dashboard = lazy(() => import("./pages/host/Dashboard"));
 
 export default function App() {
   const location = useLocation();
+  const hideNavbarRoutes = ["/login", "/register"];
+
+  const isDashboard = location.pathname.startsWith("/dashboard");
+
+  const isNotFound =
+    !["/", "/login", "/register", "/all-listings"].includes(
+      location.pathname,
+    ) &&
+    !location.pathname.startsWith("/listings/") &&
+    !location.pathname.startsWith("/dashboard");
+
   const isHiddenNavbar =
-    location.pathname.startsWith("/dashboard") ||
-    location.pathname === "/login" ||
-    location.pathname === "/register";
+    isDashboard || hideNavbarRoutes.includes(location.pathname) || isNotFound;
 
   return (
     <div className="flex flex-col min-h-screen">

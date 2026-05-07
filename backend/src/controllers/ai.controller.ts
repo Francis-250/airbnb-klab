@@ -41,47 +41,60 @@ export const smartSearch = async (req: Request, res: Response) => {
   }
 
   try {
-    const prompt = `Extract search filters from this property search query: "${query}"
+    const analysisPrompt = `Analyze this property search query: "${query}"
 
-Return ONLY this JSON object, no explanation, no markdown:
-{
-  "location": null,
-  "type": null,
-  "minPrice": null,
-  "maxPrice": null,
-  "guests": null
-}
+Return ONLY valid JSON, no markdown, no explanation:
+{"isPropertySearch":true,"confidence":"high","feedback":"string","suggestion":null,"filters":{"location":null,"type":null,"minPrice":null,"maxPrice":null,"guests":null}}
 
 Rules:
-- location: the city or area mentioned, or null
-- type: must be exactly one of: apartment, house, villa, cabin — or null
-- minPrice: minimum price per night as a number (when user says "over", "above", "at least", "from") or null
-- maxPrice: maximum price per night as a number (when user says "under", "below", "up to", "max") or null
-- guests: the number of guests as a number, or null`;
+- isPropertySearch: false if unrelated to finding a property to rent
+- confidence: "high" (3+ filters found) | "medium" (2 filters) | "low" (1 filter)
+- feedback: one sentence summarizing what you understood e.g. "Looking for a house in Kigali under $200"
+- suggestion: improvement tip if confidence is low, else null
+- type: one of apartment|house|villa|cabin or null
+- minPrice/maxPrice: number or null
+- guests: number or null`;
 
     const aiResponse = await deterministicModel.invoke([
-      new HumanMessage(prompt),
+      new HumanMessage(analysisPrompt),
     ]);
-    const filters = safeParseJSON(aiResponse.content as string);
 
-    if (!filters) {
+    console.log("Raw AI:", aiResponse.content);
+
+    const analysis = safeParseJSON(aiResponse.content as string);
+
+    console.log("Parsed:", analysis);
+
+    if (!analysis) {
       return res.status(500).json({ message: "AI returned invalid response" });
     }
 
-    const allNull = Object.values(filters).every((v) => v === null);
-    if (allNull) {
+    if (!analysis.isPropertySearch) {
+      return res.status(400).json({
+        message:
+          "That doesn't look like a property search. Try something like 'house in Kigali under $200'",
+        feedback: analysis.feedback,
+      });
+    }
+
+    const filters = analysis.filters;
+
+    if (!filters || Object.values(filters).every((v) => v === null)) {
       return res.status(400).json({
         message:
           "Could not extract any filters from your query, please be more specific",
+        feedback: analysis.feedback,
+        suggestion: analysis.suggestion,
       });
     }
 
     const where: any = {};
+
     if (filters.location) {
       where.location = { contains: filters.location, mode: "insensitive" };
     }
     if (filters.type) {
-      where.type = filters.type;
+      where.type = filters.type.toLowerCase() as ListingType;
     }
     if (filters.minPrice || filters.maxPrice) {
       where.pricePerNight = {};
@@ -102,21 +115,10 @@ Rules:
       prisma.listing.count({ where }),
     ]);
 
-    if (total === 0) {
-      return res.json({
-        message: "No properties found matching yo qur search criteria.",
-        filters,
-        data: [],
-        meta: {
-          total: 0,
-          page,
-          limit,
-          totalPages: 0,
-        },
-      });
-    }
-
     return res.json({
+      feedback: analysis.feedback,
+      confidence: analysis.confidence,
+      suggestion: analysis.suggestion ?? null,
       filters,
       data: listings,
       meta: {
@@ -127,6 +129,7 @@ Rules:
       },
     });
   } catch (error) {
+    console.error("smartSearch error:", error); // 👈 check terminal for exact error
     handleAIError(error, res);
   }
 };

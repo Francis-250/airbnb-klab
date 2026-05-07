@@ -1,16 +1,31 @@
-import { Grid, List, MapPin, SlidersHorizontal } from "lucide-react";
+import {
+  Grid,
+  List,
+  MapPin,
+  SlidersHorizontal,
+  Home,
+  DollarSign,
+  Users,
+  Sparkles,
+  Lightbulb,
+} from "lucide-react";
+
 import { useSearchParams } from "react-router-dom";
 import { Categories } from "../data";
 import ListingCard from "../components/card/ListingCard";
 import { useState, useMemo } from "react";
 import { api } from "../lib/api";
 import { useQuery } from "@tanstack/react-query";
-import type {
-  AIFilters,
-  AISearchResponse,
-  Listing,
-  ListingType,
-} from "../types";
+import type { AIFilters, Listing, ListingType } from "../types";
+
+interface AISearchResult {
+  feedback: string;
+  confidence: "high" | "medium" | "low";
+  suggestion: string | null;
+  filters: AIFilters;
+  data: Listing[];
+  meta: { total: number; page: number; limit: number; totalPages: number };
+}
 
 export default function Listing() {
   const [type, setType] = useState<"grid" | "list">("grid");
@@ -23,6 +38,12 @@ export default function Listing() {
   const [isAiSearching, setIsAiSearching] = useState(false);
   const [aiFilters, setAiFilters] = useState<AIFilters | null>(null);
   const [aiSearchMessage, setAiSearchMessage] = useState<string | null>(null);
+  const [aiFeedback, setAiFeedback] = useState<string | null>(null);
+  const [aiConfidence, setAiConfidence] = useState<
+    "high" | "medium" | "low" | null
+  >(null);
+  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
+  const [aiResults, setAiResults] = useState<Listing[] | null>(null);
 
   const {
     data: listings,
@@ -44,36 +65,26 @@ export default function Listing() {
 
     setIsAiSearching(true);
     setAiSearchMessage(null);
+    setAiFeedback(null);
+    setAiSuggestion(null);
+    setAiResults(null);
 
     try {
-      const res = await api.post<AISearchResponse>("/ai/search", {
+      const res = await api.post<AISearchResult>("/ai/search", {
         query: searchWish,
       });
-      const { filters, message } = res.data;
 
-      if (message) {
-        setAiSearchMessage(message);
-        setAiFilters(null);
-        return;
-      }
+      const { filters, feedback, confidence, suggestion, data } = res.data;
 
-      if (!filters || Object.values(filters).every((v) => v === null)) {
-        setAiSearchMessage(
-          "Could not understand your search. Try something like 'beach house under $300'",
-        );
-        setAiFilters(null);
-        return;
-      }
-
+      setAiFeedback(feedback);
+      setAiConfidence(confidence);
+      setAiSuggestion(suggestion ?? null);
       setAiFilters(filters);
+      setAiResults(data);
       setAiSearchMessage(null);
 
-      if (filters.location) {
-        setSearchParams({ location: filters.location });
-      }
-      if (filters.maxPrice) {
-        setPriceRange(filters.maxPrice);
-      }
+      if (filters.location) setSearchParams({ location: filters.location });
+      if (filters.maxPrice) setPriceRange(filters.maxPrice);
       if (filters.type) {
         const categoryMap: Record<ListingType, string> = {
           apartment: "Apartment",
@@ -84,18 +95,22 @@ export default function Listing() {
         setSelectedCategories([categoryMap[filters.type]]);
       }
     } catch (error: unknown) {
-      console.error("AI search failed:", error);
       if (error && typeof error === "object" && "response" in error) {
         const axiosError = error as {
-          response?: { data?: { message?: string } };
+          response?: {
+            data?: { message?: string; feedback?: string; suggestion?: string };
+          };
         };
+        const errData = axiosError.response?.data;
         setAiSearchMessage(
-          axiosError.response?.data?.message ||
-            "Smart search failed. Please try again.",
+          errData?.message || "Smart search failed. Please try again.",
         );
+        if (errData?.feedback) setAiFeedback(errData.feedback);
+        if (errData?.suggestion) setAiSuggestion(errData.suggestion);
       } else {
         setAiSearchMessage("Smart search failed. Please try again.");
       }
+      setAiResults(null);
     } finally {
       setIsAiSearching(false);
     }
@@ -109,27 +124,26 @@ export default function Listing() {
 
   const filteredListings = useMemo(() => {
     if (!listings) return [];
-
     return listings.filter((listing: Listing) => {
       if (priceRange && listing.pricePerNight > priceRange) return false;
-
       if (selectedCategories.length > 0) {
-        const categoryMatches = selectedCategories.some(
+        const match = selectedCategories.some(
           (cat) => listing.type?.toLowerCase() === cat.toLowerCase(),
         );
-        if (!categoryMatches) return false;
+        if (!match) return false;
       }
-
       if (locationParam) {
-        const locationMatch = listing.location
+        const match = listing.location
           ?.toLowerCase()
           .includes(locationParam.toLowerCase());
-        if (!locationMatch) return false;
+        if (!match) return false;
       }
-
       return true;
     });
   }, [listings, priceRange, selectedCategories, locationParam]);
+
+  // Use backend AI results when available, otherwise local filter
+  const displayListings = aiResults ?? filteredListings;
 
   const clearAllFilters = () => {
     setSelectedCategories([]);
@@ -138,6 +152,10 @@ export default function Listing() {
     setSearchWish("");
     setAiFilters(null);
     setAiSearchMessage(null);
+    setAiFeedback(null);
+    setAiSuggestion(null);
+    setAiConfidence(null);
+    setAiResults(null);
   };
 
   if (isLoading) return <span>Loading...</span>;
@@ -157,14 +175,10 @@ export default function Listing() {
         <aside
           className={`
             ${isFilterOpen ? "block" : "hidden"} 
-            lg:block
-            fixed
-            inset-y-0 left-0 z-30
+            lg:block fixed inset-y-0 left-0 z-30
             lg:top-14 lg:bottom-auto lg:left-[9vw]
-            w-70
-            bg-white dark:bg-[#1A1A1A]
-            overflow-y-auto
-            p-6 lg:p-0
+            w-70 bg-white dark:bg-[#1A1A1A]
+            overflow-y-auto p-6 lg:p-0
             shadow-lg lg:shadow-none
           `}
         >
@@ -238,43 +252,56 @@ export default function Listing() {
                 <button
                   onClick={handleAISearch}
                   disabled={isAiSearching || !searchWish.trim()}
-                  className="px-3 py-2 bg-(--color-primary) text-white rounded text-xs font-semibold disabled:opacity-50"
+                  className="flex items-center justify-center gap-2 px-3 py-2 bg-(--color-primary) text-white rounded text-xs font-semibold disabled:opacity-50"
                 >
+                  <Sparkles className="w-3 h-3" />
                   {isAiSearching ? "Searching..." : "Smart Search"}
                 </button>
               </div>
-
+              {aiFeedback && (
+                <div className="mt-3 p-2.5 bg-[#F8F8F8] dark:bg-[#222] border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <Sparkles className="w-3 h-3 text-(--color-primary) mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-[12px] text-[#333] dark:text-[#CCC]">
+                        {aiFeedback}
+                      </p>
+                    </div>
+                  </div>
+                  {aiSuggestion && (
+                    <p className="text-[11px] text-[#AAAAAA] mt-2 pl-5 flex items-center gap-1">
+                      <Lightbulb className="w-3 h-3 shrink-0" /> {aiSuggestion}
+                    </p>
+                  )}
+                </div>
+              )}
               {aiSearchMessage && (
                 <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-[11px] text-red-700 dark:text-red-300">
                   {aiSearchMessage}
                 </div>
               )}
-
-              {aiFilters && !aiSearchMessage && (
-                <div className="mt-3 text-[11px] text-[#717171]">
-                  <p className="font-semibold mb-1">AI extracted:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {aiFilters.location && (
-                      <span className="bg-[#EBEBEB] dark:bg-[#2A2A2A] px-2 py-0.5 rounded">
-                        📍 {aiFilters.location}
-                      </span>
-                    )}
-                    {aiFilters.type && (
-                      <span className="bg-[#EBEBEB] dark:bg-[#2A2A2A] px-2 py-0.5 rounded">
-                        🏠 {aiFilters.type}
-                      </span>
-                    )}
-                    {aiFilters.maxPrice && (
-                      <span className="bg-[#EBEBEB] dark:bg-[#2A2A2A] px-2 py-0.5 rounded">
-                        💰 ${aiFilters.maxPrice}
-                      </span>
-                    )}
-                    {aiFilters.guests && (
-                      <span className="bg-[#EBEBEB] dark:bg-[#2A2A2A] px-2 py-0.5 rounded">
-                        👥 {aiFilters.guests} guests
-                      </span>
-                    )}
-                  </div>
+              {aiFilters && (
+                <div className="mt-3 flex flex-wrap gap-1">
+                  {aiFilters.location && (
+                    <span className="flex items-center gap-1 bg-[#EBEBEB] dark:bg-[#2A2A2A] px-2 py-0.5 rounded text-[11px] text-[#717171]">
+                      <MapPin className="w-3 h-3" /> {aiFilters.location}
+                    </span>
+                  )}
+                  {aiFilters.type && (
+                    <span className="flex items-center gap-1 bg-[#EBEBEB] dark:bg-[#2A2A2A] px-2 py-0.5 rounded text-[11px] text-[#717171]">
+                      <Home className="w-3 h-3" /> {aiFilters.type}
+                    </span>
+                  )}
+                  {aiFilters.maxPrice && (
+                    <span className="flex items-center gap-1 bg-[#EBEBEB] dark:bg-[#2A2A2A] px-2 py-0.5 rounded text-[11px] text-[#717171]">
+                      <DollarSign className="w-3 h-3" /> {aiFilters.maxPrice}
+                    </span>
+                  )}
+                  {aiFilters.guests && (
+                    <span className="flex items-center gap-1 bg-[#EBEBEB] dark:bg-[#2A2A2A] px-2 py-0.5 rounded text-[11px] text-[#717171]">
+                      <Users className="w-3 h-3" /> {aiFilters.guests} guests
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -346,7 +373,7 @@ export default function Listing() {
                 style={{ fontFamily: "'Playfair Display', serif" }}
                 className="text-xl font-semibold text-[#111] dark:text-white"
               >
-                {filteredListings.length} Listings Found
+                {displayListings.length} Listings Found
               </h1>
               {locationParam && (
                 <p className="text-[13px] text-[#AAAAAA] mt-0.5 flex items-center gap-1">
@@ -355,7 +382,8 @@ export default function Listing() {
               )}
               {(selectedCategories.length > 0 ||
                 priceRange < 1000 ||
-                locationParam) && (
+                locationParam ||
+                aiResults) && (
                 <button
                   onClick={clearAllFilters}
                   className="text-[11px] text-(--color-primary) mt-2 underline"
@@ -368,28 +396,20 @@ export default function Listing() {
             <div className="flex items-center bg-white dark:bg-[#1A1A1A] rounded-xl overflow-hidden p-1 gap-1 w-fit">
               <button
                 onClick={() => setType("grid")}
-                className={`p-2 rounded-lg transition-colors ${
-                  type === "grid"
-                    ? "bg-(--color-primary) text-white"
-                    : "text-[#AAAAAA] hover:text-[#111] dark:hover:text-white"
-                }`}
+                className={`p-2 rounded-lg transition-colors ${type === "grid" ? "bg-(--color-primary) text-white" : "text-[#AAAAAA] hover:text-[#111] dark:hover:text-white"}`}
               >
                 <Grid className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setType("list")}
-                className={`p-2 rounded-lg transition-colors ${
-                  type === "list"
-                    ? "bg-(--color-primary) text-white"
-                    : "text-[#AAAAAA] hover:text-[#111] dark:hover:text-white"
-                }`}
+                className={`p-2 rounded-lg transition-colors ${type === "list" ? "bg-(--color-primary) text-white" : "text-[#AAAAAA] hover:text-[#111] dark:hover:text-white"}`}
               >
                 <List className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          {filteredListings.length === 0 ? (
+          {displayListings.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-[#717171]">No listings match your filters</p>
               <button
@@ -407,7 +427,7 @@ export default function Listing() {
                   : "flex flex-col gap-4"
               }
             >
-              {filteredListings.map((listing: Listing) => (
+              {displayListings.map((listing: Listing) => (
                 <ListingCard key={listing.id} listing={listing} type={type} />
               ))}
             </div>
