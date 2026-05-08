@@ -149,7 +149,7 @@ export default function Dashboard() {
           style={{ fontFamily: "'Playfair Display', serif" }}
           className="text-2xl font-semibold text-[#111] dark:text-white"
         >
-          Welcome back, {user?.name} 👋
+          Welcome back, {user?.name}
         </h1>
       </div>
 

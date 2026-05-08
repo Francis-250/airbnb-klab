@@ -30,7 +30,6 @@ export default function Login() {
       console.log("Login function completed successfully");
       toast.success("Login successful!");
 
-      // Check user role and redirect accordingly
       setTimeout(async () => {
         try {
           const response = await api.get("/auth/me");

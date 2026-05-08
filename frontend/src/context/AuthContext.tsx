@@ -88,8 +88,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       return null;
     },
     onSuccess: () => {
-      queryClient.setQueryData(["auth", "me"], null);
-      queryClient.clear();
+      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
     },
   });
 
