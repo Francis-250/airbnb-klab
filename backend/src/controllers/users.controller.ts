@@ -46,26 +46,19 @@ export const addFavorite = async (req: Request, res: Response) => {
       (fav) => fav.id === listingId,
     );
     if (existingFavorite) {
-      await prisma.user.update({
-        where: { id: userId as string },
-        data: {
-          favoriteListings: {
-            disconnect: [{ id: listingId }],
-          },
-        },
-      });
-      res.status(200).json({ message: "Removed from favorites" });
-    } else {
-      await prisma.user.update({
-        where: { id: userId as string },
-        data: {
-          favoriteListings: {
-            connect: [{ id: listingId }],
-          },
-        },
-      });
-      res.status(200).json({ message: "Added to favorites" });
+      return res.status(400).json({ message: "Already in favorites" });
     }
+
+    await prisma.user.update({
+      where: { id: userId as string },
+      data: {
+        favoriteListings: {
+          connect: [{ id: listingId }],
+        },
+      },
+    });
+
+    res.status(200).json({ message: "Added to favorites" });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
   }

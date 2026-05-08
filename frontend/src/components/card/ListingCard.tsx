@@ -3,6 +3,10 @@ import type { Listing } from "../../types";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "../../lib/api";
+import { useAuth } from "../../hooks/useAuth";
+import { toast } from "sonner";
 
 export default function ListingCard({
   listing,
@@ -11,7 +15,44 @@ export default function ListingCard({
   listing: Listing;
   type: "grid" | "list";
 }) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isLiked, setIsLiked] = useState(false);
+
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: async (listingId: string) => {
+      try {
+        await api.post(`/users/favorites/${listingId}`);
+        return { action: "added", message: "Added to favorites" };
+      } catch (error: any) {
+        if (error.response?.status === 400 || error.response?.status === 409) {
+          await api.delete(`/users/favorites/${listingId}`);
+          return { action: "removed", message: "Removed from favorites" };
+        }
+        throw error;
+      }
+    },
+    onSuccess: (data) => {
+      setIsLiked(data.action === "added");
+      toast.success(data.message);
+      queryClient.invalidateQueries({ queryKey: ["favorites"] });
+    },
+    onError: (error: any) => {
+      toast.error(
+        error.response?.data?.message || "Failed to update favorites",
+      );
+    },
+  });
+
+  const handleToggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!user) {
+      toast.error("Please log in to add favorites");
+      return;
+    }
+    toggleFavoriteMutation.mutate(listing.id);
+  };
 
   if (type === "list") {
     return (
@@ -89,7 +130,7 @@ export default function ListingCard({
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => setIsLiked(!isLiked)}
+                onClick={handleToggleFavorite}
                 className="shrink-0 mt-0.5"
               >
                 <motion.div
@@ -176,10 +217,7 @@ export default function ListingCard({
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            onClick={(e) => {
-              e.preventDefault();
-              setIsLiked(!isLiked);
-            }}
+            onClick={handleToggleFavorite}
             className="w-7 h-7 flex items-center justify-center rounded-full border border-white/30 bg-white/15"
           >
             <motion.div

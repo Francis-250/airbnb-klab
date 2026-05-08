@@ -1,6 +1,14 @@
 import { useAuth } from "../hooks/useAuth";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Search, User, Calendar, Settings, LogOut, Menu } from "lucide-react";
+import {
+  Home,
+  Search,
+  User,
+  Calendar,
+  Settings,
+  LogOut,
+  Menu,
+} from "lucide-react";
 import { useState } from "react";
 
 export default function RoleBasedNav() {
@@ -45,7 +53,7 @@ export default function RoleBasedNav() {
           <Link to="/dashboard" className="text-2xl font-bold text-blue-600">
             Airbnb Host
           </Link>
-          
+
           <div className="hidden md:flex gap-6">
             <Link
               to="/dashboard"
@@ -110,7 +118,7 @@ export default function RoleBasedNav() {
                 <Settings className="w-5 h-5" />
                 <span>Dashboard</span>
               </Link>
-              
+
               <div className="border-t mt-2 pt-2">
                 <div className="flex items-center gap-3 px-4 py-3">
                   <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
@@ -159,7 +167,7 @@ export default function RoleBasedNav() {
         <Link to="/" className="text-2xl font-bold text-blue-600">
           Airbnb
         </Link>
-        
+
         <div className="hidden md:flex gap-6">
           {guestNavItems.map((item) => {
             const Icon = item.icon;
@@ -236,7 +244,7 @@ export default function RoleBasedNav() {
                 </Link>
               );
             })}
-            
+
             <div className="border-t mt-2 pt-2">
               <div className="flex items-center gap-3 px-4 py-3">
                 <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">

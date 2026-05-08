@@ -4,6 +4,9 @@ import {
   getUserById,
   updateUser,
   deleteUser,
+  getFavorites,
+  addFavorite,
+  removeFavorite,
 } from "../controllers/users.controller";
 import { verifyToken } from "../middleware/auth.middleware";
 
@@ -157,5 +160,51 @@ router.put("/:id", verifyToken, updateUser);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.delete("/:id", verifyToken, deleteUser);
+
+/**
+ * @swagger
+ * /api/users/favorites:
+ *   get:
+ *     summary: Get user's favorite listings
+ *     tags: [Users]
+ *     responses:
+ *       200:
+ *         description: Success
+ *       401:
+ *         description: Unauthorized
+ */
+router.get("/favorites", verifyToken, getFavorites);
+
+/**
+ * @swagger
+ * /api/users/favorites/{listingId}:
+ *   post:
+ *     summary: Add listing to favorites
+ *     tags: [Users]
+ *     responses:
+ *       200:
+ *         description: Added to favorites
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Listing not found
+ */
+router.post("/favorites/:listingId", verifyToken, addFavorite);
+
+/**
+ * @swagger
+ * /api/users/favorites/{listingId}:
+ *   delete:
+ *     summary: Remove listing from favorites
+ *     tags: [Users]
+ *     responses:
+ *       200:
+ *         description: Removed from favorites
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Listing not found
+ */
+router.delete("/favorites/:listingId", verifyToken, removeFavorite);
 
 export default router;

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import ThemeToggle from "../ThemeToggle";
 import { Heart, Menu, User, X, ChevronDown } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
 
 export default function Navbar() {
@@ -10,6 +12,17 @@ export default function Navbar() {
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  const { data: favorites } = useQuery({
+    queryKey: ["favorites"],
+    queryFn: async () => {
+      const response = await api.get("/users/favorites");
+      return response.data;
+    },
+    enabled: !!user,
+  });
+
+  const favoritesCount = favorites?.length || 0;
 
   useEffect(() => {
     const checkTheme = () => {
@@ -78,6 +91,17 @@ export default function Navbar() {
               <ThemeToggle />
               <div className="hidden md:flex items-center gap-2">
                 <span className="w-px h-5 bg-gray-200 dark:bg-gray-700 mx-1" />
+                <Link
+                  to="/favorites"
+                  className="relative w-9 h-9 flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <Heart className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                  {favoritesCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white dark:border-[#1e242d]">
+                      {favoritesCount}
+                    </span>
+                  )}
+                </Link>
                 {user ? (
                   <div className="relative">
                     <button
@@ -127,17 +151,12 @@ export default function Navbar() {
                     )}
                   </div>
                 ) : (
-                  <>
-                    <button className="relative w-9 h-9 flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                      <Heart className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                    </button>
-                    <Link
-                      to="/login"
-                      className="w-9 h-9 flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      <User className="w-4 h-4 text-gray-600 dark:text-gray-300" />
-                    </Link>
-                  </>
+                  <Link
+                    to="/login"
+                    className="w-9 h-9 flex items-center justify-center rounded-md border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <User className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                  </Link>
                 )}
               </div>
               <button
@@ -194,6 +213,12 @@ export default function Navbar() {
 
               <div className="border-t border-gray-200 dark:border-gray-700 my-2" />
               <div className="flex items-center justify-between pt-2">
+                <button className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  <Heart className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Wishlist
+                  </span>
+                </button>
                 {user ? (
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
@@ -223,23 +248,15 @@ export default function Navbar() {
                     </button>
                   </div>
                 ) : (
-                  <>
-                    <button className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                      <Heart className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Wishlist
-                      </span>
-                    </button>
-                    <Link
-                      to="/login"
-                      className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      <User className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        Login
-                      </span>
-                    </Link>
-                  </>
+                  <Link
+                    to="/login"
+                    className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <User className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Login
+                    </span>
+                  </Link>
                 )}
               </div>
             </div>

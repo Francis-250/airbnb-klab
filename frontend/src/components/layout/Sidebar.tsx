@@ -40,7 +40,7 @@ export default function Sidebar({
                 : "text-[#717171] dark:text-[#AAAAAA] hover:bg-[#F5F5F5] dark:hover:bg-[#2A2A2A] hover:text-[#111] dark:hover:text-white"
             } ${collapsed ? "justify-center px-0" : ""}`}
           >
-            <Icon className="w-[18px] h-[18px] shrink-0" />
+            <Icon className="w-4.5 h-4.5 shrink-0" />
             {!collapsed && (
               <span className="text-[13px] font-medium truncate">
                 {link.title}
@@ -54,13 +54,12 @@ export default function Sidebar({
 
   return (
     <>
-      {/* Desktop Sidebar */}
+      ={" "}
       <div
         className={`h-screen fixed top-0 left-0 bg-white dark:bg-[#1A1A1A] border-r border-[#EBEBEB] dark:border-[#2A2A2A] transition-all duration-300 hidden md:flex flex-col z-20 ${
           collapsed ? "w-16" : "w-60"
         }`}
       >
-        {/* Logo */}
         <div
           className={`flex items-center h-14 px-4 border-b border-[#EBEBEB] dark:border-[#2A2A2A] shrink-0 ${
             collapsed ? "justify-center" : "justify-between"
@@ -85,13 +84,9 @@ export default function Sidebar({
             />
           </button>
         </div>
-
-        {/* Nav */}
         <nav className="flex-1 py-4 overflow-y-auto">
           <NavLinks />
         </nav>
-
-        {/* Footer */}
         {!collapsed && (
           <div className="px-5 py-4 border-t border-[#EBEBEB] dark:border-[#2A2A2A]">
             <p className="text-[11px] text-[#CCCCCC] dark:text-[#555]">
@@ -100,8 +95,6 @@ export default function Sidebar({
           </div>
         )}
       </div>
-
-      {/* Mobile Sidebar */}
       <div
         className={`fixed top-0 left-0 h-screen bg-white dark:bg-[#1A1A1A] border-r border-[#EBEBEB] dark:border-[#2A2A2A] z-30 transition-transform duration-300 md:hidden w-60 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
@@ -132,8 +125,6 @@ export default function Sidebar({
           </p>
         </div>
       </div>
-
-      {/* Overlay */}
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/30 backdrop-blur-sm z-20 md:hidden"

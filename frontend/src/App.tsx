@@ -17,11 +17,12 @@ import BookingCalendar from "./pages/BookingCalendar";
 import Reviews from "./pages/Reviews";
 import Bookings from "./pages/Bookings";
 import BookingForm from "./pages/BookingForm";
+import Favorites from "./pages/Favorites";
 
 const ListingDetail = lazy(() => import("./pages/ListingDetail"));
 const Dashboard = lazy(() => import("./pages/host/Dashboard"));
 
-const PUBLIC_ROUTES = ["/", "/all-listings", "/profile"];
+const PUBLIC_ROUTES = ["/", "/all-listings", "/profile", "/favorites"];
 
 export default function App() {
   const location = useLocation();
@@ -52,6 +53,7 @@ export default function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/bookings" element={<Bookings />} />
             <Route path="/bookings/:id" element={<BookingForm />} />
+            <Route path="/favorites" element={<Favorites />} />
             <Route
               path="/bookings/:id/calendar"
               element={<BookingCalendar />}

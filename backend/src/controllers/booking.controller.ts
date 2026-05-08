@@ -119,7 +119,7 @@ export const updateBooking = async (req: Request, res: Response) => {
   try {
     const booking = await prisma.booking.findUnique({
       where: { id: id as string },
-      include: { listing: true },
+      include: { listing: true, guest: true },
     });
 
     if (!booking) return res.status(404).json({ message: "Booking not found" });
@@ -140,16 +140,21 @@ export const updateBooking = async (req: Request, res: Response) => {
       where: { id: id as string },
       data: { status },
     });
-    const message =
-      status === "approved"
-        ? "Your booking has been approved!"
-        : "Your booking has been rejected.";
-    const guest = await prisma.user.findUnique({ where: { id: user } });
+
+    // Send email notification to guest
+    const statusMessage =
+      status === "confirmed"
+        ? "Your booking has been confirmed!"
+        : status === "cancelled"
+          ? "Your booking has been cancelled."
+          : "Your booking status has been updated.";
+
     await sendEmail({
-      to: guest?.email as string,
-      subject: "Welcome to Airbnb!",
-      html: bookingStatusEmail(status),
+      to: booking.guest?.email as string,
+      subject: `Booking Status Update: ${status}`,
+      html: bookingStatusEmail(status, booking.listing.title),
     });
+
     res.status(200).json(updated);
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
