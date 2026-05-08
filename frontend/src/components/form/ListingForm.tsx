@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import { api } from "../../lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import type { Listing } from "../../types";
+import { useEffect } from "react";
 
 type ListingType = "apartment" | "house" | "villa" | "cabin";
 
@@ -60,6 +62,7 @@ interface FormData {
 interface ListingFormProps {
   onClose: () => void;
   onSuccess?: () => void;
+  listing?: Listing | null;
 }
 
 function Field({
@@ -121,7 +124,11 @@ function ReviewRow({
   );
 }
 
-export default function ListingForm({ onClose, onSuccess }: ListingFormProps) {
+export default function ListingForm({
+  onClose,
+  onSuccess,
+  listing,
+}: ListingFormProps) {
   const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormData>({
@@ -139,7 +146,24 @@ export default function ListingForm({ onClose, onSuccess }: ListingFormProps) {
   );
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const createListingMutation = useMutation({
+  const isEditing = !!listing;
+
+  useEffect(() => {
+    if (listing) {
+      setForm({
+        title: listing.title || "",
+        description: listing.description || "",
+        location: listing.location || "",
+        pricePerNight: listing.pricePerNight?.toString() || "",
+        guests: listing.guests?.toString() || "",
+        type: (listing.type as ListingType) || "",
+        amenities: listing.amenities || [],
+        photos: listing.photos || [],
+      });
+    }
+  }, [listing]);
+
+  const mutation = useMutation({
     mutationFn: async (formData: FormData) => {
       const data = new FormData();
       data.append("title", formData.title.trim());
@@ -149,18 +173,28 @@ export default function ListingForm({ onClose, onSuccess }: ListingFormProps) {
       data.append("guests", formData.guests);
       data.append("type", formData.type);
       data.append("amenities", JSON.stringify(formData.amenities));
-      data.append("rating", "0");
 
-      formData.photos.forEach((photo) => {
+      const newPhotos = formData.photos.filter((p) => p instanceof File);
+      newPhotos.forEach((photo) => {
         data.append("photos", photo);
       });
 
-      const response = await api.post("/listings", data, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      return response.data;
+      if (isEditing) {
+        const existingPhotos = formData.photos.filter(
+          (p) => typeof p === "string",
+        );
+        data.append("existingPhotos", JSON.stringify(existingPhotos));
+        const response = await api.put(`/listings/${listing.id}`, data, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        return response.data;
+      } else {
+        data.append("rating", "0");
+        const response = await api.post("/listings", data, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        return response.data;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["listings"] });
@@ -239,7 +273,7 @@ export default function ListingForm({ onClose, onSuccess }: ListingFormProps) {
 
   const handleSubmit = async () => {
     if (!validateStep()) return;
-    createListingMutation.mutate(form);
+    mutation.mutate(form);
   };
 
   const inputBase =
@@ -260,7 +294,7 @@ export default function ListingForm({ onClose, onSuccess }: ListingFormProps) {
               <Home size={14} />
             </div>
             <span className="text-base font-semibold text-[#111] dark:text-white tracking-tight">
-              New Listing
+              {isEditing ? "Edit Listing" : "New Listing"}
             </span>
           </div>
           <button
@@ -300,12 +334,12 @@ export default function ListingForm({ onClose, onSuccess }: ListingFormProps) {
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 py-6">
-          {createListingMutation.isError && (
+          {mutation.isError && (
             <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
               <span className="text-sm text-red-700 dark:text-red-300">
-                {(createListingMutation.error as any)?.response?.data
-                  ?.message || "Failed to create listing"}
+                {(mutation.error as any)?.response?.data?.message ||
+                  `Failed to ${isEditing ? "update" : "create"} listing`}
               </span>
             </div>
           )}
@@ -532,7 +566,11 @@ export default function ListingForm({ onClose, onSuccess }: ListingFormProps) {
                       className="relative aspect-square rounded-xl overflow-hidden border border-[#EBEBEB] dark:border-[#2A2A2A] group"
                     >
                       <img
-                        src={URL.createObjectURL(file)}
+                        src={
+                          typeof file === "string"
+                            ? file
+                            : URL.createObjectURL(file)
+                        }
                         alt=""
                         className="w-full h-full object-cover"
                       />
@@ -637,7 +675,7 @@ export default function ListingForm({ onClose, onSuccess }: ListingFormProps) {
         <div className="flex items-center justify-between px-5 py-3.5 border-t border-[#EBEBEB] dark:border-[#2A2A2A]">
           <button
             onClick={step === 0 ? onClose : prev}
-            disabled={createListingMutation.isPending}
+            disabled={mutation.isPending}
             className="inline-flex items-center gap-1 px-4 py-2 bg-transparent border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-xl text-[13px] font-medium text-[#717171] hover:border-[#AAAAAA] dark:hover:border-[#555] hover:text-[#111] dark:hover:text-white transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {step === 0 ? (
@@ -650,7 +688,7 @@ export default function ListingForm({ onClose, onSuccess }: ListingFormProps) {
           </button>
           <button
             onClick={step === 4 ? handleSubmit : next}
-            disabled={createListingMutation.isPending}
+            disabled={mutation.isPending}
             className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold transition-all active:scale-95 cursor-pointer border
               ${
                 step === 4
@@ -659,11 +697,13 @@ export default function ListingForm({ onClose, onSuccess }: ListingFormProps) {
               } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             {step === 4 ? (
-              createListingMutation.isPending ? (
+              mutation.isPending ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Publishing...
+                  {isEditing ? "Saving..." : "Publishing..."}
                 </>
+              ) : isEditing ? (
+                "Save Changes"
               ) : (
                 "Publish listing"
               )

@@ -29,18 +29,26 @@ const listingHeader = [
   "Actions",
 ];
 
+const typeConfig: Record<string, string> = {
+  apartment: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  house:
+    "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+  villa:
+    "bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
+  cabin: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+};
+
 export default function DashboardListing() {
   const queryClient = useQueryClient();
 
   const [searchText, setSearchText] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [isForm, setIsForm] = useState(false);
+  const [editingListing, setEditingListing] = useState<Listing | null>(null);
   const [viewListing, setViewListing] = useState<Listing | null>(null);
   const [isViewOpen, setIsViewOpen] = useState(false);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 10,
-  });
+  const [pagination, setPagination] = useState({ page: 1, limit: 10 });
 
   const {
     data: listingsData,
@@ -50,7 +58,6 @@ export default function DashboardListing() {
     refetch,
   } = useQuery({
     queryKey: ["listings", "me", pagination.page, pagination.limit],
-
     queryFn: async () => {
       const res = await api.get(
         `/listings/me?page=${pagination.page}&limit=${pagination.limit}`,
@@ -60,9 +67,7 @@ export default function DashboardListing() {
         meta: res.data.meta || { total: 0, totalPages: 0 },
       };
     },
-
     placeholderData: (previousData) => previousData,
-
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
     retry: 2,
@@ -94,29 +99,20 @@ export default function DashboardListing() {
           if (!old) return old;
           return {
             ...old,
-            listings: old.listings.filter(
-              (listing: Listing) => listing.id !== deletedId,
-            ),
-            meta: {
-              ...old.meta,
-              total: old.meta.total - 1,
-            },
+            listings: old.listings.filter((l: Listing) => l.id !== deletedId),
+            meta: { ...old.meta, total: old.meta.total - 1 },
           };
         },
       );
-
       return { previousData };
     },
-
-    onError: (err, deletedId, context) => {
+    onError: (err, _, context) => {
       queryClient.setQueryData(
         ["listings", "me", pagination.page, pagination.limit],
         context?.previousData,
       );
-      console.error("Error deleting listing:", err);
       alert("Failed to delete listing. Please try again.");
     },
-
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: ["listings", "me", pagination.page, pagination.limit],
@@ -130,6 +126,11 @@ export default function DashboardListing() {
     }
   };
 
+  const handleEdit = (listing: Listing) => {
+    setEditingListing(listing);
+    setIsForm(true);
+  };
+
   const handleView = (listing: Listing) => {
     setViewListing(listing);
     setIsViewOpen(true);
@@ -138,6 +139,7 @@ export default function DashboardListing() {
   const handleFormSuccess = () => {
     refetch();
     setIsForm(false);
+    setEditingListing(null);
   };
 
   const filteredListings = Array.isArray(listings)
@@ -148,13 +150,13 @@ export default function DashboardListing() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <div className="text-red-500 mb-4">
+      <div className="flex flex-col items-center justify-center py-16 gap-4">
+        <p className="text-red-500 text-sm">
           {error instanceof Error ? error.message : "Failed to load listings"}
-        </div>
+        </p>
         <button
           onClick={() => refetch()}
-          className="px-4 py-2 bg-[#111] dark:bg-white text-white dark:text-[#111] rounded-lg hover:opacity-80 transition-all"
+          className="px-4 py-2 bg-[#111] dark:bg-white text-white dark:text-[#111] rounded-xl text-sm hover:opacity-80 transition-all"
         >
           Try again
         </button>
@@ -163,67 +165,98 @@ export default function DashboardListing() {
   }
 
   return (
-    <div className="relative overflow-x-auto">
+    <div className="relative">
+      {/* Toolbar */}
       <div className="py-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-[#EBEBEB] dark:border-[#2A2A2A]">
         <div className="relative w-full sm:w-auto">
-          <div className="absolute inset-y-0 inset-s-0 flex items-center ps-3 pointer-events-none">
-            <Search className="w-4 h-4 text-[#717171]" />
+          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+            <Search className="w-4 h-4 text-[#AAAAAA]" />
           </div>
           <input
             type="text"
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
             placeholder="Search listings…"
-            className="block w-full sm:max-w-xs ps-9 pe-3 py-2 bg-[#F7F7F7] dark:bg-[#111828] border border-[#EBEBEB] dark:border-[#2A2A2A] text-[#111] dark:text-white text-sm rounded-lg focus:ring-2 focus:ring-[#111] dark:focus:ring-white focus:border-transparent shadow-xs placeholder:text-[#AAAAAA] outline-none transition-all"
+            className="block w-full sm:w-72 pl-9 pr-3 py-2 bg-[#F7F7F7] dark:bg-[#222] border border-[#EBEBEB] dark:border-[#2A2A2A] text-[#111] dark:text-white text-sm rounded-xl focus:ring-2 focus:ring-[#111] dark:focus:ring-white focus:border-transparent placeholder:text-[#AAAAAA] outline-none transition-all"
           />
         </div>
 
         <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
           {isFetching && !isLoading && (
-            <span className="text-xs text-[#717171] animate-pulse">
+            <span className="text-[12px] text-[#AAAAAA] animate-pulse">
               Updating...
             </span>
           )}
 
+          {/* Filter */}
           <div className="relative">
             <button
               onClick={() => setFilterOpen(!filterOpen)}
-              className="inline-flex items-center justify-center text-[#717171] bg-[#F7F7F7] dark:bg-[#111828] border border-[#EBEBEB] dark:border-[#2A2A2A] hover:bg-[#EBEBEB] dark:hover:bg-[#1a2235] hover:text-[#111] dark:hover:text-white font-medium rounded-lg text-sm px-3 py-2 transition-all outline-none shadow-xs"
+              className={`inline-flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-xl border transition-all outline-none ${
+                activeFilter
+                  ? "bg-[#111] dark:bg-white text-white dark:text-[#111] border-[#111] dark:border-white"
+                  : "bg-[#F7F7F7] dark:bg-[#222] border-[#EBEBEB] dark:border-[#2A2A2A] text-[#717171] hover:text-[#111] dark:hover:text-white hover:bg-[#EBEBEB] dark:hover:bg-[#2A2A2A]"
+              }`}
             >
-              <SlidersHorizontal className="w-4 h-4 me-1.5 -ms-0.5" />
-              <span className="hidden sm:inline">Filter by</span>
+              <SlidersHorizontal className="w-4 h-4" />
+              <span className="hidden sm:inline">
+                {activeFilter ?? "Filter by"}
+              </span>
               <ChevronDown
-                className={`w-4 h-4 ms-1.5 -me-0.5 transition-transform ${filterOpen ? "rotate-180" : ""}`}
+                className={`w-3.5 h-3.5 transition-transform ${filterOpen ? "rotate-180" : ""}`}
               />
             </button>
 
             {filterOpen && (
               <>
                 <div
-                  className="fixed inset-0 z-40 md:hidden"
+                  className="fixed inset-0 z-40"
                   onClick={() => setFilterOpen(false)}
                 />
-                <div className="absolute top-full mt-1.5 z-50 bg-white dark:bg-[#111828] border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-xl shadow-lg w-44 md:right-0 left-0 md:left-auto">
-                  <ul className="p-2 text-sm font-medium text-[#717171]">
-                    {AMENITIES.map((amenity) => (
-                      <li key={amenity.key}>
+                <div className="absolute top-full mt-2 right-0 z-50 bg-white dark:bg-[#1A1A1A] border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-2xl shadow-xl w-52 overflow-hidden">
+                  <div className="p-1.5">
+                    {activeFilter && (
+                      <>
                         <button
-                          onClick={() => setFilterOpen(false)}
-                          className="inline-flex items-center w-full px-3 py-2 hover:bg-[#F7F7F7] dark:hover:bg-[#1a2235] hover:text-[#111] dark:hover:text-white rounded-lg transition-colors"
+                          onClick={() => {
+                            setActiveFilter(null);
+                            setFilterOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-[12px] text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
                         >
-                          {amenity.label}
+                          Clear filter
                         </button>
-                      </li>
+                        <div className="h-px bg-[#EBEBEB] dark:bg-[#2A2A2A] my-1" />
+                      </>
+                    )}
+                    {AMENITIES.map((amenity) => (
+                      <button
+                        key={amenity.key}
+                        onClick={() => {
+                          setActiveFilter(amenity.label);
+                          setFilterOpen(false);
+                        }}
+                        className={`flex items-center w-full px-3 py-2.5 text-[13px] rounded-xl transition-colors ${
+                          activeFilter === amenity.label
+                            ? "bg-[#F0F0F0] dark:bg-[#2A2A2A] text-[#111] dark:text-white font-medium"
+                            : "text-[#717171] hover:bg-[#F7F7F7] dark:hover:bg-[#222] hover:text-[#111] dark:hover:text-white"
+                        }`}
+                      >
+                        {amenity.label}
+                      </button>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               </>
             )}
           </div>
 
           <button
-            className="inline-flex items-center gap-2 px-3 py-2 bg-[#111] dark:bg-white text-white dark:text-[#111] text-sm font-medium rounded-lg hover:opacity-80 active:scale-95 transition-all shadow-xs"
-            onClick={() => setIsForm(true)}
+            onClick={() => {
+              setEditingListing(null);
+              setIsForm(true);
+            }}
+            className="inline-flex items-center gap-2 px-3 py-2 bg-[#111] dark:bg-white text-white dark:text-[#111] text-sm font-medium rounded-xl hover:opacity-80 active:scale-95 transition-all"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Add Listing</span>
@@ -231,38 +264,61 @@ export default function DashboardListing() {
         </div>
       </div>
 
+      {/* Active filter pill */}
+      {activeFilter && (
+        <div className="flex items-center gap-2 py-2.5">
+          <span className="text-[12px] text-[#AAAAAA]">Filtered by:</span>
+          <span className="flex items-center gap-1.5 text-[12px] font-medium px-2.5 py-1 bg-[#F0F0F0] dark:bg-[#2A2A2A] text-[#111] dark:text-white rounded-full">
+            {activeFilter}
+            <button
+              onClick={() => setActiveFilter(null)}
+              className="text-[#AAAAAA] hover:text-[#111] dark:hover:text-white ml-0.5"
+            >
+              ×
+            </button>
+          </span>
+        </div>
+      )}
+
       {isLoading ? (
-        <Spinner />
+        <div className="flex justify-center py-16">
+          <Spinner />
+        </div>
       ) : (
         <>
+          {/* Desktop Table */}
           <div className="hidden md:block overflow-x-auto">
-            <table className="w-full text-sm text-left text-[#717171]">
-              <thead className="text-sm text-[#717171] bg-[#F7F7F7] dark:bg-[#111828] border-b border-[#EBEBEB] dark:border-[#2A2A2A]">
-                <tr>
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr className="border-b border-[#EBEBEB] dark:border-[#2A2A2A]">
                   {listingHeader.map((header) => (
                     <th
                       key={header}
-                      scope="col"
-                      className="px-6 py-3 font-medium whitespace-nowrap"
+                      className="px-4 py-3 text-[12px] font-semibold text-[#AAAAAA] uppercase tracking-wide whitespace-nowrap"
                     >
                       {header}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-[#F5F5F5] dark:divide-[#2A2A2A]">
                 {filteredListings.length === 0 ? (
                   <tr>
                     <td
                       colSpan={listingHeader.length}
-                      className="px-6 py-16 text-center"
+                      className="px-6 py-20 text-center"
                     >
-                      <div className="flex flex-col items-center gap-2">
-                        <p className="text-[#717171]">No listings found</p>
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-12 h-12 rounded-2xl bg-[#F7F7F7] dark:bg-[#2A2A2A] flex items-center justify-center">
+                          <Home className="w-5 h-5 text-[#CCCCCC]" />
+                        </div>
+                        <p className="text-[13px] font-medium text-[#111] dark:text-white">
+                          No listings found
+                        </p>
                         {searchText && (
                           <button
                             onClick={() => setSearchText("")}
-                            className="text-sm text-[#111] dark:text-white underline"
+                            className="text-[12px] text-(--color-primary) underline"
                           >
                             Clear search
                           </button>
@@ -274,43 +330,72 @@ export default function DashboardListing() {
                   filteredListings.map((listing) => (
                     <tr
                       key={listing.id}
-                      className={`bg-white dark:bg-[#111828] border-b border-[#EBEBEB] dark:border-[#2A2A2A] hover:bg-[#F7F7F7] dark:hover:bg-[#1a2235] transition-colors ${
+                      className={`hover:bg-[#FAFAFA] dark:hover:bg-[#222] transition-colors ${
                         deleteMutation.isPending &&
                         deleteMutation.variables === listing.id
-                          ? "opacity-50"
+                          ? "opacity-40 pointer-events-none"
                           : ""
                       }`}
                     >
-                      <td className="px-6 py-4 font-medium text-[#111] dark:text-white">
+                      <td className="px-4 py-3.5 font-medium text-[#111] dark:text-white max-w-[180px] truncate">
                         {listing.title || "Untitled"}
                       </td>
-                      <td className="px-6 py-4">{listing.location}</td>
-                      <td className="px-6 py-4">
-                        ${listing.pricePerNight || 0}/night
+                      <td className="px-4 py-3.5 text-[#717171]">
+                        <span className="flex items-center gap-1.5">
+                          <MapPin className="w-3 h-3 shrink-0" />
+                          {listing.location}
+                        </span>
                       </td>
-                      <td className="px-6 py-4">{listing.guests}</td>
-                      <td className="px-6 py-4">{listing.type}</td>
-                      <td className="px-6 py-4">
-                        <div className="flex gap-2">
+                      <td className="px-4 py-3.5 text-[#717171]">
+                        <span className="flex items-center gap-1">
+                          <DollarSign className="w-3 h-3 shrink-0" />
+                          {listing.pricePerNight || 0}
+                          <span className="text-[11px] text-[#CCCCCC]">
+                            /night
+                          </span>
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5 text-[#717171]">
+                        <span className="flex items-center gap-1.5">
+                          <Users className="w-3 h-3 shrink-0" />
+                          {listing.guests}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold capitalize ${
+                            typeConfig[listing.type?.toLowerCase()] ??
+                            "bg-[#F0F0F0] text-[#717171]"
+                          }`}
+                        >
+                          {listing.type}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-1">
                           <button
                             onClick={() => handleView(listing)}
-                            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                             disabled={deleteMutation.isPending}
+                            className="p-1.5 hover:bg-[#F0F0F0] dark:hover:bg-[#2A2A2A] rounded-lg transition-colors"
+                            title="View"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-3.5 h-3.5 text-[#717171]" />
+                          </button>
+                          <button
+                            onClick={() => handleEdit(listing)}
+                            disabled={deleteMutation.isPending}
+                            className="p-1.5 hover:bg-[#F0F0F0] dark:hover:bg-[#2A2A2A] rounded-lg transition-colors"
+                            title="Edit"
+                          >
+                            <Pen className="w-3.5 h-3.5 text-[#717171]" />
                           </button>
                           <button
                             onClick={() => handleDelete(listing.id)}
-                            className="p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                             disabled={deleteMutation.isPending}
+                            className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                            title="Delete"
                           >
-                            <Trash className="w-4 h-4 text-red-600" />
-                          </button>
-                          <button
-                            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                            disabled={deleteMutation.isPending}
-                          >
-                            <Pen className="w-4 h-4" />
+                            <Trash className="w-3.5 h-3.5 text-red-500" />
                           </button>
                         </div>
                       </td>
@@ -321,14 +406,20 @@ export default function DashboardListing() {
             </table>
           </div>
 
+          {/* Mobile Cards */}
           <div className="block md:hidden space-y-3 mt-4">
             {filteredListings.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 py-16">
-                <p className="text-[#717171]">No listings found</p>
+              <div className="flex flex-col items-center gap-3 py-16">
+                <div className="w-12 h-12 rounded-2xl bg-[#F7F7F7] dark:bg-[#2A2A2A] flex items-center justify-center">
+                  <Home className="w-5 h-5 text-[#CCCCCC]" />
+                </div>
+                <p className="text-[13px] font-medium text-[#111] dark:text-white">
+                  No listings found
+                </p>
                 {searchText && (
                   <button
                     onClick={() => setSearchText("")}
-                    className="text-sm text-[#111] dark:text-white underline"
+                    className="text-[12px] text-(--color-primary) underline"
                   >
                     Clear search
                   </button>
@@ -338,86 +429,97 @@ export default function DashboardListing() {
               filteredListings.map((listing) => (
                 <div
                   key={listing.id}
-                  className={`bg-white dark:bg-[#111828] border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-xl p-4 hover:shadow-md transition-shadow ${
+                  className={`bg-white dark:bg-[#1A1A1A] border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-2xl p-4 transition-all ${
                     deleteMutation.isPending &&
                     deleteMutation.variables === listing.id
-                      ? "opacity-50"
+                      ? "opacity-40 pointer-events-none"
                       : ""
                   }`}
                 >
                   <div className="flex justify-between items-start mb-3">
-                    <h3 className="font-semibold text-[#111] dark:text-white text-lg">
-                      {listing.title || "Untitled"}
-                    </h3>
-                    <div className="flex gap-1">
+                    <div className="flex-1 min-w-0 pr-2">
+                      <h3 className="font-semibold text-[#111] dark:text-white text-[14px] truncate">
+                        {listing.title || "Untitled"}
+                      </h3>
+                      <span
+                        className={`inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize ${
+                          typeConfig[listing.type?.toLowerCase()] ??
+                          "bg-[#F0F0F0] text-[#717171]"
+                        }`}
+                      >
+                        {listing.type}
+                      </span>
+                    </div>
+                    <div className="flex gap-1 shrink-0">
                       <button
                         onClick={() => handleView(listing)}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                        disabled={deleteMutation.isPending}
+                        className="p-1.5 hover:bg-[#F0F0F0] dark:hover:bg-[#2A2A2A] rounded-lg transition-colors"
                       >
-                        <Eye className="w-4 h-4 text-[#717171]" />
+                        <Eye className="w-3.5 h-3.5 text-[#717171]" />
+                      </button>
+                      <button
+                        onClick={() => handleEdit(listing)}
+                        className="p-1.5 hover:bg-[#F0F0F0] dark:hover:bg-[#2A2A2A] rounded-lg transition-colors"
+                      >
+                        <Pen className="w-3.5 h-3.5 text-[#717171]" />
                       </button>
                       <button
                         onClick={() => handleDelete(listing.id)}
-                        className="p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                        disabled={deleteMutation.isPending}
+                        className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                       >
-                        <Trash className="w-4 h-4 text-red-600" />
-                      </button>
-                      <button
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                        disabled={deleteMutation.isPending}
-                      >
-                        <Pen className="w-4 h-4 text-[#717171]" />
+                        <Trash className="w-3.5 h-3.5 text-red-500" />
                       </button>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-[#717171]">
-                      <MapPin className="w-4 h-4 shrink-0" />
-                      <span>{listing.location}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-[#717171]">
-                      <DollarSign className="w-4 h-4 shrink-0" />
-                      <span>${listing.pricePerNight || 0}/night</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-[#717171]">
-                      <Users className="w-4 h-4 shrink-0" />
-                      <span>{listing.guests} guests</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-[#717171]">
-                      <Home className="w-4 h-4 shrink-0" />
-                      <span className="capitalize">{listing.type}</span>
-                    </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { icon: MapPin, value: listing.location },
+                      {
+                        icon: DollarSign,
+                        value: `$${listing.pricePerNight || 0}/night`,
+                      },
+                      { icon: Users, value: `${listing.guests} guests` },
+                      { icon: Home, value: listing.type },
+                    ].map(({ icon: Icon, value }) => (
+                      <div
+                        key={value}
+                        className="flex items-center gap-1.5 text-[12px] text-[#717171]"
+                      >
+                        <Icon className="w-3.5 h-3.5 shrink-0" />
+                        <span className="truncate capitalize">{value}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))
             )}
           </div>
 
+          {/* Pagination */}
           <div className="px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-[#EBEBEB] dark:border-[#2A2A2A]">
-            <p className="text-xs text-[#717171] text-center sm:text-left">
+            <p className="text-[12px] text-[#AAAAAA]">
               Showing {filteredListings.length} of {total} listings
             </p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <button
                 onClick={() =>
                   setPagination((prev) => ({ ...prev, page: prev.page - 1 }))
                 }
                 disabled={pagination.page === 1 || isFetching}
-                className="text-xs px-3 py-1.5 rounded-lg hover:bg-[#F7F7F7] dark:hover:bg-[#1a2235] text-[#717171] hover:text-[#111] dark:hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="text-[12px] px-3 py-1.5 rounded-lg text-[#717171] hover:bg-[#F7F7F7] dark:hover:bg-[#222] hover:text-[#111] dark:hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Previous
               </button>
-              <span className="text-xs text-[#717171]">
-                Page {pagination.page} of {totalPages}
+              <span className="text-[12px] text-[#AAAAAA] px-2">
+                {pagination.page} / {totalPages || 1}
               </span>
               <button
                 onClick={() =>
                   setPagination((prev) => ({ ...prev, page: prev.page + 1 }))
                 }
                 disabled={pagination.page === totalPages || isFetching}
-                className="text-xs px-3 py-1.5 rounded-lg hover:bg-[#F7F7F7] dark:hover:bg-[#1a2235] text-[#717171] hover:text-[#111] dark:hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="text-[12px] px-3 py-1.5 rounded-lg text-[#717171] hover:bg-[#F7F7F7] dark:hover:bg-[#222] hover:text-[#111] dark:hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Next
               </button>
@@ -428,7 +530,11 @@ export default function DashboardListing() {
 
       {isForm && (
         <ListingForm
-          onClose={() => setIsForm(false)}
+          listing={editingListing}
+          onClose={() => {
+            setIsForm(false);
+            setEditingListing(null);
+          }}
           onSuccess={handleFormSuccess}
         />
       )}

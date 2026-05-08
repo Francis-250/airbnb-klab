@@ -8,36 +8,37 @@ import Spinner from "./components/Spinner";
 import DashboardListing from "./pages/host/Listing";
 import { ProtectedRoute } from "./lib/ProtectedRoute";
 import DashboardLayout from "./components/layout/DashboardLayout";
-import ThemeToggle from "./components/ThemeToggle";
 import Listing from "./pages/Listing";
 import Footer from "./components/layout/Footer";
 import DashboardBooking from "./pages/host/Booking";
 import Register from "./pages/Register";
+import Profile from "./pages/Profile";
+import BookingCalendar from "./pages/BookingCalendar";
+import Reviews from "./pages/Reviews";
 
 const ListingDetail = lazy(() => import("./pages/ListingDetail"));
 const Dashboard = lazy(() => import("./pages/host/Dashboard"));
 
+const PUBLIC_ROUTES = ["/", "/all-listings", "/profile"];
+
 export default function App() {
   const location = useLocation();
-  const hideNavbarRoutes = ["/login", "/register"];
 
   const isDashboard = location.pathname.startsWith("/dashboard");
+  const isAuthPage = ["/login", "/register"].includes(location.pathname);
+  const isPublic =
+    PUBLIC_ROUTES.includes(location.pathname) ||
+    location.pathname.startsWith("/listings/") ||
+    location.pathname.startsWith("/bookings/");
 
-  const isNotFound =
-    !["/", "/login", "/register", "/all-listings"].includes(
-      location.pathname,
-    ) &&
-    !location.pathname.startsWith("/listings/") &&
-    !location.pathname.startsWith("/dashboard");
-
-  const isHiddenNavbar =
-    isDashboard || hideNavbarRoutes.includes(location.pathname) || isNotFound;
+  const showNavbar = isPublic;
+  const showFooter = isPublic;
 
   return (
     <div className="flex flex-col min-h-screen">
-      {!isHiddenNavbar && <Navbar />}
+      {showNavbar && <Navbar />}
       <main
-        className={`grow ${!isHiddenNavbar ? "lg:pt-3 px-4 md:px-[6vw] lg:px-[9vw]" : ""}`}
+        className={`grow ${showNavbar ? "lg:pt-3 px-4 md:px-[6vw] lg:px-[9vw]" : ""}`}
       >
         <Suspense fallback={<Spinner />}>
           <Routes>
@@ -46,6 +47,12 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/all-listings" element={<Listing />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route
+              path="/bookings/:id/calendar"
+              element={<BookingCalendar />}
+            />
+            <Route path="/listings/:id/reviews" element={<Reviews />} />
             <Route
               path="/dashboard"
               element={
@@ -58,15 +65,11 @@ export default function App() {
               <Route path="bookings" element={<DashboardBooking />} />
               <Route path="listings" element={<DashboardListing />} />
             </Route>
-
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
       </main>
-      {!isHiddenNavbar && <Footer />}
-      <div className="fixed bottom-4 right-4">
-        <ThemeToggle />
-      </div>
+      {showFooter && <Footer />}
     </div>
   );
 }

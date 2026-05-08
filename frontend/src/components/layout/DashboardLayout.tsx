@@ -10,7 +10,7 @@ export default function DashboardLayout() {
   const { user } = useAuth();
 
   return (
-    <div className="flex min-h-screen bg-muted/40">
+    <div className="flex min-h-screen bg-[#F7F7F7] dark:bg-[#111]">
       <Sidebar
         collapsed={collapsed}
         setCollapsed={setCollapsed}
@@ -20,11 +20,11 @@ export default function DashboardLayout() {
 
       <div
         className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out ${
-          collapsed ? "md:ml-17.5" : "md:ml-64"
+          collapsed ? "md:ml-16" : "md:ml-60"
         }`}
       >
         <Header setIsOpen={setIsOpen} user={user} />
-        <main className="container mx-auto p-4 lg:p-6">
+        <main className="p-4 lg:p-6">
           <Outlet />
         </main>
       </div>

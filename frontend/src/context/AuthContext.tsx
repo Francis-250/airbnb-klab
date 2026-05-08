@@ -6,6 +6,8 @@ type User = {
   id: string;
   name: string;
   email: string;
+  username: string;
+  phone?: string;
   role: string;
   avatar?: string;
   bio?: string;
@@ -22,6 +24,7 @@ export type AuthContextType = {
     email: string,
     password: string,
   ) => Promise<void>;
+  refetch: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -29,7 +32,11 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const queryClient = useQueryClient();
 
-  const { data: user, isLoading: loading } = useQuery({
+  const {
+    data: user,
+    isLoading: loading,
+    refetch,
+  } = useQuery({
     queryKey: ["auth", "me"],
     queryFn: async () => {
       try {
@@ -105,7 +112,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user: user || null, loading, login, logout, register }}
+      value={{ user: user || null, loading, login, logout, register, refetch }}
     >
       {children}
     </AuthContext.Provider>

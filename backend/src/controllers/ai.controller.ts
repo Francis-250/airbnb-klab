@@ -7,6 +7,7 @@ import {
 import { model, deterministicModel } from "../lib/ai";
 import prisma from "../lib/prisma";
 import { getCache, setCache, deleteCacheByPrefix } from "../lib/cache";
+import { ListingType } from "@prisma/client";
 
 function safeParseJSON(text: string) {
   try {
@@ -129,7 +130,7 @@ Rules:
       },
     });
   } catch (error) {
-    console.error("smartSearch error:", error); // 👈 check terminal for exact error
+    console.error("smartSearch error:", error);
     handleAIError(error, res);
   }
 };

@@ -1,6 +1,105 @@
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
 
+export const getFavorites = async (req: Request, res: Response) => {
+  const userId = req.user;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId as string },
+      include: {
+        favoriteListings: {
+          include: {
+            _count: {
+              select: { bookings: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json(user.favoriteListings);
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const addFavorite = async (req: Request, res: Response) => {
+  const { listingId } = req.params;
+  const userId = req.user;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId as string },
+      include: { favoriteListings: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const existingFavorite = user.favoriteListings.some(
+      (fav) => fav.id === listingId,
+    );
+    if (existingFavorite) {
+      await prisma.user.update({
+        where: { id: userId as string },
+        data: {
+          favoriteListings: {
+            disconnect: [{ id: listingId }],
+          },
+        },
+      });
+      res.status(200).json({ message: "Removed from favorites" });
+    } else {
+      await prisma.user.update({
+        where: { id: userId as string },
+        data: {
+          favoriteListings: {
+            connect: [{ id: listingId }],
+          },
+        },
+      });
+      res.status(200).json({ message: "Added to favorites" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const removeFavorite = async (req: Request, res: Response) => {
+  const { listingId } = req.params;
+  const userId = req.user;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId as string },
+      include: { favoriteListings: true },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    await prisma.user.update({
+      where: { id: userId as string },
+      data: {
+        favoriteListings: {
+          disconnect: [{ id: listingId }],
+        },
+      },
+    });
+
+    res.status(200).json({ message: "Removed from favorites" });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 export const getAllUsers = async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;

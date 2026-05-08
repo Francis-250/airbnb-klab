@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, ChevronLeft } from "lucide-react";
+import { ChevronLeft, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { DashboardLinks } from "../../data";
 
@@ -23,135 +23,122 @@ export default function Sidebar({
     setActiveLink(location.pathname);
   }, [location]);
 
+  const NavLinks = ({ onClickLink }: { onClickLink?: () => void }) => (
+    <div className="flex flex-col gap-1 px-3">
+      {DashboardLinks.map((link, index) => {
+        const Icon = link.icon;
+        const isActive = activeLink === link.url;
+        return (
+          <Link
+            to={link.url}
+            key={index}
+            onClick={onClickLink}
+            title={collapsed ? link.title : ""}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
+              isActive
+                ? "bg-(--color-primary) text-white"
+                : "text-[#717171] dark:text-[#AAAAAA] hover:bg-[#F5F5F5] dark:hover:bg-[#2A2A2A] hover:text-[#111] dark:hover:text-white"
+            } ${collapsed ? "justify-center px-0" : ""}`}
+          >
+            <Icon className="w-[18px] h-[18px] shrink-0" />
+            {!collapsed && (
+              <span className="text-[13px] font-medium truncate">
+                {link.title}
+              </span>
+            )}
+          </Link>
+        );
+      })}
+    </div>
+  );
+
   return (
     <>
       {/* Desktop Sidebar */}
       <div
-        className={`h-screen fixed top-0 left-0 bg-white dark:bg-gray-900 text-gray-800 dark:text-white transition-all duration-500 hidden md:flex flex-col z-20 ${
-          collapsed ? "w-16" : "w-64"
+        className={`h-screen fixed top-0 left-0 bg-white dark:bg-[#1A1A1A] border-r border-[#EBEBEB] dark:border-[#2A2A2A] transition-all duration-300 hidden md:flex flex-col z-20 ${
+          collapsed ? "w-16" : "w-60"
         }`}
       >
-        <div className="flex items-center justify-between p-4">
+        {/* Logo */}
+        <div
+          className={`flex items-center h-14 px-4 border-b border-[#EBEBEB] dark:border-[#2A2A2A] shrink-0 ${
+            collapsed ? "justify-center" : "justify-between"
+          }`}
+        >
           {!collapsed && (
-            <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-              Admin
-            </h2>
+            <span
+              style={{ fontFamily: "'Playfair Display', serif" }}
+              className="text-[16px] font-semibold text-[#111] dark:text-white"
+            >
+              Dashboard
+            </span>
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#F5F5F5] dark:hover:bg-[#2A2A2A] transition-colors"
           >
             <ChevronLeft
-              className={`w-5 h-5 transition-transform ${
+              className={`w-4 h-4 text-[#AAAAAA] transition-transform duration-300 ${
                 collapsed ? "rotate-180" : ""
               }`}
             />
           </button>
         </div>
 
-        <nav className="flex-1 mt-6 overflow-y-auto">
-          <div className="flex flex-col space-y-1 px-2">
-            {DashboardLinks.map((link, index) => {
-              const Icon = link.icon;
-              const isActive = activeLink === link.url;
-
-              return (
-                <Link
-                  to={link.url}
-                  key={index}
-                  className={`flex items-center p-3 rounded-lg transition-all duration-200 ${
-                    isActive
-                      ? "bg-(--color-primary) text-white"
-                      : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300"
-                  } ${collapsed ? "justify-center" : ""}`}
-                  title={collapsed ? link.title : ""}
-                >
-                  <Icon className="w-5 h-5 shrink-0" />
-                  {!collapsed && (
-                    <span className="ml-3 font-medium truncate">
-                      {link.title}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
+        {/* Nav */}
+        <nav className="flex-1 py-4 overflow-y-auto">
+          <NavLinks />
         </nav>
 
+        {/* Footer */}
         {!collapsed && (
-          <div className="p-4 text-xs text-gray-500 dark:text-gray-500">
-            © {new Date().getFullYear()} Airbnb
+          <div className="px-5 py-4 border-t border-[#EBEBEB] dark:border-[#2A2A2A]">
+            <p className="text-[11px] text-[#CCCCCC] dark:text-[#555]">
+              © {new Date().getFullYear()} Airbnb
+            </p>
           </div>
         )}
       </div>
 
       {/* Mobile Sidebar */}
       <div
-        className={`fixed top-0 left-0 h-screen bg-white dark:bg-gray-900 text-gray-800 dark:text-white z-30 transition-all duration-300 md:hidden transform ${
+        className={`fixed top-0 left-0 h-screen bg-white dark:bg-[#1A1A1A] border-r border-[#EBEBEB] dark:border-[#2A2A2A] z-30 transition-transform duration-300 md:hidden w-60 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
-        } w-64`}
+        }`}
       >
-        <div className="flex items-center justify-between p-4">
-          <h2 className="text-xl font-bold text-gray-800 dark:text-white">
-            Navigation
-          </h2>
+        <div className="flex items-center justify-between h-14 px-4 border-b border-[#EBEBEB] dark:border-[#2A2A2A]">
+          <span
+            style={{ fontFamily: "'Playfair Display', serif" }}
+            className="text-[16px] font-semibold text-[#111] dark:text-white"
+          >
+            Dashboard
+          </span>
           <button
             onClick={() => setIsOpen(false)}
-            className="p-2 bg-gray-100 dark:bg-gray-800 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-            aria-label="Close menu"
+            className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[#F5F5F5] dark:hover:bg-[#2A2A2A] transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4 text-[#AAAAAA]" />
           </button>
         </div>
 
-        <nav className="flex-1 mt-6 overflow-y-auto">
-          <div className="flex flex-col space-y-1 px-2">
-            {DashboardLinks.map((link, index) => {
-              const Icon = link.icon;
-              const isActive = activeLink === link.url;
-
-              return (
-                <Link
-                  to={link.url}
-                  key={index}
-                  onClick={() => setIsOpen(false)}
-                  className={`flex items-center p-3 rounded-lg transition-all duration-200 ${
-                    isActive
-                      ? "bg-(--color-primary) text-white"
-                      : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300"
-                  }`}
-                >
-                  <Icon className="w-5 h-5 shrink-0" />
-                  <span className="ml-3 font-medium">{link.title}</span>
-                </Link>
-              );
-            })}
-          </div>
+        <nav className="flex-1 py-4 overflow-y-auto">
+          <NavLinks onClickLink={() => setIsOpen(false)} />
         </nav>
 
-        <div className="p-4 text-xs text-gray-500 dark:text-gray-500">
-          © {new Date().getFullYear()} Airbnb
+        <div className="px-5 py-4 border-t border-[#EBEBEB] dark:border-[#2A2A2A]">
+          <p className="text-[11px] text-[#CCCCCC] dark:text-[#555]">
+            © {new Date().getFullYear()} Airbnb
+          </p>
         </div>
       </div>
 
-      {/* Overlay - only shows when mobile sidebar is open */}
+      {/* Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/20 dark:bg-black/40 z-20 md:hidden"
+          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-20 md:hidden"
           onClick={() => setIsOpen(false)}
         />
-      )}
-
-      {/* Mobile Menu Button - only show when sidebar is closed */}
-      {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-4 right-4 p-3 bg-(--color-primary) rounded-full md:hidden z-20 hover:bg-(--color-primary)/90 transition-colors shadow-lg"
-          aria-label="Open menu"
-        >
-          <Menu className="w-6 h-6 text-white" />
-        </button>
       )}
     </>
   );

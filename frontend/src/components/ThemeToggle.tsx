@@ -16,6 +16,11 @@ export default function ThemeToggle() {
   useEffect(() => {
     const html = document.documentElement;
     html.setAttribute("data-theme", theme);
+    if (theme === "dark") {
+      html.classList.add("dark");
+    } else {
+      html.classList.remove("dark");
+    }
     localStorage.setItem("theme", theme);
   }, [theme]);
 
@@ -26,13 +31,13 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="p-2 rounded-full bg-white dark:bg-gray-800 transition-all duration-200"
+      className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#F5F5F5] dark:hover:bg-[#2A2A2A] transition-colors"
       aria-label="Toggle theme"
     >
       {theme === "dark" ? (
-        <Sun className="w-4 h-4 text-yellow-500" />
+        <Sun className="w-4 h-4 text-[#AAAAAA] hover:text-yellow-500 transition-colors" />
       ) : (
-        <Moon className="w-4 h-4 text-gray-700 dark:text-gray-300" />
+        <Moon className="w-4 h-4 text-[#AAAAAA] hover:text-[#111] transition-colors" />
       )}
     </button>
   );

@@ -140,27 +140,46 @@ export const updateListing = async (req: Request, res: Response) => {
     guests,
     type,
     amenities,
-    rating,
+    existingPhotos,
   } = req.body;
 
   try {
-    if (guests <= 0) {
+    const parsedPrice = parseFloat(pricePerNight);
+    const parsedGuests = parseInt(guests);
+    const parsedAmenities = Array.isArray(amenities)
+      ? amenities
+      : JSON.parse(amenities || "[]");
+    const parsedExistingPhotos = Array.isArray(existingPhotos)
+      ? existingPhotos
+      : JSON.parse(existingPhotos || "[]");
+
+    if (parsedGuests <= 0) {
       return res.status(400).json({ message: "Guests must be greater than 0" });
     }
-    if (pricePerNight <= 0) {
+    if (parsedPrice <= 0) {
       return res
         .status(400)
         .json({ message: "Price per night must be greater than 0" });
     }
 
-    const isOwned = await prisma.listing.findFirst({
+    const listingToUpdate = await prisma.listing.findFirst({
       where: { id: id as string, hostId: user },
     });
-    if (!isOwned) {
+    if (!listingToUpdate) {
       return res
         .status(403)
-        .json({ message: "This property is not owned by you" });
+        .json({ message: "This property is not owned by you or not found" });
     }
+
+    let newPhotoUrls: string[] = [];
+    if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+      const results = await uploadListingPhotosHelper(
+        req.files as Express.Multer.File[],
+      );
+      newPhotoUrls = results.map((result: any) => result.secure_url);
+    }
+
+    const allPhotos = [...parsedExistingPhotos, ...newPhotoUrls];
 
     const listing = await prisma.listing.update({
       where: { id: id as string },
@@ -168,11 +187,11 @@ export const updateListing = async (req: Request, res: Response) => {
         title,
         description,
         location,
-        pricePerNight,
-        guests,
+        pricePerNight: parsedPrice,
+        guests: parsedGuests,
         type,
-        amenities,
-        rating,
+        amenities: parsedAmenities,
+        photos: allPhotos,
       },
     });
 

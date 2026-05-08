@@ -39,9 +39,6 @@ export default function Listing() {
   const [aiFilters, setAiFilters] = useState<AIFilters | null>(null);
   const [aiSearchMessage, setAiSearchMessage] = useState<string | null>(null);
   const [aiFeedback, setAiFeedback] = useState<string | null>(null);
-  const [aiConfidence, setAiConfidence] = useState<
-    "high" | "medium" | "low" | null
-  >(null);
   const [aiSuggestion, setAiSuggestion] = useState<string | null>(null);
   const [aiResults, setAiResults] = useState<Listing[] | null>(null);
 
@@ -62,7 +59,6 @@ export default function Listing() {
       setAiSearchMessage("Please enter a search query");
       return;
     }
-
     setIsAiSearching(true);
     setAiSearchMessage(null);
     setAiFeedback(null);
@@ -73,11 +69,9 @@ export default function Listing() {
       const res = await api.post<AISearchResult>("/ai/search", {
         query: searchWish,
       });
-
-      const { filters, feedback, confidence, suggestion, data } = res.data;
+      const { filters, feedback, suggestion, data } = res.data;
 
       setAiFeedback(feedback);
-      setAiConfidence(confidence);
       setAiSuggestion(suggestion ?? null);
       setAiFilters(filters);
       setAiResults(data);
@@ -142,7 +136,6 @@ export default function Listing() {
     });
   }, [listings, priceRange, selectedCategories, locationParam]);
 
-  // Use backend AI results when available, otherwise local filter
   const displayListings = aiResults ?? filteredListings;
 
   const clearAllFilters = () => {
@@ -154,42 +147,76 @@ export default function Listing() {
     setAiSearchMessage(null);
     setAiFeedback(null);
     setAiSuggestion(null);
-    setAiConfidence(null);
     setAiResults(null);
   };
 
-  if (isLoading) return <span>Loading...</span>;
-  if (error) return <span>Error: {error.message}</span>;
+  if (isLoading)
+    return (
+      <div className="min-h-screen py-4 sm:py-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:ml-[296px]">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={i}
+              className="aspect-4/3 rounded-2xl bg-[#EBEBEB] dark:bg-[#2A2A2A] animate-pulse"
+            />
+          ))}
+        </div>
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-red-500 text-sm">{error.message}</p>
+      </div>
+    );
 
   return (
     <div className="min-h-screen py-4 sm:py-6">
       <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-8">
         <button
-          onClick={() => setIsFilterOpen(!isFilterOpen)}
-          className="lg:hidden flex items-center gap-2 mb-4 px-4 py-2 bg-(--color-primary) text-white rounded-lg"
+          onClick={() => setIsFilterOpen(true)}
+          className="lg:hidden flex items-center gap-2 mb-4 px-4 py-2.5 bg-(--color-primary) text-white rounded-xl text-sm font-medium w-fit"
         >
           <SlidersHorizontal className="w-4 h-4" />
           Filters
+          {(selectedCategories.length > 0 ||
+            priceRange < 1000 ||
+            locationParam) && (
+            <span className="w-4 h-4 bg-white text-(--color-primary) rounded-full text-[10px] font-bold flex items-center justify-center">
+              !
+            </span>
+          )}
         </button>
 
         <aside
           className={`
-            ${isFilterOpen ? "block" : "hidden"} 
-            lg:block fixed inset-y-0 left-0 z-30
+            ${isFilterOpen ? "block" : "hidden"}
+            lg:block fixed inset-y-0 left-0 z-50
             lg:top-14 lg:bottom-auto lg:left-[9vw]
             w-70 bg-white dark:bg-[#1A1A1A]
             overflow-y-auto p-6 lg:p-0
-            shadow-lg lg:shadow-none
+            shadow-xl lg:shadow-none
           `}
         >
+          {/* Mobile header */}
           <div className="lg:hidden flex justify-between items-center mb-6">
-            <h2 className="text-lg font-semibold">Filters</h2>
-            <button onClick={() => setIsFilterOpen(false)} className="p-2">
+            <h2
+              style={{ fontFamily: "'Playfair Display', serif" }}
+              className="text-lg font-semibold text-[#111] dark:text-white"
+            >
+              Filters
+            </h2>
+            <button
+              onClick={() => setIsFilterOpen(false)}
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#F5F5F5] dark:hover:bg-[#2A2A2A] transition-colors text-[#AAAAAA]"
+            >
               ✕
             </button>
           </div>
 
           <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl p-6">
+            {/* Desktop header */}
             <div className="hidden lg:flex items-center gap-2 mb-6">
               <SlidersHorizontal className="w-4 h-4 text-(--color-primary)" />
               <h2
@@ -200,6 +227,7 @@ export default function Listing() {
               </h2>
             </div>
 
+            {/* Price */}
             <div className="mb-7">
               <div className="flex justify-between items-center mb-3">
                 <p className="text-[13px] font-semibold text-[#111] dark:text-white">
@@ -228,6 +256,7 @@ export default function Listing() {
 
             <div className="h-px bg-[#EBEBEB] dark:bg-[#2A2A2A] mb-6" />
 
+            {/* Smart Search */}
             <div>
               <p className="text-[13px] font-semibold text-[#111] dark:text-white mb-1">
                 Smart Search
@@ -247,26 +276,25 @@ export default function Listing() {
                     }
                   }}
                   rows={3}
-                  className="w-full bg-[#EBEBEB] dark:bg-[#2A2A2A] py-2 px-3 text-[13px] text-[#333] dark:text-[#CCCCCC] outline-none transition-colors rounded resize-none"
+                  className="w-full bg-[#F5F5F5] dark:bg-[#2A2A2A] py-2 px-3 text-[13px] text-[#333] dark:text-[#CCCCCC] outline-none transition-colors rounded-xl resize-none"
                 />
                 <button
                   onClick={handleAISearch}
                   disabled={isAiSearching || !searchWish.trim()}
-                  className="flex items-center justify-center gap-2 px-3 py-2 bg-(--color-primary) text-white rounded text-xs font-semibold disabled:opacity-50"
+                  className="flex items-center justify-center gap-2 px-3 py-2.5 bg-(--color-primary) text-white rounded-xl text-[12px] font-semibold disabled:opacity-50 transition-opacity"
                 >
                   <Sparkles className="w-3 h-3" />
                   {isAiSearching ? "Searching..." : "Smart Search"}
                 </button>
               </div>
+
               {aiFeedback && (
-                <div className="mt-3 p-2.5 bg-[#F8F8F8] dark:bg-[#222] border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-lg">
+                <div className="mt-3 p-2.5 bg-[#F8F8F8] dark:bg-[#222] border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-xl">
                   <div className="flex items-start gap-2">
                     <Sparkles className="w-3 h-3 text-(--color-primary) mt-0.5 shrink-0" />
-                    <div>
-                      <p className="text-[12px] text-[#333] dark:text-[#CCC]">
-                        {aiFeedback}
-                      </p>
-                    </div>
+                    <p className="text-[12px] text-[#333] dark:text-[#CCC]">
+                      {aiFeedback}
+                    </p>
                   </div>
                   {aiSuggestion && (
                     <p className="text-[11px] text-[#AAAAAA] mt-2 pl-5 flex items-center gap-1">
@@ -275,30 +303,32 @@ export default function Listing() {
                   )}
                 </div>
               )}
+
               {aiSearchMessage && (
-                <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-[11px] text-red-700 dark:text-red-300">
+                <div className="mt-3 p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-[11px] text-red-700 dark:text-red-300">
                   {aiSearchMessage}
                 </div>
               )}
+
               {aiFilters && (
                 <div className="mt-3 flex flex-wrap gap-1">
                   {aiFilters.location && (
-                    <span className="flex items-center gap-1 bg-[#EBEBEB] dark:bg-[#2A2A2A] px-2 py-0.5 rounded text-[11px] text-[#717171]">
+                    <span className="flex items-center gap-1 bg-[#EBEBEB] dark:bg-[#2A2A2A] px-2 py-1 rounded-lg text-[11px] text-[#717171]">
                       <MapPin className="w-3 h-3" /> {aiFilters.location}
                     </span>
                   )}
                   {aiFilters.type && (
-                    <span className="flex items-center gap-1 bg-[#EBEBEB] dark:bg-[#2A2A2A] px-2 py-0.5 rounded text-[11px] text-[#717171]">
+                    <span className="flex items-center gap-1 bg-[#EBEBEB] dark:bg-[#2A2A2A] px-2 py-1 rounded-lg text-[11px] text-[#717171]">
                       <Home className="w-3 h-3" /> {aiFilters.type}
                     </span>
                   )}
                   {aiFilters.maxPrice && (
-                    <span className="flex items-center gap-1 bg-[#EBEBEB] dark:bg-[#2A2A2A] px-2 py-0.5 rounded text-[11px] text-[#717171]">
+                    <span className="flex items-center gap-1 bg-[#EBEBEB] dark:bg-[#2A2A2A] px-2 py-1 rounded-lg text-[11px] text-[#717171]">
                       <DollarSign className="w-3 h-3" /> {aiFilters.maxPrice}
                     </span>
                   )}
                   {aiFilters.guests && (
-                    <span className="flex items-center gap-1 bg-[#EBEBEB] dark:bg-[#2A2A2A] px-2 py-0.5 rounded text-[11px] text-[#717171]">
+                    <span className="flex items-center gap-1 bg-[#EBEBEB] dark:bg-[#2A2A2A] px-2 py-1 rounded-lg text-[11px] text-[#717171]">
                       <Users className="w-3 h-3" /> {aiFilters.guests} guests
                     </span>
                   )}
@@ -308,6 +338,7 @@ export default function Listing() {
 
             <div className="h-px bg-[#EBEBEB] dark:bg-[#2A2A2A] my-6" />
 
+            {/* Categories */}
             <div>
               <p className="text-[13px] font-semibold text-[#111] dark:text-white mb-1">
                 Categories
@@ -359,13 +390,15 @@ export default function Listing() {
           </div>
         </aside>
 
+        {/* Overlay */}
         {isFilterOpen && (
           <div
-            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
             onClick={() => setIsFilterOpen(false)}
           />
         )}
 
+        {/* Main content */}
         <div className="lg:col-start-2">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-5">
             <div>
@@ -410,11 +443,16 @@ export default function Listing() {
           </div>
 
           {displayListings.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-[#717171]">No listings match your filters</p>
+            <div className="flex flex-col items-center justify-center py-20 gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-[#F5F5F5] dark:bg-[#2A2A2A] flex items-center justify-center">
+                <Home className="w-5 h-5 text-[#CCCCCC]" />
+              </div>
+              <p className="text-[13px] font-medium text-[#111] dark:text-white">
+                No listings match your filters
+              </p>
               <button
                 onClick={clearAllFilters}
-                className="mt-4 text-(--color-primary) underline"
+                className="text-[12px] text-(--color-primary) underline"
               >
                 Clear all filters
               </button>
