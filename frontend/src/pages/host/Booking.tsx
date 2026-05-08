@@ -47,7 +47,6 @@ interface Booking {
 export default function DashboardBooking() {
   const [searchText, setSearchText] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [checkedAll, setCheckedAll] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
   const { data: response, isLoading } = useQuery({
@@ -169,14 +168,6 @@ export default function DashboardBooking() {
         <table className="w-full text-sm text-left">
           <thead>
             <tr className="border-b border-[#EBEBEB] dark:border-[#2A2A2A]">
-              <th className="py-3 px-4">
-                <input
-                  type="checkbox"
-                  checked={checkedAll}
-                  onChange={() => setCheckedAll(!checkedAll)}
-                  className="w-4 h-4 rounded border-[#EBEBEB] dark:border-[#2A2A2A] bg-[#F7F7F7] dark:bg-[#222] accent-(--color-primary) cursor-pointer"
-                />
-              </th>
               {bookingHeader.map((header: string) => (
                 <th
                   key={header}
@@ -210,12 +201,6 @@ export default function DashboardBooking() {
                   key={booking.id}
                   className="border-b border-[#EBEBEB] dark:border-[#2A2A2A]"
                 >
-                  <td className="py-3 px-4">
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 rounded border-[#EBEBEB] dark:border-[#2A2A2A] bg-[#F7F7F7] dark:bg-[#222] accent-(--color-primary) cursor-pointer"
-                    />
-                  </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
