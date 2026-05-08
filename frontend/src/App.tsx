@@ -15,6 +15,8 @@ import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import BookingCalendar from "./pages/BookingCalendar";
 import Reviews from "./pages/Reviews";
+import Bookings from "./pages/Bookings";
+import BookingForm from "./pages/BookingForm";
 
 const ListingDetail = lazy(() => import("./pages/ListingDetail"));
 const Dashboard = lazy(() => import("./pages/host/Dashboard"));
@@ -36,7 +38,7 @@ export default function App() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {showNavbar && <Navbar />}
+      {!isDashboard && !isAuthPage && <Navbar />}
       <main
         className={`grow ${showNavbar ? "lg:pt-3 px-4 md:px-[6vw] lg:px-[9vw]" : ""}`}
       >
@@ -48,6 +50,8 @@ export default function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/all-listings" element={<Listing />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/bookings" element={<Bookings />} />
+            <Route path="/bookings/:id" element={<BookingForm />} />
             <Route
               path="/bookings/:id/calendar"
               element={<BookingCalendar />}
@@ -56,7 +60,7 @@ export default function App() {
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRole="host">
                   <DashboardLayout />
                 </ProtectedRoute>
               }

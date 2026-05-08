@@ -1,12 +1,17 @@
 import { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "../hooks/useAuth";
+import { api } from "../lib/api";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { login } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get("redirect");
 
   const handleGoogleLogin = () => {
     setIsLoading(true);
@@ -20,14 +25,41 @@ export default function Login() {
     setIsLoading(true);
 
     try {
+      console.log("Attempting login with:", email);
       await login(email, password);
+      console.log("Login function completed successfully");
       toast.success("Login successful!");
-      window.location.href = "/dashboard";
-    } catch (error: any) {
+
+      // Check user role and redirect accordingly
+      setTimeout(async () => {
+        try {
+          const response = await api.get("/auth/me");
+          const user = response.data.user;
+          console.log("User role after login:", user.role);
+
+          if (redirect) {
+            console.log("Navigating to:", redirect);
+            navigate(redirect);
+          } else if (user.role === "host") {
+            console.log("Redirecting host to dashboard");
+            window.location.href = "/dashboard";
+          } else {
+            console.log("Redirecting guest to home page");
+            navigate("/");
+          }
+        } catch (error) {
+          console.error("Failed to get user role:", error);
+          navigate("/");
+        }
+      }, 500);
+    } catch (error: unknown) {
+      console.error("Login error in handleSubmit:", error);
       const message =
-        error.response?.data?.message || error.message || "Login failed";
+        (error as { response?: { data?: { message?: string } } })?.response
+          ?.data?.message ||
+        (error as Error)?.message ||
+        "Login failed";
       toast.error(message);
-    } finally {
       setIsLoading(false);
     }
   };

@@ -8,6 +8,8 @@ import {
   MapPin,
   DollarSign,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../../lib/api";
 
 const statusConfig: Record<string, { label: string; class: string }> = {
   confirmed: {
@@ -26,11 +28,37 @@ const statusConfig: Record<string, { label: string; class: string }> = {
   },
 };
 
+interface Booking {
+  id: string;
+  guest: {
+    name: string;
+    email: string;
+  };
+  listing: {
+    title: string;
+    location: string;
+  };
+  checkIn: string;
+  checkOut: string;
+  status: string;
+  totalPrice: number;
+}
+
 export default function DashboardBooking() {
   const [searchText, setSearchText] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [checkedAll, setCheckedAll] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+
+  const { data: response, isLoading } = useQuery({
+    queryKey: ["host-bookings"],
+    queryFn: async () => {
+      const response = await api.get("/bookings");
+      return response.data;
+    },
+  });
+
+  const bookings = response?.data || [];
 
   const filterOptions = [
     { icon: MapPin, label: "Location" },
@@ -160,46 +188,191 @@ export default function DashboardBooking() {
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td
-                colSpan={bookingHeader.length + 1}
-                className="px-6 py-20 text-center"
-              >
-                <div className="flex flex-col items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-[#F7F7F7] dark:bg-[#2A2A2A] flex items-center justify-center">
-                    <CalendarDays className="w-5 h-5 text-[#CCCCCC]" />
+            {isLoading ? (
+              <tr>
+                <td
+                  colSpan={bookingHeader.length + 1}
+                  className="px-6 py-20 text-center"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-[#F7F7F7] dark:bg-[#2A2A2A] flex items-center justify-center">
+                      <CalendarDays className="w-5 h-5 text-[#CCCCCC]" />
+                    </div>
+                    <p className="text-[13px] font-medium text-[#111] dark:text-white">
+                      Loading bookings...
+                    </p>
                   </div>
-                  <p className="text-[13px] font-medium text-[#111] dark:text-white">
-                    No bookings yet
-                  </p>
-                  <p className="text-[12px] text-[#AAAAAA]">
-                    Bookings will appear here once guests start reserving
-                  </p>
-                </div>
-              </td>
-            </tr>
+                </td>
+              </tr>
+            ) : bookings && bookings.length > 0 ? (
+              bookings.map((booking: Booking) => (
+                <tr
+                  key={booking.id}
+                  className="border-b border-[#EBEBEB] dark:border-[#2A2A2A]"
+                >
+                  <td className="py-3 px-4">
+                    <input
+                      type="checkbox"
+                      className="w-4 h-4 rounded border-[#EBEBEB] dark:border-[#2A2A2A] bg-[#F7F7F7] dark:bg-[#222] accent-(--color-primary) cursor-pointer"
+                    />
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                        <span className="text-xs font-medium">
+                          {booking.guest?.name?.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">
+                          {booking.guest?.name}
+                        </p>
+                        <p className="text-xs text-[#AAAAAA]">
+                          {booking.guest?.email}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div>
+                      <p className="font-medium text-sm">
+                        {booking.listing?.title}
+                      </p>
+                      <p className="text-xs text-[#AAAAAA]">
+                        {booking.listing?.location}
+                      </p>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <div>
+                      <p className="text-sm">
+                        {new Date(booking.checkIn).toLocaleDateString()}
+                      </p>
+                      <p className="text-xs text-[#AAAAAA]">
+                        to {new Date(booking.checkOut).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${statusConfig[booking.status]?.class || "bg-gray-100 text-gray-700"}`}
+                    >
+                      {statusConfig[booking.status]?.label || booking.status}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <p className="font-medium text-sm">${booking.totalPrice}</p>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan={bookingHeader.length + 1}
+                  className="px-6 py-20 text-center"
+                >
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-[#F7F7F7] dark:bg-[#2A2A2A] flex items-center justify-center">
+                      <CalendarDays className="w-5 h-5 text-[#CCCCCC]" />
+                    </div>
+                    <p className="text-[13px] font-medium text-[#111] dark:text-white">
+                      No bookings yet
+                    </p>
+                    <p className="text-[12px] text-[#AAAAAA]">
+                      Bookings will appear here once guests start reserving
+                    </p>
+                  </div>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
 
       {/* Mobile empty state */}
       <div className="block md:hidden py-20 text-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-[#F7F7F7] dark:bg-[#2A2A2A] flex items-center justify-center">
-            <CalendarDays className="w-5 h-5 text-[#CCCCCC]" />
+        {isLoading ? (
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-[#F7F7F7] dark:bg-[#2A2A2A] flex items-center justify-center">
+              <CalendarDays className="w-5 h-5 text-[#CCCCCC]" />
+            </div>
+            <p className="text-[13px] font-medium text-[#111] dark:text-white">
+              Loading bookings...
+            </p>
           </div>
-          <p className="text-[13px] font-medium text-[#111] dark:text-white">
-            No bookings yet
-          </p>
-          <p className="text-[12px] text-[#AAAAAA]">
-            Bookings will appear here once guests start reserving
-          </p>
-        </div>
+        ) : bookings && bookings.length > 0 ? (
+          <div className="space-y-4">
+            {bookings.map((booking: Booking) => (
+              <div
+                key={booking.id}
+                className="bg-white dark:bg-[#1A1A1A] border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-2xl p-4"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                      <span className="text-xs font-medium">
+                        {booking.guest?.name?.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">
+                        {booking.guest?.name}
+                      </p>
+                      <p className="text-xs text-[#AAAAAA]">
+                        {booking.guest?.email}
+                      </p>
+                    </div>
+                  </div>
+                  <span
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${statusConfig[booking.status]?.class || "bg-gray-100 text-gray-700"}`}
+                  >
+                    {statusConfig[booking.status]?.label || booking.status}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <p className="font-medium text-sm">
+                      {booking.listing?.title}
+                    </p>
+                    <p className="text-xs text-[#AAAAAA]">
+                      {booking.listing?.location}
+                    </p>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm">
+                        {new Date(booking.checkIn).toLocaleDateString()}
+                      </p>
+                      <p className="text-xs text-[#AAAAAA]">
+                        to {new Date(booking.checkOut).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <p className="font-medium text-sm">${booking.totalPrice}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-[#F7F7F7] dark:bg-[#2A2A2A] flex items-center justify-center">
+              <CalendarDays className="w-5 h-5 text-[#CCCCCC]" />
+            </div>
+            <p className="text-[13px] font-medium text-[#111] dark:text-white">
+              No bookings yet
+            </p>
+            <p className="text-[12px] text-[#AAAAAA]">
+              Bookings will appear here once guests start reserving
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Pagination */}
       <div className="px-4 py-3 flex items-center justify-between border-t border-[#EBEBEB] dark:border-[#2A2A2A]">
-        <p className="text-[12px] text-[#AAAAAA]">Showing 0 bookings</p>
+        <p className="text-[12px] text-[#AAAAAA]">
+          Showing {bookings?.length || 0} bookings
+        </p>
         <div className="flex items-center gap-1">
           <button
             disabled

@@ -38,10 +38,10 @@ model Listing {
   photos        String[]
   rating        Float?
   hostId        String
-  host          User        @relation(fields: [hostId], references: [id])
+  host          User        @relation("UserListings", fields: [hostId], references: [id])
   bookings      Booking[]
   reviews       Review[]
-  favoriteBy    User[]       @relation("FavoriteBy")
+  favoriteBy    User[]      @relation("FavoriteListings")
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 }
