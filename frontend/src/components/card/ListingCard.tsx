@@ -111,9 +111,6 @@ export default function ListingCard({
                   <span className="text-[13px] font-semibold text-red-500">
                     ({listing.rating})
                   </span>
-                  <span className="text-[13px] text-red-500">
-                    {listing.reviews?.toLocaleString() ?? "2,391"}
-                  </span>
                 </motion.div>
                 <motion.div
                   initial={{ x: -10, opacity: 0 }}

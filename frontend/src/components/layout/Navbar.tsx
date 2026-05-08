@@ -7,7 +7,6 @@ import { api } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
 
 export default function Navbar() {
-  const [isDark, setIsDark] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const { user, logout } = useAuth();
@@ -23,20 +22,6 @@ export default function Navbar() {
   });
 
   const favoritesCount = favorites?.length || 0;
-
-  useEffect(() => {
-    const checkTheme = () => {
-      const theme = document.documentElement.getAttribute("data-theme");
-      setIsDark(theme === "dark");
-    };
-    checkTheme();
-    const observer = new MutationObserver(checkTheme);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["data-theme"],
-    });
-    return () => observer.disconnect();
-  }, []);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
