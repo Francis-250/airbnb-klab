@@ -1,7 +1,41 @@
 import { Link, useLocation } from "react-router-dom";
 import { ChevronLeft, X } from "lucide-react";
-import { useState, useEffect } from "react";
 import { DashboardLinks } from "../../data";
+
+interface NavLinksProps {
+  activeLink: string;
+  collapsed: boolean;
+  onClickLink?: () => void;
+}
+
+const NavLinks = ({ activeLink, collapsed, onClickLink }: NavLinksProps) => (
+  <div className="flex flex-col gap-1 px-3">
+    {DashboardLinks.map((link, index) => {
+      const Icon = link.icon;
+      const isActive = activeLink === link.url;
+      return (
+        <Link
+          to={link.url}
+          key={index}
+          onClick={onClickLink}
+          title={collapsed ? link.title : ""}
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
+            isActive
+              ? "bg-(--color-primary) text-white"
+              : "text-[#717171] dark:text-[#AAAAAA] hover:bg-[#F5F5F5] dark:hover:bg-[#2A2A2A] hover:text-[#111] dark:hover:text-white"
+          } ${collapsed ? "justify-center px-0" : ""}`}
+        >
+          <Icon className="w-4.5 h-4.5 shrink-0" />
+          {!collapsed && (
+            <span className="text-[13px] font-medium truncate">
+              {link.title}
+            </span>
+          )}
+        </Link>
+      );
+    })}
+  </div>
+);
 
 interface SidebarProps {
   collapsed: boolean;
@@ -17,44 +51,9 @@ export default function Sidebar({
   isOpen,
 }: SidebarProps) {
   const location = useLocation();
-  const [activeLink, setActiveLink] = useState(location.pathname);
-
-  useEffect(() => {
-    setActiveLink(location.pathname);
-  }, [location]);
-
-  const NavLinks = ({ onClickLink }: { onClickLink?: () => void }) => (
-    <div className="flex flex-col gap-1 px-3">
-      {DashboardLinks.map((link, index) => {
-        const Icon = link.icon;
-        const isActive = activeLink === link.url;
-        return (
-          <Link
-            to={link.url}
-            key={index}
-            onClick={onClickLink}
-            title={collapsed ? link.title : ""}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${
-              isActive
-                ? "bg-(--color-primary) text-white"
-                : "text-[#717171] dark:text-[#AAAAAA] hover:bg-[#F5F5F5] dark:hover:bg-[#2A2A2A] hover:text-[#111] dark:hover:text-white"
-            } ${collapsed ? "justify-center px-0" : ""}`}
-          >
-            <Icon className="w-4.5 h-4.5 shrink-0" />
-            {!collapsed && (
-              <span className="text-[13px] font-medium truncate">
-                {link.title}
-              </span>
-            )}
-          </Link>
-        );
-      })}
-    </div>
-  );
 
   return (
     <>
-      ={" "}
       <div
         className={`h-screen fixed top-0 left-0 bg-white dark:bg-[#1A1A1A] border-r border-[#EBEBEB] dark:border-[#2A2A2A] transition-all duration-300 hidden md:flex flex-col z-20 ${
           collapsed ? "w-16" : "w-60"
@@ -85,7 +84,7 @@ export default function Sidebar({
           </button>
         </div>
         <nav className="flex-1 py-4 overflow-y-auto">
-          <NavLinks />
+          <NavLinks activeLink={location.pathname} collapsed={collapsed} />
         </nav>
         {!collapsed && (
           <div className="px-5 py-4 border-t border-[#EBEBEB] dark:border-[#2A2A2A]">
@@ -116,7 +115,11 @@ export default function Sidebar({
         </div>
 
         <nav className="flex-1 py-4 overflow-y-auto">
-          <NavLinks onClickLink={() => setIsOpen(false)} />
+          <NavLinks
+            activeLink={location.pathname}
+            collapsed={false}
+            onClickLink={() => setIsOpen(false)}
+          />
         </nav>
 
         <div className="px-5 py-4 border-t border-[#EBEBEB] dark:border-[#2A2A2A]">

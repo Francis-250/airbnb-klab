@@ -10,14 +10,6 @@ import {
   DollarSign,
 } from "lucide-react";
 
-interface SearchResult {
-  data: Listing[];
-  meta?: {
-    total: number;
-    totalPages: number;
-  };
-}
-
 interface Listing {
   id: string;
   title: string;

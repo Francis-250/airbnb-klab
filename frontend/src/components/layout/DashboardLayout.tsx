@@ -23,7 +23,7 @@ export default function DashboardLayout() {
           collapsed ? "md:ml-16" : "md:ml-60"
         }`}
       >
-        <Header setIsOpen={setIsOpen} user={user} />
+        {user && <Header setIsOpen={setIsOpen} user={user} />}
         <main className="p-4 lg:p-6">
           <Outlet />
         </main>

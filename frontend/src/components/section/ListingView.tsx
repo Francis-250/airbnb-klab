@@ -204,7 +204,7 @@ export default function ListingView({
             <div className="flex items-center gap-3 py-4 border-t border-b border-[#EBEBEB] dark:border-[#2A2A2A] mb-5">
               <img
                 src={listing.host.avatar || "/default-avatar.png"}
-                alt={listing.host.name}
+                alt={listing.host.name || "Host"}
                 className="w-10 h-10 rounded-full object-cover bg-[#EBEBEB]"
               />
               <div>

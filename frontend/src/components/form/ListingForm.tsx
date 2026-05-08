@@ -56,7 +56,7 @@ interface FormData {
   guests: string;
   type: ListingType | "";
   amenities: string[];
-  photos: File[];
+  photos: (File | string)[];
 }
 
 interface ListingFormProps {

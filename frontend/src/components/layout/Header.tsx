@@ -36,7 +36,7 @@ export default function Header({ setIsOpen, user }: HeaderProps) {
             {user?.avatar ? (
               <img
                 src={user.avatar}
-                alt={user.name}
+                alt={user.name || ""}
                 className="w-7 h-7 rounded-full object-cover"
               />
             ) : (

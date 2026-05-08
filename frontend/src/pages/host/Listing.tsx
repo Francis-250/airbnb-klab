@@ -106,7 +106,7 @@ export default function DashboardListing() {
       );
       return { previousData };
     },
-    onError: (err, _, context) => {
+    onError: (_, __, context) => {
       queryClient.setQueryData(
         ["listings", "me", pagination.page, pagination.limit],
         context?.previousData,

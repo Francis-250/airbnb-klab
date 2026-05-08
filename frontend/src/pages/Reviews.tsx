@@ -48,7 +48,11 @@ export default function Reviews() {
   });
 
   const createReviewMutation = useMutation({
-    mutationFn: async (reviewData: { listingId: string; rating: number; comment: string }) => {
+    mutationFn: async (reviewData: {
+      listingId: string;
+      rating: number;
+      comment: string;
+    }) => {
       const response = await api.post("/reviews", reviewData);
       return response.data;
     },
@@ -74,16 +78,24 @@ export default function Reviews() {
     });
   };
 
-  const renderStars = (rating: number, interactive = false, onRatingChange?: (rating: number) => void) => {
+  const renderStars = (
+    rating: number,
+    interactive = false,
+    onRatingChange?: (rating: number) => void,
+  ) => {
     return (
       <div className="flex gap-1">
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
             className={`w-5 h-5 ${
-              star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
+              star <= rating
+                ? "fill-yellow-400 text-yellow-400"
+                : "text-gray-300"
             } ${interactive ? "cursor-pointer hover:text-yellow-400" : ""}`}
-            onClick={() => interactive && onRatingChange && onRatingChange(star)}
+            onClick={() =>
+              interactive && onRatingChange && onRatingChange(star)
+            }
           />
         ))}
       </div>
@@ -98,39 +110,49 @@ export default function Reviews() {
     return <div className="p-6">Loading reviews...</div>;
   }
 
-  const averageRating = reviewsData?.ratingDistribution.reduce(
-    (sum, item) => sum + item.rating * item.count,
-    0
-  ) / reviewsData?.ratingDistribution.reduce((sum, item) => sum + item.count, 0) || 0;
+  const totalReviews =
+    reviewsData?.ratingDistribution.reduce(
+      (sum, item) => sum + item.count,
+      0,
+    ) || 0;
+  const weightedTotal =
+    reviewsData?.ratingDistribution.reduce(
+      (sum, item) => sum + item.rating * item.count,
+      0,
+    ) || 0;
+  const averageRating = totalReviews > 0 ? weightedTotal / totalReviews : 0;
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-4">Reviews</h1>
-        
+
         <div className="bg-white p-6 mb-6">
           <div className="flex items-center gap-4 mb-4">
             <div className="text-4xl font-bold">{averageRating.toFixed(1)}</div>
             <div>
               {renderStars(Math.round(averageRating))}
-              <p className="text-gray-600">{reviewsData?.pagination.total} reviews</p>
+              <p className="text-gray-600">
+                {reviewsData?.pagination.total} reviews
+              </p>
             </div>
           </div>
-          
+
           <div className="space-y-2">
             {[5, 4, 3, 2, 1].map((rating) => {
-              const count = reviewsData?.ratingDistribution.find(r => r.rating === rating)?.count || 0;
-              const percentage = reviewsData?.pagination.total > 0 
-                ? (count / reviewsData.pagination.total) * 100 
-                : 0;
-              
+              const count =
+                reviewsData?.ratingDistribution.find((r) => r.rating === rating)
+                  ?.count || 0;
+              const percentage =
+                totalReviews > 0 ? (count / totalReviews) * 100 : 0;
+
               return (
                 <div key={rating} className="flex items-center gap-2">
                   <span className="w-3">{rating}</span>
                   <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                   <div className="flex-1 bg-gray-200 h-2">
-                    <div 
-                      className="bg-yellow-400 h-2" 
+                    <div
+                      className="bg-yellow-400 h-2"
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
@@ -141,7 +163,7 @@ export default function Reviews() {
           </div>
         </div>
 
-        {user && user.role === 'guest' && (
+        {user && user.role === "guest" && (
           <div className="mb-6">
             <button
               onClick={() => setShowReviewForm(!showReviewForm)}
@@ -149,35 +171,43 @@ export default function Reviews() {
             >
               {showReviewForm ? "Cancel" : "Write a Review"}
             </button>
-            
+
             {showReviewForm && (
               <form onSubmit={handleSubmitReview} className="bg-white p-6 mt-4">
                 <h3 className="text-lg font-semibold mb-4">Your Review</h3>
-                
+
                 <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2">Rating</label>
-                  {renderStars(newReview.rating, true, (rating) => 
-                    setNewReview({ ...newReview, rating })
+                  <label className="block text-sm font-medium mb-2">
+                    Rating
+                  </label>
+                  {renderStars(newReview.rating, true, (rating) =>
+                    setNewReview({ ...newReview, rating }),
                   )}
                 </div>
-                
+
                 <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2">Comment</label>
+                  <label className="block text-sm font-medium mb-2">
+                    Comment
+                  </label>
                   <textarea
                     value={newReview.comment}
-                    onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}
+                    onChange={(e) =>
+                      setNewReview({ ...newReview, comment: e.target.value })
+                    }
                     className="w-full p-3 border min-h-32"
                     placeholder="Share your experience..."
                     required
                   />
                 </div>
-                
+
                 <button
                   type="submit"
                   className="bg-blue-500 text-white px-4 py-2"
                   disabled={createReviewMutation.isPending}
                 >
-                  {createReviewMutation.isPending ? "Submitting..." : "Submit Review"}
+                  {createReviewMutation.isPending
+                    ? "Submitting..."
+                    : "Submit Review"}
                 </button>
               </form>
             )}
@@ -191,29 +221,35 @@ export default function Reviews() {
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
                 {review.guest.avatar ? (
-                  <img src={review.guest.avatar} alt={review.guest.name} className="w-12 h-12 rounded-full object-cover" />
+                  <img
+                    src={review.guest.avatar}
+                    alt={review.guest.name}
+                    className="w-12 h-12 rounded-full object-cover"
+                  />
                 ) : (
                   <span className="text-lg font-semibold">
                     {review.guest.name.charAt(0).toUpperCase()}
                   </span>
                 )}
               </div>
-              
+
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <h4 className="font-semibold">{review.guest.name}</h4>
-                    <p className="text-sm text-gray-600">{formatDate(review.createdAt)}</p>
+                    <p className="text-sm text-gray-600">
+                      {formatDate(review.createdAt)}
+                    </p>
                   </div>
                   {renderStars(review.rating)}
                 </div>
-                
+
                 <p className="text-gray-800">{review.comment}</p>
               </div>
             </div>
           </div>
         ))}
-        
+
         {reviewsData?.reviews.length === 0 && (
           <div className="bg-white p-6 text-center text-gray-500">
             No reviews yet. Be the first to review!
