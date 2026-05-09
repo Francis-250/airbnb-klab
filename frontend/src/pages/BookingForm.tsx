@@ -5,7 +5,18 @@ import axios from "axios";
 import { api } from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
 import { toast } from "sonner";
-import { Users, MapPin, Check, Star, ArrowLeft, Calendar } from "lucide-react";
+import {
+  ArrowLeft,
+  BadgeCheck,
+  CalendarDays,
+  Check,
+  Clock3,
+  Home,
+  MapPin,
+  ShieldCheck,
+  Star,
+  Users,
+} from "lucide-react";
 import type { Listing } from "../types";
 
 export default function BookingForm() {
@@ -34,7 +45,7 @@ export default function BookingForm() {
       return response.data;
     },
     onSuccess: () => {
-      toast.success("Booking created successfully");
+      toast.success("Booking request created");
       navigate("/bookings");
     },
     onError: (error: unknown) => {
@@ -45,17 +56,11 @@ export default function BookingForm() {
     },
   });
 
-  const nights =
-    checkIn && checkOut
-      ? Math.max(
-          0,
-          Math.ceil(
-            (new Date(checkOut).getTime() - new Date(checkIn).getTime()) /
-              (1000 * 60 * 60 * 24),
-          ),
-        )
-      : 0;
-  const totalPrice = listing ? nights * listing.pricePerNight : 0;
+  const nights = getNights(checkIn, checkOut);
+  const subtotal = listing ? Math.round(nights * listing.pricePerNight) : 0;
+  const serviceFee = nights > 0 ? 0 : 0;
+  const totalPrice = subtotal + serviceFee;
+  const today = new Date().toISOString().split("T")[0];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,16 +80,16 @@ export default function BookingForm() {
 
   if (!user) {
     return (
-      <div className="flex min-h-[70vh] items-center justify-center px-4">
-        <div className="max-w-md text-center">
+      <div className="flex min-h-[72vh] items-center justify-center px-4">
+        <div className="max-w-md rounded-[2rem] border border-gray-200 bg-white p-8 text-center shadow-sm dark:border-white/[0.08] dark:bg-[#111827]">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-(--color-primary)/10 text-(--color-primary)">
-            <Calendar className="h-6 w-6" />
+            <CalendarDays className="h-6 w-6" />
           </div>
           <h1 className="mt-5 text-xl font-semibold text-gray-950 dark:text-white">
             Log in to reserve
           </h1>
           <p className="mt-2 text-[14px] leading-6 text-gray-500 dark:text-gray-400">
-            Sign in before creating a booking for this stay.
+            Sign in to choose dates and create a booking request.
           </p>
           <Link
             to={`/login?redirect=/bookings/${id}`}
@@ -98,17 +103,7 @@ export default function BookingForm() {
   }
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen py-8">
-        <div className="grid gap-8 lg:grid-cols-[1fr_420px]">
-          <div className="space-y-4">
-            <div className="h-8 w-48 rounded-lg bg-gray-100 dark:bg-white/[0.05] animate-pulse" />
-            <div className="h-52 rounded-2xl bg-gray-100 dark:bg-white/[0.05] animate-pulse" />
-          </div>
-          <div className="h-96 rounded-2xl bg-gray-100 dark:bg-white/[0.05] animate-pulse" />
-        </div>
-      </div>
-    );
+    return <BookingFormSkeleton />;
   }
 
   if (!listing) {
@@ -119,109 +114,168 @@ export default function BookingForm() {
     );
   }
 
+  const photo = listing.photos?.[0];
+
   return (
     <div className="min-h-screen py-8">
       <button
         onClick={() => navigate(-1)}
-        className="mb-8 inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-[13px] font-semibold text-gray-700 transition-colors hover:border-(--color-primary) hover:text-(--color-primary) dark:border-white/[0.08] dark:text-gray-300"
+        className="mb-7 inline-flex items-center gap-2 rounded-full border border-gray-200 px-4 py-2 text-[13px] font-semibold text-gray-700 transition-colors hover:bg-gray-50 dark:border-white/[0.08] dark:text-gray-300 dark:hover:bg-white/[0.04]"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to listing
+        Back
       </button>
 
-      <div className="grid gap-10 lg:grid-cols-[1fr_420px]">
-        <main>
-          <h1
-            style={{ fontFamily: "'Playfair Display', serif" }}
-            className="text-3xl font-semibold text-gray-950 dark:text-white"
-          >
-            Confirm and reserve
-          </h1>
+      <div className="mb-8">
+        <p className="text-[12px] font-semibold uppercase tracking-widest text-(--color-primary)">
+          Reservation
+        </p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-gray-950 dark:text-white">
+          Confirm your stay
+        </h1>
+        <p className="mt-2 max-w-2xl text-[14px] leading-6 text-gray-500 dark:text-gray-400">
+          Review your trip dates, stay details, and estimated total before
+          sending your booking request.
+        </p>
+      </div>
 
-          <section className="mt-8 flex gap-4 border-b border-gray-200 pb-8 dark:border-white/[0.08]">
-            <div className="h-28 w-28 shrink-0 overflow-hidden rounded-2xl bg-gray-100 dark:bg-white/[0.05]">
-              {listing.photos?.[0] ? (
-                <img
-                  src={listing.photos[0]}
-                  alt={listing.title}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-gray-400">
-                  <MapPin className="h-6 w-6" />
-                </div>
-              )}
-            </div>
-            <div className="min-w-0">
-              <p className="text-[12px] font-semibold uppercase tracking-widest text-gray-400">
-                {listing.type}
-              </p>
-              <h2 className="mt-1 truncate text-lg font-semibold text-gray-950 dark:text-white">
-                {listing.title}
-              </h2>
-              <p className="mt-1 flex items-center gap-1 text-[13px] text-gray-500 dark:text-gray-400">
-                <MapPin className="h-3.5 w-3.5" />
-                {listing.location}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-3 text-[13px] text-gray-500 dark:text-gray-400">
-                <span className="inline-flex items-center gap-1">
-                  <Users className="h-3.5 w-3.5" />
-                  {listing.guests} guests
-                </span>
-                {listing.rating && (
-                  <span className="inline-flex items-center gap-1 font-semibold text-gray-950 dark:text-white">
-                    <Star className="h-3.5 w-3.5 fill-amber-400 stroke-none" />
-                    {listing.rating.toFixed(1)}
-                  </span>
+      <form
+        onSubmit={handleSubmit}
+        className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]"
+      >
+        <main className="space-y-6">
+          <section className="overflow-hidden rounded-[1.75rem] border border-gray-200 bg-white dark:border-white/[0.08] dark:bg-[#111827]">
+            <div className="grid md:grid-cols-[220px_1fr]">
+              <div className="h-64 bg-gray-100 dark:bg-white/[0.05] md:h-full">
+                {photo ? (
+                  <img
+                    src={photo}
+                    alt={listing.title}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-gray-400">
+                    <Home className="h-7 w-7" />
+                  </div>
                 )}
+              </div>
+              <div className="p-5 sm:p-6">
+                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+                      {listing.type}
+                    </p>
+                    <h2 className="mt-1 text-xl font-semibold text-gray-950 dark:text-white">
+                      {listing.title}
+                    </h2>
+                    <p className="mt-2 flex items-center gap-1.5 text-[13px] text-gray-500 dark:text-gray-400">
+                      <MapPin className="h-3.5 w-3.5 text-(--color-primary)" />
+                      {listing.location}
+                    </p>
+                  </div>
+                  {listing.rating && (
+                    <span className="inline-flex w-fit items-center gap-1 rounded-full bg-gray-50 px-3 py-1.5 text-[13px] font-semibold text-gray-950 dark:bg-white/[0.06] dark:text-white">
+                      <Star className="h-3.5 w-3.5 fill-gray-900 stroke-none dark:fill-white" />
+                      {listing.rating.toFixed(2).replace(/0$/, "")}
+                    </span>
+                  )}
+                </div>
+
+                <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                  <StayFact
+                    icon={Users}
+                    label="Guests"
+                    value={`Up to ${listing.guests}`}
+                  />
+                  <StayFact
+                    icon={Home}
+                    label="Stay type"
+                    value={listing.type}
+                  />
+                  <StayFact
+                    icon={BadgeCheck}
+                    label="Host"
+                    value={listing.host?.name || "Verified"}
+                  />
+                </div>
               </div>
             </div>
           </section>
 
-          <section className="border-b border-gray-200 py-8 dark:border-white/[0.08]">
-            <h2 className="text-xl font-semibold text-gray-950 dark:text-white">
-              Your trip
-            </h2>
+          <section className="rounded-[1.75rem] border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111827] sm:p-6">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-950 dark:text-white">
+                  Choose dates
+                </h2>
+                <p className="mt-1 text-[14px] text-gray-500 dark:text-gray-400">
+                  Your checkout date must be after check-in.
+                </p>
+              </div>
+              <CalendarDays className="h-5 w-5 text-(--color-primary)" />
+            </div>
+
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <label className="block">
-                <span className="mb-2 block text-[11px] font-semibold uppercase tracking-widest text-gray-500">
-                  Check-in
-                </span>
-                <input
-                  type="date"
-                  value={checkIn}
-                  onChange={(e) => setCheckIn(e.target.value)}
-                  min={new Date().toISOString().split("T")[0]}
-                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-950 outline-none transition-colors focus:border-(--color-primary) dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-2 block text-[11px] font-semibold uppercase tracking-widest text-gray-500">
-                  Check-out
-                </span>
-                <input
-                  type="date"
-                  value={checkOut}
-                  onChange={(e) => setCheckOut(e.target.value)}
-                  min={checkIn || new Date().toISOString().split("T")[0]}
-                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-950 outline-none transition-colors focus:border-(--color-primary) dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
-                />
-              </label>
+              <DateInput
+                label="Check-in"
+                value={checkIn}
+                min={today}
+                onChange={setCheckIn}
+              />
+              <DateInput
+                label="Check-out"
+                value={checkOut}
+                min={checkIn || today}
+                onChange={setCheckOut}
+              />
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <TripDetail
+                icon={CalendarDays}
+                label="Check-in"
+                value={checkIn ? formatDate(checkIn) : "Not selected"}
+              />
+              <TripDetail
+                icon={CalendarDays}
+                label="Check-out"
+                value={checkOut ? formatDate(checkOut) : "Not selected"}
+              />
+              <TripDetail
+                icon={Clock3}
+                label="Duration"
+                value={`${nights} ${nights === 1 ? "night" : "nights"}`}
+              />
+            </div>
+          </section>
+
+          <section className="rounded-[1.75rem] border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111827] sm:p-6">
+            <div className="flex items-start gap-3">
+              <ShieldCheck className="mt-0.5 h-5 w-5 text-(--color-primary)" />
+              <div>
+                <h2 className="text-lg font-semibold text-gray-950 dark:text-white">
+                  Request protected by Airbnb
+                </h2>
+                <p className="mt-1 text-[14px] leading-6 text-gray-500 dark:text-gray-400">
+                  The backend creates this booking with pending status first.
+                  Your host can then confirm or cancel it from their dashboard.
+                </p>
+              </div>
             </div>
           </section>
 
           {listing.amenities?.length > 0 && (
-            <section className="py-8">
-              <h2 className="text-xl font-semibold text-gray-950 dark:text-white">
+            <section className="rounded-[1.75rem] border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111827] sm:p-6">
+              <h2 className="text-lg font-semibold text-gray-950 dark:text-white">
                 Included with this stay
               </h2>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                {listing.amenities.map((amenity) => (
+                {listing.amenities.slice(0, 6).map((amenity) => (
                   <div
                     key={amenity}
                     className="flex items-center gap-3 text-[14px] text-gray-700 dark:text-gray-300"
                   >
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-(--color-primary)/10 text-(--color-primary)">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-(--color-primary)/10 text-(--color-primary)">
                       <Check className="h-3.5 w-3.5" />
                     </span>
                     {amenity}
@@ -232,30 +286,43 @@ export default function BookingForm() {
           )}
         </main>
 
-        <aside className="lg:sticky lg:top-24">
-          <form
-            onSubmit={handleSubmit}
-            className="rounded-[1.5rem] border border-gray-200 bg-white p-5 shadow-xl shadow-black/[0.06] dark:border-white/[0.08] dark:bg-[#111827] dark:shadow-black/30"
-          >
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-semibold text-gray-950 dark:text-white">
-                ${listing.pricePerNight}
+        <aside className="lg:sticky lg:top-24 lg:self-start">
+          <div className="rounded-[1.75rem] border border-gray-200 bg-white p-5 shadow-lg shadow-black/[0.05] dark:border-white/[0.08] dark:bg-[#111827] dark:shadow-black/25">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[13px] text-gray-500 dark:text-gray-400">
+                  Price
+                </p>
+                <p className="mt-1 text-2xl font-semibold text-gray-950 dark:text-white">
+                  ${listing.pricePerNight}
+                  <span className="text-[14px] font-normal text-gray-500">
+                    {" "}
+                    night
+                  </span>
+                </p>
+              </div>
+              <span className="rounded-full bg-(--color-primary)/10 px-3 py-1.5 text-[12px] font-semibold text-(--color-primary)">
+                Pending request
               </span>
-              <span className="text-[14px] text-gray-500">per night</span>
             </div>
 
-            <div className="mt-5 space-y-3 rounded-2xl border border-gray-200 p-4 dark:border-white/[0.08]">
-              <div className="flex justify-between text-[14px] text-gray-600 dark:text-gray-300">
-                <span>
-                  ${listing.pricePerNight} x {nights} nights
-                </span>
-                <span>${totalPrice}</span>
-              </div>
+            <div className="mt-5 overflow-hidden rounded-2xl border border-gray-200 dark:border-white/[0.08]">
+              <SummaryField label="Check-in" value={checkIn ? formatDate(checkIn) : "Add date"} />
+              <SummaryField label="Check-out" value={checkOut ? formatDate(checkOut) : "Add date"} />
+              <SummaryField
+                label="Guests"
+                value={`Up to ${listing.guests} guests`}
+              />
+            </div>
+
+            <div className="mt-5 space-y-3 text-[14px]">
+              <PriceLine
+                label={`$${listing.pricePerNight} x ${nights} nights`}
+                value={`$${subtotal}`}
+              />
+              <PriceLine label="Service fee" value={`$${serviceFee}`} />
               <div className="border-t border-gray-200 pt-3 dark:border-white/[0.08]">
-                <div className="flex justify-between text-[16px] font-semibold text-gray-950 dark:text-white">
-                  <span>Total</span>
-                  <span>${totalPrice}</span>
-                </div>
+                <PriceLine label="Total" value={`$${totalPrice}`} strong />
               </div>
             </div>
 
@@ -264,14 +331,157 @@ export default function BookingForm() {
               disabled={createBookingMutation.isPending || nights <= 0}
               className="mt-5 w-full rounded-xl bg-(--color-primary) px-5 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-(--color-primary-dark) disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {createBookingMutation.isPending ? "Reserving..." : "Reserve"}
+              {createBookingMutation.isPending
+                ? "Creating request..."
+                : "Reserve"}
             </button>
             <p className="mt-3 text-center text-[12px] text-gray-500 dark:text-gray-400">
               You will not be charged yet.
             </p>
-          </form>
+          </div>
         </aside>
+      </form>
+    </div>
+  );
+}
+
+function DateInput({
+  label,
+  value,
+  min,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  min: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-[11px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+        {label}
+      </span>
+      <input
+        type="date"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        min={min}
+        className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-950 outline-none transition-colors focus:border-(--color-primary) dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
+      />
+    </label>
+  );
+}
+
+function StayFact({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-2xl bg-gray-50 p-4 dark:bg-white/[0.04]">
+      <Icon className="h-4 w-4 text-(--color-primary)" />
+      <p className="mt-3 text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+        {label}
+      </p>
+      <p className="mt-1 truncate text-[14px] font-semibold capitalize text-gray-950 dark:text-white">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function TripDetail({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-gray-200 p-4 dark:border-white/[0.08]">
+      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+        <Icon className="h-3.5 w-3.5" />
+        {label}
+      </div>
+      <p className="mt-2 text-[14px] font-semibold text-gray-950 dark:text-white">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function SummaryField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="border-b border-gray-200 p-3 last:border-b-0 dark:border-white/[0.08]">
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+        {label}
+      </p>
+      <p className="mt-1 text-[13px] font-semibold text-gray-950 dark:text-white">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function PriceLine({
+  label,
+  value,
+  strong,
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+}) {
+  return (
+    <div
+      className={`flex justify-between gap-4 ${
+        strong
+          ? "text-[16px] font-semibold text-gray-950 dark:text-white"
+          : "text-gray-600 dark:text-gray-300"
+      }`}
+    >
+      <span>{label}</span>
+      <span>{value}</span>
+    </div>
+  );
+}
+
+function BookingFormSkeleton() {
+  return (
+    <div className="min-h-screen py-8">
+      <div className="mb-8 h-10 w-64 rounded-xl bg-gray-100 dark:bg-white/[0.05] animate-pulse" />
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="space-y-6">
+          <div className="h-72 rounded-[1.75rem] bg-gray-100 dark:bg-white/[0.05] animate-pulse" />
+          <div className="h-64 rounded-[1.75rem] bg-gray-100 dark:bg-white/[0.05] animate-pulse" />
+        </div>
+        <div className="h-96 rounded-[1.75rem] bg-gray-100 dark:bg-white/[0.05] animate-pulse" />
       </div>
     </div>
   );
+}
+
+function getNights(checkIn: string, checkOut: string) {
+  if (!checkIn || !checkOut) return 0;
+  return Math.max(
+    0,
+    Math.ceil(
+      (new Date(checkOut).getTime() - new Date(checkIn).getTime()) /
+        (1000 * 60 * 60 * 24),
+    ),
+  );
+}
+
+function formatDate(date: string) {
+  return new Date(date).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }

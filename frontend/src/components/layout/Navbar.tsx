@@ -16,6 +16,7 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { api } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
+import ThemeToggle from "../ThemeToggle";
 
 const NAV_ITEMS = [
   { label: "Homes", to: "/all-listings", icon: Home, active: true },
@@ -174,12 +175,7 @@ export default function Navbar() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <Link
-              to="/dashboard"
-              className="hidden rounded-full px-3 py-1.5 text-xs font-semibold text-gray-800 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/[0.06] md:inline-flex"
-            >
-              Become a host
-            </Link>
+            <ThemeToggle />
             <div className="relative" ref={profileRef}>
               <button
                 onClick={() => setIsProfileOpen((value) => !value)}
@@ -311,12 +307,18 @@ function CompactSearch({ onSearch }: { onSearch: () => void }) {
         <Home className="h-4 w-4 text-gray-600 dark:text-gray-300" />
         Anywhere
       </button>
-      <button className="border-r border-gray-200 px-4 text-xs font-semibold text-gray-950 dark:border-white/[0.1] dark:text-white">
-        Anytime
-      </button>
-      <button className="px-4 text-xs font-semibold text-gray-950 dark:text-white">
-        Add guests
-      </button>
+      <Link
+        to="/bookings"
+        className="border-r border-gray-200 px-4 text-xs font-semibold text-gray-950 dark:border-white/[0.1] dark:text-white"
+      >
+        Bookings
+      </Link>
+      <Link
+        to="/favorites"
+        className="px-4 text-xs font-semibold text-gray-950 dark:text-white"
+      >
+        Favorites
+      </Link>
       <button
         onClick={onSearch}
         className="flex h-9 w-9 items-center justify-center rounded-full bg-(--color-primary) text-white transition-colors hover:bg-(--color-primary-dark)"
