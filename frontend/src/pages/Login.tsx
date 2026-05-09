@@ -46,48 +46,31 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] px-4 py-10 dark:bg-[#1e242d]">
-      <div className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-6xl overflow-hidden rounded-[2rem] border border-gray-200 bg-white dark:border-white/[0.08] dark:bg-[#111827] lg:grid-cols-[1fr_0.9fr]">
-        <div className="relative hidden min-h-full lg:block">
-          <img
-            src="/image/hero-background.jpg"
-            alt="Guest home"
-            className="h-full w-full object-cover"
-          />
-          <div className="absolute inset-x-6 bottom-6 rounded-2xl border border-white/30 bg-white/90 p-5 backdrop-blur-md dark:border-white/[0.08] dark:bg-[#111827]/90">
-            <p className="text-[12px] font-semibold uppercase tracking-widest text-gray-400">
-              Welcome back
-            </p>
-            <h1
-              style={{ fontFamily: "'Playfair Display', serif" }}
-              className="mt-2 text-3xl font-semibold text-gray-950 dark:text-white"
-            >
-              Continue planning your stay.
-            </h1>
-          </div>
+    <div className="flex min-h-screen items-center justify-center bg-white px-4 py-10 dark:bg-[#0f1117]">
+      <div className="w-full max-w-[420px]">
+        <Link
+          to="/"
+          className="inline-flex text-2xl font-bold text-gray-950 dark:text-white"
+        >
+          Air<span className="text-(--color-primary)">b</span>nb
+        </Link>
+
+        <div className="mt-10">
+          <p className="text-[12px] font-semibold uppercase tracking-widest text-gray-400">
+            Sign in
+          </p>
+          <h1
+            style={{ fontFamily: "'Playfair Display', serif" }}
+            className="mt-2 text-3xl font-semibold text-gray-950 dark:text-white"
+          >
+            Welcome back
+          </h1>
+          <p className="mt-3 text-[14px] leading-6 text-gray-500 dark:text-gray-400">
+            Sign in to manage bookings, saved homes, and your account.
+          </p>
         </div>
 
-        <div className="flex items-center justify-center p-6 sm:p-10">
-          <div className="w-full max-w-md">
-            <Link to="/" className="text-2xl font-bold text-gray-950 dark:text-white">
-              Air<span className="text-(--color-primary)">b</span>nb
-            </Link>
-            <div className="mt-10">
-              <p className="text-[12px] font-semibold uppercase tracking-widest text-gray-400">
-                Sign in
-              </p>
-              <h2
-                style={{ fontFamily: "'Playfair Display', serif" }}
-                className="mt-2 text-4xl font-semibold text-gray-950 dark:text-white"
-              >
-                Welcome back
-              </h2>
-              <p className="mt-3 text-[14px] leading-6 text-gray-500 dark:text-gray-400">
-                Access your bookings, saved homes, and account details.
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+        <form onSubmit={handleSubmit} className="mt-8 space-y-4">
               <label className="block">
                 <span className="mb-2 block text-[12px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">
                   Email
@@ -123,7 +106,9 @@ export default function Login() {
                     type="button"
                     onClick={() => setShowPassword((value) => !value)}
                     className="text-gray-400 transition-colors hover:text-gray-700 dark:hover:text-white"
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -134,26 +119,33 @@ export default function Login() {
                 </span>
               </label>
 
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full rounded-xl bg-(--color-primary) px-5 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-(--color-primary-dark) disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isLoading ? "Signing in..." : "Sign in"}
-              </button>
-            </form>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full rounded-xl bg-(--color-primary) px-5 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-(--color-primary-dark) disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isLoading ? "Signing in..." : "Sign in"}
+          </button>
+        </form>
 
-            <p className="mt-6 text-center text-[14px] text-gray-500 dark:text-gray-400">
-              New to Airbnb?{" "}
-              <Link
-                to="/register"
-                className="font-semibold text-(--color-primary) hover:underline"
-              >
-                Create an account
-              </Link>
-            </p>
-          </div>
+        <div className="mt-4 text-center">
+          <Link
+            to="/forgot-password"
+            className="text-[13px] font-semibold text-(--color-primary) hover:underline"
+          >
+            Forgot password?
+          </Link>
         </div>
+
+        <p className="mt-6 text-center text-[14px] text-gray-500 dark:text-gray-400">
+          New to Airbnb?{" "}
+          <Link
+            to="/register"
+            className="font-semibold text-(--color-primary) hover:underline"
+          >
+            Create an account
+          </Link>
+        </p>
       </div>
     </div>
   );

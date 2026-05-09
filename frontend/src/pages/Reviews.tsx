@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
 import { toast } from "sonner";
-import { MessageSquare, Star } from "lucide-react";
+import { Check, MessageSquare, Pencil, Star, Trash2, X } from "lucide-react";
 
 interface Review {
   id: string;
@@ -12,6 +12,7 @@ interface Review {
   comment: string;
   createdAt: string;
   guest: {
+    id: string;
     name: string;
     avatar?: string;
   };
@@ -37,6 +38,11 @@ export default function Reviews() {
   const queryClient = useQueryClient();
   const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [editingReview, setEditingReview] = useState<{
+    id: string;
+    rating: number;
+    comment: string;
+  } | null>(null);
 
   const { data: reviewsData, isLoading } = useQuery({
     queryKey: ["reviews", id],
@@ -67,6 +73,42 @@ export default function Reviews() {
     },
   });
 
+  const updateReviewMutation = useMutation({
+    mutationFn: async (reviewData: {
+      id: string;
+      rating: number;
+      comment: string;
+    }) => {
+      const response = await api.put(`/reviews/${reviewData.id}`, {
+        rating: reviewData.rating,
+        comment: reviewData.comment,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success("Review updated");
+      setEditingReview(null);
+      queryClient.invalidateQueries({ queryKey: ["reviews", id] });
+    },
+    onError: () => {
+      toast.error("Failed to update review");
+    },
+  });
+
+  const deleteReviewMutation = useMutation({
+    mutationFn: async (reviewId: string) => {
+      const response = await api.delete(`/reviews/${reviewId}`);
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success("Review deleted");
+      queryClient.invalidateQueries({ queryKey: ["reviews", id] });
+    },
+    onError: () => {
+      toast.error("Failed to delete review");
+    },
+  });
+
   const handleSubmitReview = (e: React.FormEvent) => {
     e.preventDefault();
     if (!id || !newReview.comment.trim()) return;
@@ -76,6 +118,12 @@ export default function Reviews() {
       rating: newReview.rating,
       comment: newReview.comment,
     });
+  };
+
+  const handleUpdateReview = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingReview?.comment.trim()) return;
+    updateReviewMutation.mutate(editingReview);
   };
 
   const totalReviews =
@@ -218,7 +266,11 @@ export default function Reviews() {
       )}
 
       <div className="space-y-4">
-        {reviewsData?.reviews.map((review) => (
+        {reviewsData?.reviews.map((review) => {
+          const isOwner = user?.id === review.guest.id;
+          const isEditingThis = editingReview?.id === review.id;
+
+          return (
           <article
             key={review.id}
             className="rounded-[1.5rem] border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111827]"
@@ -245,15 +297,101 @@ export default function Reviews() {
                       {new Date(review.createdAt).toLocaleDateString()}
                     </p>
                   </div>
-                  <Stars rating={review.rating} />
+                  <div className="flex items-center gap-3">
+                    <Stars rating={review.rating} />
+                    {isOwner && !isEditingThis && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditingReview({
+                              id: review.id,
+                              rating: review.rating,
+                              comment: review.comment,
+                            })
+                          }
+                          className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-500 transition-colors hover:border-(--color-primary) hover:text-(--color-primary) dark:border-white/[0.08]"
+                          aria-label="Edit review"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteReviewMutation.mutate(review.id)}
+                          disabled={deleteReviewMutation.isPending}
+                          className="flex h-8 w-8 items-center justify-center rounded-full border border-red-200 text-red-500 transition-colors hover:bg-red-50 disabled:opacity-60 dark:border-red-500/30 dark:hover:bg-red-500/10"
+                          aria-label="Delete review"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <p className="mt-3 text-[14px] leading-6 text-gray-600 dark:text-gray-300">
-                  {review.comment}
-                </p>
+                {isEditingThis ? (
+                  <form onSubmit={handleUpdateReview} className="mt-4">
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() =>
+                            setEditingReview({
+                              ...editingReview,
+                              rating: star,
+                            })
+                          }
+                          className="text-amber-400"
+                          aria-label={`Set rating ${star}`}
+                        >
+                          <Star
+                            className={`h-5 w-5 ${
+                              star <= editingReview.rating ? "fill-current" : ""
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                    <textarea
+                      value={editingReview.comment}
+                      onChange={(e) =>
+                        setEditingReview({
+                          ...editingReview,
+                          comment: e.target.value,
+                        })
+                      }
+                      className="mt-3 min-h-28 w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-950 outline-none transition-colors focus:border-(--color-primary) dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
+                      required
+                    />
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        type="submit"
+                        disabled={updateReviewMutation.isPending}
+                        className="inline-flex items-center gap-2 rounded-xl bg-(--color-primary) px-4 py-2 text-[12px] font-semibold text-white transition-colors hover:bg-(--color-primary-dark) disabled:opacity-60"
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                        {updateReviewMutation.isPending ? "Saving..." : "Save"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setEditingReview(null)}
+                        className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-[12px] font-semibold text-gray-600 transition-colors hover:border-(--color-primary) hover:text-(--color-primary) dark:border-white/[0.08] dark:text-gray-300"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <p className="mt-3 text-[14px] leading-6 text-gray-600 dark:text-gray-300">
+                    {review.comment}
+                  </p>
+                )}
               </div>
             </div>
           </article>
-        ))}
+          );
+        })}
 
         {reviewsData?.reviews.length === 0 && (
           <div className="flex flex-col items-center justify-center rounded-[1.5rem] border border-gray-200 bg-white px-6 py-20 text-center dark:border-white/[0.08] dark:bg-[#111827]">

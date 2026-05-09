@@ -54,6 +54,7 @@ export const createReview = async (req: Request, res: Response) => {
       include: {
         guest: {
           select: {
+            id: true,
             name: true,
             avatar: true,
           },
@@ -93,6 +94,7 @@ export const getListingReviews = async (req: Request, res: Response) => {
       include: {
         guest: {
           select: {
+            id: true,
             name: true,
             avatar: true,
           },
@@ -158,6 +160,7 @@ export const updateReview = async (req: Request, res: Response) => {
       include: {
         guest: {
           select: {
+            id: true,
             name: true,
             avatar: true,
           },

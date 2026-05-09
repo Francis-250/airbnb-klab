@@ -162,11 +162,6 @@ export default function Navbar() {
                 >
                   <span className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gray-50 text-gray-800 dark:bg-white/[0.06] dark:text-white">
                     <Icon className="h-5 w-5" />
-                    {item.badge && (
-                      <span className="absolute -right-2 -top-2 rounded-full bg-gray-800 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white dark:bg-white dark:text-gray-950">
-                        {item.badge}
-                      </span>
-                    )}
                   </span>
                   <span>{item.label}</span>
                   {item.active && (

@@ -3,7 +3,16 @@ import { useAuth } from "../hooks/useAuth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, apiFormData } from "../lib/api";
 import { toast } from "sonner";
-import { Mail, Phone, ShieldCheck, User, Camera, Trash2, Save } from "lucide-react";
+import {
+  Camera,
+  KeyRound,
+  Mail,
+  Phone,
+  Save,
+  ShieldCheck,
+  Trash2,
+  User,
+} from "lucide-react";
 
 export default function Profile() {
   const { user, refetch } = useAuth();
@@ -18,6 +27,10 @@ export default function Profile() {
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+  });
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: FormData) => {
@@ -63,6 +76,18 @@ export default function Profile() {
     onError: () => toast.error("Failed to remove avatar"),
   });
 
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data: typeof passwordData) => {
+      const response = await api.post("/auth/change-password", data);
+      return response.data;
+    },
+    onSuccess: () => {
+      toast.success("Password updated");
+      setPasswordData({ currentPassword: "", newPassword: "" });
+    },
+    onError: () => toast.error("Failed to update password"),
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const data = new FormData();
@@ -71,6 +96,15 @@ export default function Profile() {
     data.append("phone", formData.phone);
     data.append("bio", formData.bio);
     updateProfileMutation.mutate(data);
+  };
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordData.newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+    changePasswordMutation.mutate(passwordData);
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -191,7 +225,8 @@ export default function Profile() {
           </div>
         </aside>
 
-        <main className="rounded-[1.5rem] border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111827] md:p-7">
+        <main className="space-y-6">
+          <section className="rounded-[1.5rem] border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111827] md:p-7">
           {!isEditing ? (
             <div>
               <div className="flex flex-col justify-between gap-4 border-b border-gray-200 pb-6 dark:border-white/[0.08] sm:flex-row sm:items-center">
@@ -322,6 +357,68 @@ export default function Profile() {
               </div>
             </form>
           )}
+          </section>
+
+          <section className="rounded-[1.5rem] border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111827] md:p-7">
+            <div className="border-b border-gray-200 pb-6 dark:border-white/[0.08]">
+              <div className="flex items-center gap-3">
+                <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-(--color-primary)/10 text-(--color-primary)">
+                  <KeyRound className="h-4 w-4" />
+                </span>
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-950 dark:text-white">
+                    Password
+                  </h2>
+                  <p className="mt-1 text-[14px] text-gray-500 dark:text-gray-400">
+                    Update your sign in password.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <form onSubmit={handlePasswordSubmit} className="mt-6 grid gap-4 sm:grid-cols-2">
+              <FormField label="Current password">
+                <input
+                  type="password"
+                  value={passwordData.currentPassword}
+                  onChange={(e) =>
+                    setPasswordData({
+                      ...passwordData,
+                      currentPassword: e.target.value,
+                    })
+                  }
+                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-950 outline-none transition-colors focus:border-(--color-primary) dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
+                  required
+                />
+              </FormField>
+              <FormField label="New password">
+                <input
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) =>
+                    setPasswordData({
+                      ...passwordData,
+                      newPassword: e.target.value,
+                    })
+                  }
+                  className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-950 outline-none transition-colors focus:border-(--color-primary) dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
+                  required
+                />
+              </FormField>
+              <div className="sm:col-span-2">
+                <button
+                  type="submit"
+                  disabled={changePasswordMutation.isPending}
+                  className="inline-flex items-center gap-2 rounded-xl bg-(--color-primary) px-5 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-(--color-primary-dark) disabled:opacity-60"
+                >
+                  <Save className="h-4 w-4" />
+                  {changePasswordMutation.isPending
+                    ? "Updating..."
+                    : "Update password"}
+                </button>
+              </div>
+            </form>
+          </section>
         </main>
       </div>
     </div>

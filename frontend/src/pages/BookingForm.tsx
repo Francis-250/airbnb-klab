@@ -6,7 +6,6 @@ import { api } from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
 import { toast } from "sonner";
 import {
-  ArrowLeft,
   BadgeCheck,
   CalendarDays,
   Check,

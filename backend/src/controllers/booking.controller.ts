@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { BookingStatus, Prisma } from "@prisma/client";
 import prisma from "../lib/prisma";
 import { sendEmail } from "../middleware/resend";
 import {
@@ -12,19 +13,44 @@ export const getAllBookings = async (req: Request, res: Response) => {
   const page = parseInt(req.query.page as string) || 1;
   const limit = parseInt(req.query.limit as string) || 10;
   const skip = (page - 1) * limit;
+  const status = req.query.status as string | undefined;
+  const now = new Date();
 
   try {
-    const where =
+    const baseWhere: Prisma.BookingWhereInput =
       role === "guest" ? { guestId: user } : { listing: { hostId: user } };
+    const where: Prisma.BookingWhereInput =
+      status === "upcoming"
+        ? {
+            ...baseWhere,
+            status: { in: [BookingStatus.pending, BookingStatus.confirmed] },
+            checkOut: { gte: now },
+          }
+        : status === "past"
+          ? {
+              ...baseWhere,
+              status: { not: BookingStatus.cancelled },
+              checkOut: { lt: now },
+            }
+          : status === "cancelled"
+            ? { ...baseWhere, status: BookingStatus.cancelled }
+            : baseWhere;
     const [bookings, total] = await Promise.all([
       prisma.booking.findMany({
         where,
         skip,
         take: limit,
+        orderBy: { createdAt: "desc" },
         include: {
-          guest: { select: { name: true, avatar: true } },
+          guest: { select: { name: true, email: true, avatar: true } },
           listing: {
-            select: { id: true, title: true, location: true, photos: true },
+            select: {
+              id: true,
+              title: true,
+              location: true,
+              photos: true,
+              pricePerNight: true,
+            },
           },
         },
       }),
@@ -142,14 +168,6 @@ export const updateBooking = async (req: Request, res: Response) => {
       where: { id: id as string },
       data: { status },
     });
-
-    // Send email notification to guest
-    const statusMessage =
-      status === "confirmed"
-        ? "Your booking has been confirmed!"
-        : status === "cancelled"
-          ? "Your booking has been cancelled."
-          : "Your booking status has been updated.";
 
     await sendEmail({
       to: booking.guest?.email as string,

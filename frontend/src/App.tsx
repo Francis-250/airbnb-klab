@@ -18,6 +18,9 @@ import Reviews from "./pages/Reviews";
 import Bookings from "./pages/Bookings";
 import BookingForm from "./pages/BookingForm";
 import Favorites from "./pages/Favorites";
+import ForgotPassword from "./pages/ForgotPassword";
+import VerifyOtp from "./pages/VerifyOtp";
+import ResetPassword from "./pages/ResetPassword";
 
 const ListingDetail = lazy(() => import("./pages/ListingDetail"));
 const Dashboard = lazy(() => import("./pages/host/Dashboard"));
@@ -28,9 +31,14 @@ export default function App() {
   const location = useLocation();
 
   const isDashboard = location.pathname.startsWith("/dashboard");
-  const isAuthPage = ["/login", "/register", "/test"].includes(
-    location.pathname,
-  );
+  const isAuthPage = [
+    "/login",
+    "/register",
+    "/forgot-password",
+    "/verify-otp",
+    "/reset-password",
+    "/test",
+  ].includes(location.pathname);
   const isPublic =
     PUBLIC_ROUTES.includes(location.pathname) ||
     location.pathname.startsWith("/listings/") ||
@@ -51,6 +59,9 @@ export default function App() {
             <Route path="/listings/:id" element={<ListingDetail />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/verify-otp" element={<VerifyOtp />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/all-listings" element={<Listing />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/bookings" element={<Bookings />} />

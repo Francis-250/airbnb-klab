@@ -53,7 +53,7 @@ export const addFavorite = async (req: Request, res: Response) => {
       where: { id: userId as string },
       data: {
         favoriteListings: {
-          connect: [{ id: listingId }],
+          connect: [{ id: listingId as string }],
         },
       },
     });
@@ -82,7 +82,7 @@ export const removeFavorite = async (req: Request, res: Response) => {
       where: { id: userId as string },
       data: {
         favoriteListings: {
-          disconnect: [{ id: listingId }],
+          disconnect: [{ id: listingId as string }],
         },
       },
     });
