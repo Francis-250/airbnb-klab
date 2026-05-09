@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import Navbar from "./components/layout/Navbar";
 import { Route, Routes, useLocation } from "react-router-dom";
 import Home from "./pages/Home";
@@ -21,6 +21,7 @@ import Favorites from "./pages/Favorites";
 import ForgotPassword from "./pages/ForgotPassword";
 import VerifyOtp from "./pages/VerifyOtp";
 import ResetPassword from "./pages/ResetPassword";
+import { useAuthStore } from "./store/auth.store";
 
 const ListingDetail = lazy(() => import("./pages/ListingDetail"));
 const Dashboard = lazy(() => import("./pages/host/Dashboard"));
@@ -29,6 +30,11 @@ const PUBLIC_ROUTES = ["/", "/all-listings", "/profile", "/favorites"];
 
 export default function App() {
   const location = useLocation();
+  const fetchUser = useAuthStore((state) => state.fetchUser);
+
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
 
   const isDashboard = location.pathname.startsWith("/dashboard");
   const isAuthPage = [

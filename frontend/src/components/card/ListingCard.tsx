@@ -5,9 +5,9 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
-import { useAuth } from "../../hooks/useAuth";
 import { toast } from "sonner";
 import axios from "axios";
+import { useAuthStore } from "../../store/auth.store";
 
 interface ListingCardProps {
   listing: Listing;
@@ -15,7 +15,7 @@ interface ListingCardProps {
 }
 
 export default function ListingCard({ listing, type }: ListingCardProps) {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [isLiked, setIsLiked] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
@@ -46,9 +46,7 @@ export default function ListingCard({ listing, type }: ListingCardProps) {
         ? error.response?.data?.message
         : undefined;
 
-      toast.error(
-        message || "Failed to update favorites",
-      );
+      toast.error(message || "Failed to update favorites");
     },
   });
 

@@ -16,8 +16,20 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import { api } from "../../lib/api";
-import { useAuth } from "../../hooks/useAuth";
 import ThemeToggle from "../ThemeToggle";
+import { useAuthStore } from "../../store/auth.store";
+import type { User as AuthUser } from "../../store/auth.store";
+
+type Favorite = {
+  id: string;
+  listing: {
+    id: string;
+    title: string;
+    location: string;
+    price: number;
+    image: string;
+  };
+};
 
 const NAV_ITEMS = [
   { label: "Homes", to: "/all-listings", icon: Home, active: true },
@@ -31,7 +43,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [where, setWhere] = useState("");
   const profileRef = useRef<HTMLDivElement>(null);
-  const { user, logout } = useAuth();
+  const { user, logout } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
   const isHome = location.pathname === "/";
@@ -42,7 +54,7 @@ export default function Navbar() {
     queryFn: async () => {
       try {
         const response = await api.get("/users/favorites");
-        return response.data as unknown[];
+        return response.data.favorites as Favorite[];
       } catch (error) {
         if (axios.isAxiosError(error) && error.response?.status === 404) {
           return [];
@@ -335,7 +347,7 @@ function ProfileMenu({
   navigate,
   close,
 }: {
-  user: ReturnType<typeof useAuth>["user"];
+  user: AuthUser | null;
   favoritesCount: number;
   logout: () => Promise<void>;
   navigate: ReturnType<typeof useNavigate>;
@@ -401,7 +413,7 @@ function MobileMenu({
   navigate,
   close,
 }: {
-  user: ReturnType<typeof useAuth>["user"];
+  user: AuthUser | null;
   favoritesCount: number;
   logout: () => Promise<void>;
   navigate: ReturnType<typeof useNavigate>;
@@ -477,7 +489,7 @@ function Avatar({
   user,
   size,
 }: {
-  user: ReturnType<typeof useAuth>["user"];
+  user: AuthUser | null;
   size: number;
 }) {
   if (user?.avatar) {

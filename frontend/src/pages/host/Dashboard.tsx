@@ -1,4 +1,3 @@
-import { useAuth } from "../../hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import {
@@ -11,6 +10,7 @@ import {
   MapPin,
   ChevronRight,
 } from "lucide-react";
+import { useAuthStore } from "../../store/auth.store";
 
 interface Booking {
   id: string;
@@ -113,7 +113,7 @@ const stats_config = [
 ];
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats"],

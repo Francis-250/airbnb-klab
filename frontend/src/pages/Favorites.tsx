@@ -1,13 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api";
-import { useAuth } from "../hooks/useAuth";
+import { useAuthStore } from "../store/auth.store";
 import { Heart, MapPin, Star, Users } from "lucide-react";
 import { toast } from "sonner";
 import type { Listing } from "../types";
 
 export default function Favorites() {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const queryClient = useQueryClient();
 
   const { data: favorites = [], isLoading } = useQuery({

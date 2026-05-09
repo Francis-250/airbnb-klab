@@ -2,12 +2,12 @@ import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuthStore } from "../../store/auth.store";
 
 export default function DashboardLayout() {
   const [isOpen, setIsOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<boolean>(false);
-  const { user } = useAuth();
+  const { user } = useAuthStore();
 
   return (
     <div className="flex min-h-screen bg-[#F7F7F7] dark:bg-[#111]">

@@ -1,4 +1,4 @@
-import { useAuth } from "../hooks/useAuth";
+import { useAuthStore } from "../store/auth.store";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
@@ -12,7 +12,7 @@ import {
 import { useState } from "react";
 
 export default function RoleBasedNav() {
-  const { user, logout } = useAuth();
+  const { user, logout } = useAuthStore();
   const location = useLocation();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

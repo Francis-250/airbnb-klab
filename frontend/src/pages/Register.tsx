@@ -3,7 +3,7 @@ import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, User, Lock, AtSign } from "lucide-react";
 import axios from "axios";
-import { useAuth } from "../hooks/useAuth";
+import { useAuthStore } from "../store/auth.store";
 
 export default function Register() {
   const [name, setName] = useState("");
@@ -11,7 +11,7 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { register } = useAuth();
+  const { register } = useAuthStore();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {

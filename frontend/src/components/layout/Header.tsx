@@ -3,7 +3,7 @@ import type { UserProps } from "../../types";
 import ThemeToggle from "../ThemeToggle";
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuthStore } from "../../store/auth.store";
 
 interface HeaderProps {
   setIsOpen: (isOpen: boolean) => void;
@@ -12,7 +12,7 @@ interface HeaderProps {
 
 export default function Header({ setIsOpen, user }: HeaderProps) {
   const [profileOpen, setProfileOpen] = useState(false);
-  const { logout } = useAuth();
+  const { logout } = useAuthStore();
 
   return (
     <div className="flex items-center justify-between h-14 px-4 bg-white dark:bg-[#1A1A1A] border-b border-[#EBEBEB] dark:border-[#2A2A2A] sticky top-0 z-10">

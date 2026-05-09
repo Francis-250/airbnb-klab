@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api";
-import { useAuth } from "../hooks/useAuth";
 import { toast } from "sonner";
 import {
   CalendarDays,
@@ -16,6 +15,7 @@ import {
   X,
   XCircle,
 } from "lucide-react";
+import { useAuthStore } from "../store/auth.store";
 
 interface Booking {
   id: string;
@@ -68,7 +68,7 @@ const emptyText: Record<Tab, string> = {
 };
 
 export default function Bookings() {
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<Tab>("upcoming");
 
@@ -165,7 +165,8 @@ export default function Bookings() {
           ))}
         </div>
         <span className="hidden pb-3 text-[13px] text-gray-500 dark:text-gray-400 sm:block">
-          {bookingList.length} {bookingList.length === 1 ? "booking" : "bookings"}
+          {bookingList.length}{" "}
+          {bookingList.length === 1 ? "booking" : "bookings"}
         </span>
       </div>
 

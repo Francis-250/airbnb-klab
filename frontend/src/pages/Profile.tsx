@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useAuth } from "../hooks/useAuth";
+import { useAuthStore } from "../store/auth.store";
+import type { User as AuthUser } from "../store/auth.store";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, apiFormData } from "../lib/api";
 import { toast } from "sonner";
@@ -14,8 +15,16 @@ import {
   User,
 } from "lucide-react";
 
+const getProfileFormData = (user: AuthUser) => ({
+  name: user.name,
+  email: user.email,
+  username: user.username,
+  phone: user.phone || "",
+  bio: user.bio || "",
+});
+
 export default function Profile() {
-  const { user, refetch } = useAuth();
+  const { user, fetchUser } = useAuthStore();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -40,7 +49,7 @@ export default function Profile() {
     onSuccess: () => {
       toast.success("Profile updated");
       setIsEditing(false);
-      refetch();
+      fetchUser();
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
     },
     onError: () => toast.error("Failed to update profile"),
@@ -57,7 +66,7 @@ export default function Profile() {
       toast.success("Avatar updated");
       setAvatarFile(null);
       setAvatarPreview(null);
-      refetch();
+      fetchUser();
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
     },
     onError: () => toast.error("Failed to update avatar"),
@@ -70,7 +79,7 @@ export default function Profile() {
     },
     onSuccess: () => {
       toast.success("Avatar removed");
-      refetch();
+      fetchUser();
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
     },
     onError: () => toast.error("Failed to remove avatar"),
@@ -132,7 +141,7 @@ export default function Profile() {
   const displayAvatar = avatarPreview || user.avatar;
   const initials = user.name
     .split(" ")
-    .map((n) => n[0])
+    .map((n: string) => n[0])
     .join("")
     .toUpperCase()
     .slice(0, 2);
@@ -199,7 +208,9 @@ export default function Profile() {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-(--color-primary) px-4 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-(--color-primary-dark) disabled:opacity-60"
                 >
                   <Save className="h-4 w-4" />
-                  {updateAvatarMutation.isPending ? "Uploading..." : "Upload photo"}
+                  {updateAvatarMutation.isPending
+                    ? "Uploading..."
+                    : "Upload photo"}
                 </button>
               )}
               {user.avatar && !avatarFile && (
@@ -209,7 +220,9 @@ export default function Profile() {
                   className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 px-4 py-2.5 text-[13px] font-semibold text-red-500 transition-colors hover:bg-red-50 disabled:opacity-60 dark:border-red-500/30 dark:hover:bg-red-500/10"
                 >
                   <Trash2 className="h-4 w-4" />
-                  {deleteAvatarMutation.isPending ? "Removing..." : "Remove photo"}
+                  {deleteAvatarMutation.isPending
+                    ? "Removing..."
+                    : "Remove photo"}
                 </button>
               )}
             </div>
@@ -227,136 +240,135 @@ export default function Profile() {
 
         <main className="space-y-6">
           <section className="rounded-[1.5rem] border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111827] md:p-7">
-          {!isEditing ? (
-            <div>
-              <div className="flex flex-col justify-between gap-4 border-b border-gray-200 pb-6 dark:border-white/[0.08] sm:flex-row sm:items-center">
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-950 dark:text-white">
-                    Personal information
-                  </h2>
-                  <p className="mt-1 text-[14px] text-gray-500 dark:text-gray-400">
-                    These details help hosts recognize your account.
+            {!isEditing ? (
+              <div>
+                <div className="flex flex-col justify-between gap-4 border-b border-gray-200 pb-6 dark:border-white/[0.08] sm:flex-row sm:items-center">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-950 dark:text-white">
+                      Personal information
+                    </h2>
+                    <p className="mt-1 text-[14px] text-gray-500 dark:text-gray-400">
+                      These details help hosts recognize your account.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setFormData(getProfileFormData(user));
+                      setIsEditing(true);
+                    }}
+                    className="w-fit rounded-xl bg-(--color-primary) px-5 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-(--color-primary-dark)"
+                  >
+                    Edit profile
+                  </button>
+                </div>
+
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  <ViewField label="Full name" value={user.name} />
+                  <ViewField label="Username" value={`@${user.username}`} />
+                  <ViewField label="Email" value={user.email} />
+                  <ViewField label="Phone" value={user.phone || "Not added"} />
+                </div>
+
+                <div className="mt-4 rounded-2xl bg-gray-50 p-4 dark:bg-white/[0.04]">
+                  <p className="text-[12px] font-semibold uppercase tracking-widest text-gray-400">
+                    Bio
+                  </p>
+                  <p className="mt-2 text-[14px] leading-6 text-gray-600 dark:text-gray-300">
+                    {user.bio || "No bio added yet."}
                   </p>
                 </div>
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="w-fit rounded-xl bg-(--color-primary) px-5 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-(--color-primary-dark)"
-                >
-                  Edit profile
-                </button>
               </div>
+            ) : (
+              <form onSubmit={handleSubmit}>
+                <div className="border-b border-gray-200 pb-6 dark:border-white/[0.08]">
+                  <h2 className="text-xl font-semibold text-gray-950 dark:text-white">
+                    Edit profile
+                  </h2>
+                  <p className="mt-1 text-[14px] text-gray-500 dark:text-gray-400">
+                    Update the details shown on your guest profile.
+                  </p>
+                </div>
 
-              <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                <ViewField label="Full name" value={user.name} />
-                <ViewField label="Username" value={`@${user.username}`} />
-                <ViewField label="Email" value={user.email} />
-                <ViewField label="Phone" value={user.phone || "Not added"} />
-              </div>
+                <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                  <FormField label="Full name">
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) =>
+                        setFormData({ ...formData, name: e.target.value })
+                      }
+                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-950 outline-none transition-colors focus:border-(--color-primary) dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
+                      required
+                    />
+                  </FormField>
+                  <FormField label="Username">
+                    <input
+                      type="text"
+                      value={formData.username}
+                      onChange={(e) =>
+                        setFormData({ ...formData, username: e.target.value })
+                      }
+                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-950 outline-none transition-colors focus:border-(--color-primary) dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
+                      required
+                    />
+                  </FormField>
+                  <FormField label="Email">
+                    <input
+                      type="email"
+                      value={formData.email}
+                      disabled
+                      className="w-full cursor-not-allowed rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-950 opacity-60 outline-none transition-colors dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
+                    />
+                  </FormField>
+                  <FormField label="Phone">
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) =>
+                        setFormData({ ...formData, phone: e.target.value })
+                      }
+                      className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-950 outline-none transition-colors focus:border-(--color-primary) dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
+                    />
+                  </FormField>
+                </div>
 
-              <div className="mt-4 rounded-2xl bg-gray-50 p-4 dark:bg-white/[0.04]">
-                <p className="text-[12px] font-semibold uppercase tracking-widest text-gray-400">
-                  Bio
-                </p>
-                <p className="mt-2 text-[14px] leading-6 text-gray-600 dark:text-gray-300">
-                  {user.bio || "No bio added yet."}
-                </p>
-              </div>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit}>
-              <div className="border-b border-gray-200 pb-6 dark:border-white/[0.08]">
-                <h2 className="text-xl font-semibold text-gray-950 dark:text-white">
-                  Edit profile
-                </h2>
-                <p className="mt-1 text-[14px] text-gray-500 dark:text-gray-400">
-                  Update the details shown on your guest profile.
-                </p>
-              </div>
+                <div className="mt-4">
+                  <FormField label="Bio">
+                    <textarea
+                      value={formData.bio}
+                      onChange={(e) =>
+                        setFormData({ ...formData, bio: e.target.value })
+                      }
+                      rows={4}
+                      className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-950 outline-none transition-colors focus:border-(--color-primary) dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
+                    />
+                  </FormField>
+                </div>
 
-              <div className="mt-6 grid gap-4 sm:grid-cols-2">
-                <FormField label="Full name">
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-950 outline-none transition-colors focus:border-(--color-primary) dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
-                    required
-                  />
-                </FormField>
-                <FormField label="Username">
-                  <input
-                    type="text"
-                    value={formData.username}
-                    onChange={(e) =>
-                      setFormData({ ...formData, username: e.target.value })
-                    }
-                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-950 outline-none transition-colors focus:border-(--color-primary) dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
-                    required
-                  />
-                </FormField>
-                <FormField label="Email">
-                  <input
-                    type="email"
-                    value={formData.email}
-                    disabled
-                    className="w-full cursor-not-allowed rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-950 opacity-60 outline-none transition-colors dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
-                  />
-                </FormField>
-                <FormField label="Phone">
-                  <input
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) =>
-                      setFormData({ ...formData, phone: e.target.value })
-                    }
-                    className="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-950 outline-none transition-colors focus:border-(--color-primary) dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
-                  />
-                </FormField>
-              </div>
-
-              <div className="mt-4">
-                <FormField label="Bio">
-                  <textarea
-                    value={formData.bio}
-                    onChange={(e) =>
-                      setFormData({ ...formData, bio: e.target.value })
-                    }
-                    rows={4}
-                    className="w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-950 outline-none transition-colors focus:border-(--color-primary) dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
-                  />
-                </FormField>
-              </div>
-
-              <div className="mt-6 flex flex-wrap gap-3 border-t border-gray-200 pt-6 dark:border-white/[0.08]">
-                <button
-                  type="submit"
-                  disabled={updateProfileMutation.isPending}
-                  className="inline-flex items-center gap-2 rounded-xl bg-(--color-primary) px-5 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-(--color-primary-dark) disabled:opacity-60"
-                >
-                  <Save className="h-4 w-4" />
-                  {updateProfileMutation.isPending ? "Saving..." : "Save changes"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEditing(false);
-                    setFormData({
-                      name: user.name,
-                      email: user.email,
-                      username: user.username,
-                      phone: user.phone || "",
-                      bio: user.bio || "",
-                    });
-                  }}
-                  className="rounded-xl border border-gray-200 px-5 py-2.5 text-[13px] font-semibold text-gray-700 transition-colors hover:border-(--color-primary) hover:text-(--color-primary) dark:border-white/[0.08] dark:text-gray-300"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
+                <div className="mt-6 flex flex-wrap gap-3 border-t border-gray-200 pt-6 dark:border-white/[0.08]">
+                  <button
+                    type="submit"
+                    disabled={updateProfileMutation.isPending}
+                    className="inline-flex items-center gap-2 rounded-xl bg-(--color-primary) px-5 py-2.5 text-[13px] font-semibold text-white transition-colors hover:bg-(--color-primary-dark) disabled:opacity-60"
+                  >
+                    <Save className="h-4 w-4" />
+                    {updateProfileMutation.isPending
+                      ? "Saving..."
+                      : "Save changes"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setFormData(getProfileFormData(user));
+                    }}
+                    className="rounded-xl border border-gray-200 px-5 py-2.5 text-[13px] font-semibold text-gray-700 transition-colors hover:border-(--color-primary) hover:text-(--color-primary) dark:border-white/[0.08] dark:text-gray-300"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
           </section>
 
           <section className="rounded-[1.5rem] border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111827] md:p-7">
@@ -376,7 +388,10 @@ export default function Profile() {
               </div>
             </div>
 
-            <form onSubmit={handlePasswordSubmit} className="mt-6 grid gap-4 sm:grid-cols-2">
+            <form
+              onSubmit={handlePasswordSubmit}
+              className="mt-6 grid gap-4 sm:grid-cols-2"
+            >
               <FormField label="Current password">
                 <input
                   type="password"

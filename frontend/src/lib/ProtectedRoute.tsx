@@ -1,5 +1,5 @@
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
+import { useAuthStore } from "../store/auth.store";
 import Spinner from "../components/Spinner";
 
 interface ProtectedRouteProps {
@@ -11,7 +11,7 @@ export function ProtectedRoute({
   children,
   requiredRole,
 }: ProtectedRouteProps) {
-  const { user, loading } = useAuth();
+  const { user, loading } = useAuthStore();
 
   if (loading) return <Spinner />;
 

@@ -3,7 +3,6 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { api } from "../lib/api";
-import { useAuth } from "../hooks/useAuth";
 import { toast } from "sonner";
 import {
   BadgeCheck,
@@ -17,11 +16,12 @@ import {
   Users,
 } from "lucide-react";
 import type { Listing } from "../types";
+import { useAuthStore } from "../store/auth.store";
 
 export default function BookingForm() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user } = useAuthStore();
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
 
