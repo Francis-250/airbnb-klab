@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
 import { toast } from "sonner";
-import { Star } from "lucide-react";
+import { MessageSquare, Star } from "lucide-react";
 
 interface Review {
   id: string;
@@ -57,7 +57,7 @@ export default function Reviews() {
       return response.data;
     },
     onSuccess: () => {
-      toast.success("Review submitted successfully!");
+      toast.success("Review submitted successfully");
       setNewReview({ rating: 5, comment: "" });
       setShowReviewForm(false);
       queryClient.invalidateQueries({ queryKey: ["reviews", id] });
@@ -78,43 +78,9 @@ export default function Reviews() {
     });
   };
 
-  const renderStars = (
-    rating: number,
-    interactive = false,
-    onRatingChange?: (rating: number) => void,
-  ) => {
-    return (
-      <div className="flex gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className={`w-5 h-5 ${
-              star <= rating
-                ? "fill-yellow-400 text-yellow-400"
-                : "text-gray-300"
-            } ${interactive ? "cursor-pointer hover:text-yellow-400" : ""}`}
-            onClick={() =>
-              interactive && onRatingChange && onRatingChange(star)
-            }
-          />
-        ))}
-      </div>
-    );
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-  };
-
-  if (isLoading) {
-    return <div className="p-6">Loading reviews...</div>;
-  }
-
   const totalReviews =
-    reviewsData?.ratingDistribution.reduce(
-      (sum, item) => sum + item.count,
-      0,
-    ) || 0;
+    reviewsData?.ratingDistribution.reduce((sum, item) => sum + item.count, 0) ||
+    0;
   const weightedTotal =
     reviewsData?.ratingDistribution.reduce(
       (sum, item) => sum + item.rating * item.count,
@@ -122,23 +88,52 @@ export default function Reviews() {
     ) || 0;
   const averageRating = totalReviews > 0 ? weightedTotal / totalReviews : 0;
 
+  if (isLoading) {
+    return (
+      <div className="min-h-[60vh] py-8">
+        <div className="h-80 rounded-2xl bg-gray-100 dark:bg-white/[0.05] animate-pulse" />
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-4">Reviews</h1>
+    <div className="min-h-screen py-8">
+      <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div>
+          <p className="text-[12px] font-semibold uppercase tracking-widest text-gray-400">
+            Guest reviews
+          </p>
+          <h1
+            style={{ fontFamily: "'Playfair Display', serif" }}
+            className="mt-1 text-3xl font-semibold text-gray-950 dark:text-white"
+          >
+            Reviews
+          </h1>
+        </div>
+        {user?.role === "guest" && (
+          <button
+            onClick={() => setShowReviewForm((value) => !value)}
+            className="w-fit rounded-xl bg-(--color-primary) px-5 py-3 text-[13px] font-semibold text-white transition-colors hover:bg-(--color-primary-dark)"
+          >
+            {showReviewForm ? "Cancel" : "Write a review"}
+          </button>
+        )}
+      </div>
 
-        <div className="bg-white p-6 mb-6">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="text-4xl font-bold">{averageRating.toFixed(1)}</div>
-            <div>
-              {renderStars(Math.round(averageRating))}
-              <p className="text-gray-600">
-                {reviewsData?.pagination.total} reviews
-              </p>
+      <section className="mb-6 rounded-[1.5rem] border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111827] md:p-7">
+        <div className="grid gap-8 md:grid-cols-[220px_1fr]">
+          <div>
+            <p className="text-5xl font-semibold text-gray-950 dark:text-white">
+              {averageRating.toFixed(1)}
+            </p>
+            <div className="mt-3">
+              <Stars rating={Math.round(averageRating)} />
             </div>
+            <p className="mt-2 text-[14px] text-gray-500 dark:text-gray-400">
+              {reviewsData?.pagination.total || 0} reviews
+            </p>
           </div>
-
-          <div className="space-y-2">
+          <div className="space-y-3">
             {[5, 4, 3, 2, 1].map((rating) => {
               const count =
                 reviewsData?.ratingDistribution.find((r) => r.rating === rating)
@@ -147,115 +142,146 @@ export default function Reviews() {
                 totalReviews > 0 ? (count / totalReviews) * 100 : 0;
 
               return (
-                <div key={rating} className="flex items-center gap-2">
-                  <span className="w-3">{rating}</span>
-                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  <div className="flex-1 bg-gray-200 h-2">
+                <div key={rating} className="flex items-center gap-3">
+                  <span className="w-5 text-[13px] font-semibold text-gray-700 dark:text-gray-300">
+                    {rating}
+                  </span>
+                  <Star className="h-3.5 w-3.5 fill-amber-400 stroke-none" />
+                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-100 dark:bg-white/[0.06]">
                     <div
-                      className="bg-yellow-400 h-2"
+                      className="h-full rounded-full bg-(--color-primary)"
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
-                  <span className="w-12 text-right text-sm">{count}</span>
+                  <span className="w-8 text-right text-[12px] text-gray-500">
+                    {count}
+                  </span>
                 </div>
               );
             })}
           </div>
         </div>
+      </section>
 
-        {user && user.role === "guest" && (
-          <div className="mb-6">
-            <button
-              onClick={() => setShowReviewForm(!showReviewForm)}
-              className="bg-blue-500 text-white px-4 py-2"
-            >
-              {showReviewForm ? "Cancel" : "Write a Review"}
-            </button>
-
-            {showReviewForm && (
-              <form onSubmit={handleSubmitReview} className="bg-white p-6 mt-4">
-                <h3 className="text-lg font-semibold mb-4">Your Review</h3>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2">
-                    Rating
-                  </label>
-                  {renderStars(newReview.rating, true, (rating) =>
-                    setNewReview({ ...newReview, rating }),
-                  )}
-                </div>
-
-                <div className="mb-4">
-                  <label className="block text-sm font-medium mb-2">
-                    Comment
-                  </label>
-                  <textarea
-                    value={newReview.comment}
-                    onChange={(e) =>
-                      setNewReview({ ...newReview, comment: e.target.value })
-                    }
-                    className="w-full p-3 border min-h-32"
-                    placeholder="Share your experience..."
-                    required
-                  />
-                </div>
-
+      {showReviewForm && (
+        <form
+          onSubmit={handleSubmitReview}
+          className="mb-6 rounded-[1.5rem] border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111827]"
+        >
+          <h2 className="text-lg font-semibold text-gray-950 dark:text-white">
+            Share your experience
+          </h2>
+          <div className="mt-4">
+            <p className="mb-2 text-[12px] font-semibold uppercase tracking-widest text-gray-500">
+              Rating
+            </p>
+            <div className="flex gap-1">
+              {[1, 2, 3, 4, 5].map((star) => (
                 <button
-                  type="submit"
-                  className="bg-blue-500 text-white px-4 py-2"
-                  disabled={createReviewMutation.isPending}
+                  key={star}
+                  type="button"
+                  onClick={() => setNewReview({ ...newReview, rating: star })}
+                  className="text-amber-400"
+                  aria-label={`Set rating ${star}`}
                 >
-                  {createReviewMutation.isPending
-                    ? "Submitting..."
-                    : "Submit Review"}
+                  <Star
+                    className={`h-6 w-6 ${
+                      star <= newReview.rating ? "fill-current" : ""
+                    }`}
+                  />
                 </button>
-              </form>
-            )}
+              ))}
+            </div>
           </div>
-        )}
-      </div>
+          <label className="mt-4 block">
+            <span className="mb-2 block text-[12px] font-semibold uppercase tracking-widest text-gray-500">
+              Comment
+            </span>
+            <textarea
+              value={newReview.comment}
+              onChange={(e) =>
+                setNewReview({ ...newReview, comment: e.target.value })
+              }
+              className="min-h-32 w-full resize-none rounded-xl border border-gray-200 bg-white px-4 py-3 text-[14px] text-gray-950 outline-none transition-colors focus:border-(--color-primary) dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
+              placeholder="Share what stood out during your stay"
+              required
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={createReviewMutation.isPending}
+            className="mt-4 rounded-xl bg-(--color-primary) px-5 py-3 text-[13px] font-semibold text-white transition-colors hover:bg-(--color-primary-dark) disabled:opacity-60"
+          >
+            {createReviewMutation.isPending ? "Submitting..." : "Submit review"}
+          </button>
+        </form>
+      )}
 
       <div className="space-y-4">
         {reviewsData?.reviews.map((review) => (
-          <div key={review.id} className="bg-white p-6">
+          <article
+            key={review.id}
+            className="rounded-[1.5rem] border border-gray-200 bg-white p-5 dark:border-white/[0.08] dark:bg-[#111827]"
+          >
             <div className="flex items-start gap-4">
-              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-                {review.guest.avatar ? (
-                  <img
-                    src={review.guest.avatar}
-                    alt={review.guest.name}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                ) : (
-                  <span className="text-lg font-semibold">
-                    {review.guest.name.charAt(0).toUpperCase()}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-2">
+              {review.guest.avatar ? (
+                <img
+                  src={review.guest.avatar}
+                  alt={review.guest.name}
+                  className="h-12 w-12 rounded-2xl object-cover"
+                />
+              ) : (
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-(--color-primary)/10 font-semibold text-(--color-primary)">
+                  {review.guest.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
                   <div>
-                    <h4 className="font-semibold">{review.guest.name}</h4>
-                    <p className="text-sm text-gray-600">
-                      {formatDate(review.createdAt)}
+                    <h3 className="font-semibold text-gray-950 dark:text-white">
+                      {review.guest.name}
+                    </h3>
+                    <p className="text-[12px] text-gray-500">
+                      {new Date(review.createdAt).toLocaleDateString()}
                     </p>
                   </div>
-                  {renderStars(review.rating)}
+                  <Stars rating={review.rating} />
                 </div>
-
-                <p className="text-gray-800">{review.comment}</p>
+                <p className="mt-3 text-[14px] leading-6 text-gray-600 dark:text-gray-300">
+                  {review.comment}
+                </p>
               </div>
             </div>
-          </div>
+          </article>
         ))}
 
         {reviewsData?.reviews.length === 0 && (
-          <div className="bg-white p-6 text-center text-gray-500">
-            No reviews yet. Be the first to review!
+          <div className="flex flex-col items-center justify-center rounded-[1.5rem] border border-gray-200 bg-white px-6 py-20 text-center dark:border-white/[0.08] dark:bg-[#111827]">
+            <MessageSquare className="h-8 w-8 text-(--color-primary)" />
+            <h2 className="mt-4 text-lg font-semibold text-gray-950 dark:text-white">
+              No reviews yet
+            </h2>
+            <p className="mt-2 text-[14px] text-gray-500 dark:text-gray-400">
+              Reviews from guests will appear here.
+            </p>
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function Stars({ rating }: { rating: number }) {
+  return (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          className={`h-4 w-4 ${
+            star <= rating ? "fill-amber-400 text-amber-400" : "text-gray-300"
+          }`}
+        />
+      ))}
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import Calendar from "../components/Calendar";
 import { toast } from "sonner";
+import { CalendarDays, MapPin, Users } from "lucide-react";
+import type { Listing } from "../types";
 
 export default function BookingCalendar() {
   const { id } = useParams<{ id: string }>();
@@ -16,7 +18,7 @@ export default function BookingCalendar() {
     queryKey: ["listing", id],
     queryFn: async () => {
       const response = await api.get(`/listings/${id}`);
-      return response.data;
+      return (response.data.listing ?? response.data) as Listing;
     },
     enabled: !!id,
   });
@@ -48,8 +50,8 @@ export default function BookingCalendar() {
       setSelectedDates([]);
     } else if (date.toDateString() === checkOut?.toDateString()) {
       setCheckOut(null);
-      const dates = [checkIn!];
-      const current = new Date(checkIn!);
+      const dates = checkIn ? [checkIn] : [];
+      const current = new Date(checkIn || date);
       current.setDate(current.getDate() + 1);
       while (current < date) {
         dates.push(new Date(current));
@@ -59,13 +61,11 @@ export default function BookingCalendar() {
     }
   };
 
-  const calculateTotalPrice = () => {
-    if (!checkIn || !checkOut || !listing) return 0;
-    const nights = Math.ceil(
-      (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24),
-    );
-    return nights * listing.pricePerNight * guests;
-  };
+  const nights =
+    checkIn && checkOut
+      ? Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24))
+      : 0;
+  const totalPrice = listing ? nights * listing.pricePerNight * guests : 0;
 
   const handleBooking = async () => {
     if (!checkIn || !checkOut || !listing) {
@@ -79,7 +79,7 @@ export default function BookingCalendar() {
         checkIn: checkIn.toISOString(),
         checkOut: checkOut.toISOString(),
       });
-      toast.success("Booking request sent successfully!");
+      toast.success("Booking request sent successfully");
       setCheckIn(null);
       setCheckOut(null);
       setSelectedDates([]);
@@ -89,106 +89,148 @@ export default function BookingCalendar() {
   };
 
   if (isLoading) {
-    return <div className="p-6">Loading...</div>;
+    return (
+      <div className="min-h-[60vh] py-8">
+        <div className="h-96 rounded-2xl bg-gray-100 dark:bg-white/[0.05] animate-pulse" />
+      </div>
+    );
   }
 
   if (!listing) {
-    return <div className="p-6">Listing not found</div>;
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <p className="text-sm text-gray-500">Listing not found.</p>
+      </div>
+    );
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div>
-          <h1 className="text-2xl font-bold mb-4">{listing.title}</h1>
-          <p className="text-gray-600 mb-6">{listing.location}</p>
+    <div className="min-h-screen py-8">
+      <div className="mb-8">
+        <p className="text-[12px] font-semibold uppercase tracking-widest text-gray-400">
+          Calendar
+        </p>
+        <h1
+          style={{ fontFamily: "'Playfair Display', serif" }}
+          className="mt-1 text-3xl font-semibold text-gray-950 dark:text-white"
+        >
+          Select dates
+        </h1>
+      </div>
 
-          {listing.photos && listing.photos.length > 0 && (
-            <div className="mb-6">
+      <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
+        <main className="space-y-6">
+          <div className="overflow-hidden rounded-[1.5rem] border border-gray-200 bg-white dark:border-white/[0.08] dark:bg-[#111827]">
+            {listing.photos?.[0] && (
               <img
                 src={listing.photos[0]}
                 alt={listing.title}
-                className="w-full h-64 object-cover"
+                className="h-72 w-full object-cover"
               />
+            )}
+            <div className="p-5">
+              <h2 className="text-xl font-semibold text-gray-950 dark:text-white">
+                {listing.title}
+              </h2>
+              <p className="mt-2 flex items-center gap-1.5 text-[14px] text-gray-500 dark:text-gray-400">
+                <MapPin className="h-4 w-4 text-(--color-primary)" />
+                {listing.location}
+              </p>
             </div>
-          )}
+          </div>
 
-          <Calendar
-            selectedDates={selectedDates}
-            onDateSelect={handleDateSelect}
-            onDateRemove={handleDateRemove}
-          />
-        </div>
+          <div className="rounded-[1.5rem] border border-gray-200 bg-white p-4 dark:border-white/[0.08] dark:bg-[#111827]">
+            <Calendar
+              selectedDates={selectedDates}
+              onDateSelect={handleDateSelect}
+              onDateRemove={handleDateRemove}
+            />
+          </div>
+        </main>
 
-        <div>
-          <div className="bg-white p-6">
-            <h2 className="text-xl font-semibold mb-4">Booking Details</h2>
-
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Check-in
-                </label>
-                <div className="p-3 bg-gray-50">
-                  {checkIn ? checkIn.toLocaleDateString() : "Select a date"}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Check-out
-                </label>
-                <div className="p-3 bg-gray-50">
-                  {checkOut ? checkOut.toLocaleDateString() : "Select a date"}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Guests</label>
+        <aside className="lg:sticky lg:top-24">
+          <div className="rounded-[1.5rem] border border-gray-200 bg-white p-5 shadow-xl shadow-black/[0.06] dark:border-white/[0.08] dark:bg-[#111827]">
+            <h2 className="text-lg font-semibold text-gray-950 dark:text-white">
+              Booking details
+            </h2>
+            <div className="mt-5 space-y-3">
+              <DetailRow
+                icon={CalendarDays}
+                label="Check-in"
+                value={checkIn ? checkIn.toLocaleDateString() : "Select a date"}
+              />
+              <DetailRow
+                icon={CalendarDays}
+                label="Check-out"
+                value={checkOut ? checkOut.toLocaleDateString() : "Select a date"}
+              />
+              <label className="block rounded-xl bg-gray-50 p-3 dark:bg-white/[0.04]">
+                <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+                  <Users className="h-3 w-3" />
+                  Guests
+                </span>
                 <select
                   value={guests}
                   onChange={(e) => setGuests(Number(e.target.value))}
-                  className="w-full p-3 bg-gray-50"
+                  className="mt-2 w-full bg-transparent text-[14px] font-semibold text-gray-950 outline-none dark:text-white"
                 >
-                  {[1, 2, 3, 4, 5, 6].map((num) => (
-                    <option key={num} value={num}>
-                      {num} {num === 1 ? "Guest" : "Guests"}
-                    </option>
-                  ))}
+                  {Array.from({ length: Math.max(1, listing.guests) }).map((_, i) => {
+                    const num = i + 1;
+                    return (
+                      <option key={num} value={num}>
+                        {num} {num === 1 ? "guest" : "guests"}
+                      </option>
+                    );
+                  })}
                 </select>
-              </div>
+              </label>
             </div>
 
-            <div className="border-t pt-4">
-              <div className="flex justify-between mb-2">
+            <div className="mt-5 border-t border-gray-200 pt-5 dark:border-white/[0.08]">
+              <div className="flex justify-between text-[14px] text-gray-600 dark:text-gray-300">
                 <span>
-                  ${listing.pricePerNight} x{" "}
-                  {checkIn && checkOut
-                    ? Math.ceil(
-                        (checkOut.getTime() - checkIn.getTime()) /
-                          (1000 * 60 * 60 * 24),
-                      )
-                    : 0}{" "}
-                  nights
+                  ${listing.pricePerNight} x {nights} nights
                 </span>
-                <span>${calculateTotalPrice()}</span>
+                <span>${totalPrice}</span>
               </div>
-              <div className="flex justify-between font-semibold text-lg">
+              <div className="mt-3 flex justify-between text-lg font-semibold text-gray-950 dark:text-white">
                 <span>Total</span>
-                <span>${calculateTotalPrice()}</span>
+                <span>${totalPrice}</span>
               </div>
             </div>
 
             <button
               onClick={handleBooking}
               disabled={!checkIn || !checkOut}
-              className="w-full mt-6 bg-blue-500 text-white py-3 font-semibold disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="mt-5 w-full rounded-xl bg-(--color-primary) px-5 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-(--color-primary-dark) disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Book Now
+              Book now
             </button>
           </div>
-        </div>
+        </aside>
       </div>
+    </div>
+  );
+}
+
+function DetailRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-xl bg-gray-50 p-3 dark:bg-white/[0.04]">
+      <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+        <Icon className="h-3 w-3" />
+        {label}
+      </p>
+      <p className="mt-2 text-[14px] font-semibold text-gray-950 dark:text-white">
+        {value}
+      </p>
     </div>
   );
 }

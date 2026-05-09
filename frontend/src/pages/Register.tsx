@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { useAuth } from "../hooks/useAuth";
 import { Link, useNavigate } from "react-router-dom";
+import { Mail, User, Lock, AtSign } from "lucide-react";
+import axios from "axios";
+import { useAuth } from "../hooks/useAuth";
 
 export default function Register() {
   const [name, setName] = useState("");
@@ -18,98 +20,150 @@ export default function Register() {
 
     try {
       await register(name, username, email, password);
-      toast.success("Registration successful!");
+      toast.success("Registration successful");
       navigate("/login");
-    } catch (error: any) {
-      const message =
-        error.response?.data?.message || error.message || "Registration failed";
-      toast.error(message);
+    } catch (error: unknown) {
+      const message = axios.isAxiosError<{ message?: string }>(error)
+        ? error.response?.data?.message
+        : error instanceof Error
+          ? error.message
+          : "Registration failed";
+      toast.error(message || "Registration failed");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900">
-      <div className="max-w-md mx-auto px-4 py-16">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Create an account
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Join us and start your journey
-          </p>
+    <div className="min-h-screen bg-[#f8fafc] px-4 py-10 dark:bg-[#1e242d]">
+      <div className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-6xl overflow-hidden rounded-[2rem] border border-gray-200 bg-white dark:border-white/[0.08] dark:bg-[#111827] lg:grid-cols-[0.9fr_1fr]">
+        <div className="flex items-center justify-center p-6 sm:p-10">
+          <div className="w-full max-w-md">
+            <Link to="/" className="text-2xl font-bold text-gray-950 dark:text-white">
+              Air<span className="text-(--color-primary)">b</span>nb
+            </Link>
+            <div className="mt-10">
+              <p className="text-[12px] font-semibold uppercase tracking-widest text-gray-400">
+                Create account
+              </p>
+              <h1
+                style={{ fontFamily: "'Playfair Display', serif" }}
+                className="mt-2 text-4xl font-semibold text-gray-950 dark:text-white"
+              >
+                Start booking better stays.
+              </h1>
+              <p className="mt-3 text-[14px] leading-6 text-gray-500 dark:text-gray-400">
+                Save homes, manage trips, and keep your profile ready for hosts.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+              <AuthInput
+                icon={User}
+                label="Name"
+                value={name}
+                onChange={setName}
+                placeholder="Full name"
+              />
+              <AuthInput
+                icon={AtSign}
+                label="Username"
+                value={username}
+                onChange={setUsername}
+                placeholder="username"
+              />
+              <AuthInput
+                icon={Mail}
+                label="Email"
+                value={email}
+                onChange={setEmail}
+                type="email"
+                placeholder="you@example.com"
+              />
+              <AuthInput
+                icon={Lock}
+                label="Password"
+                value={password}
+                onChange={setPassword}
+                type="password"
+                placeholder="Create a password"
+              />
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full rounded-xl bg-(--color-primary) px-5 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-(--color-primary-dark) disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isLoading ? "Creating account..." : "Create account"}
+              </button>
+            </form>
+
+            <p className="mt-6 text-center text-[14px] text-gray-500 dark:text-gray-400">
+              Already have an account?{" "}
+              <Link
+                to="/login"
+                className="font-semibold text-(--color-primary) hover:underline"
+              >
+                Sign in
+              </Link>
+            </p>
+          </div>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Name
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 focus:border-(--color-primary) dark:focus:border-(--color-primary) focus:outline-none transition-colors text-gray-900 dark:text-white"
-            />
+        <div className="relative hidden min-h-full lg:block">
+          <img
+            src="/image/hero-background.jpg"
+            alt="Airbnb stay"
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-x-6 bottom-6 rounded-2xl border border-white/30 bg-white/90 p-5 backdrop-blur-md dark:border-white/[0.08] dark:bg-[#111827]/90">
+            <p className="text-[12px] font-semibold uppercase tracking-widest text-gray-400">
+              Guest ready
+            </p>
+            <h2
+              style={{ fontFamily: "'Playfair Display', serif" }}
+              className="mt-2 text-3xl font-semibold text-gray-950 dark:text-white"
+            >
+              Your next trip starts with a clean profile.
+            </h2>
           </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Username
-            </label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 focus:border-(--color-primary) dark:focus:border-(--color-primary) focus:outline-none transition-colors text-gray-900 dark:text-white"
-            />
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 focus:border-(--color-primary) dark:focus:border-(--color-primary) focus:outline-none transition-colors text-gray-900 dark:text-white"
-            />
-          </div>
-
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 focus:border-(--color-primary) dark:focus:border-(--color-primary) focus:outline-none transition-colors text-gray-900 dark:text-white"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-3 bg-(--color-primary) text-white font-bold hover:bg-opacity-90 transition-all disabled:opacity-50"
-          >
-            {isLoading ? "Creating account..." : "Create account"}
-          </button>
-        </form>
-        <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-4">
-          Already have an account?{" "}
-          <Link
-            to="/login"
-            className="font-medium text-(--color-primary) hover:underline"
-          >
-            Log in
-          </Link>
-        </p>
+        </div>
       </div>
     </div>
+  );
+}
+
+function AuthInput({
+  icon: Icon,
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  placeholder: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-[12px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+        {label}
+      </span>
+      <span className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 transition-colors focus-within:border-(--color-primary) dark:border-white/[0.08] dark:bg-white/[0.04]">
+        <Icon className="h-4 w-4 text-gray-400" />
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          required
+          className="w-full bg-transparent text-[14px] text-gray-950 outline-none placeholder:text-gray-300 dark:text-white"
+          placeholder={placeholder}
+        />
+      </span>
+    </label>
   );
 }

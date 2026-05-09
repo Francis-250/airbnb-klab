@@ -23,7 +23,9 @@ export const getAllBookings = async (req: Request, res: Response) => {
         take: limit,
         include: {
           guest: { select: { name: true, avatar: true } },
-          listing: { select: { title: true, location: true } },
+          listing: {
+            select: { id: true, title: true, location: true, photos: true },
+          },
         },
       }),
       prisma.booking.count({ where }),

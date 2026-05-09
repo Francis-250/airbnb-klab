@@ -28,7 +28,9 @@ export default function App() {
   const location = useLocation();
 
   const isDashboard = location.pathname.startsWith("/dashboard");
-  const isAuthPage = ["/login", "/register"].includes(location.pathname);
+  const isAuthPage = ["/login", "/register", "/test"].includes(
+    location.pathname,
+  );
   const isPublic =
     PUBLIC_ROUTES.includes(location.pathname) ||
     location.pathname.startsWith("/listings/") ||

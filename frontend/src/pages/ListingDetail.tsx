@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   Heart,
   Share2,
@@ -6,277 +6,239 @@ import {
   MapPin,
   ChevronLeft,
   ChevronRight,
+  Star,
+  BadgeCheck,
+  Wifi,
+  Car,
+  Utensils,
+  Dumbbell,
+  Waves,
+  Wind,
+  Check,
 } from "lucide-react";
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type { Listing } from "../types";
 import Spinner from "../components/Spinner";
 
+const amenityIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  wifi: Wifi,
+  parking: Car,
+  kitchen: Utensils,
+  gym: Dumbbell,
+  pool: Waves,
+  ac: Wind,
+};
+
 export default function ListingDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [listing, setListing] = useState<Listing | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [mainImage, setMainImage] = useState("");
   const [isSaved, setIsSaved] = useState(false);
-  const [isShared, setIsShared] = useState(false);
   const [sliderIndex, setSliderIndex] = useState(0);
 
-  useEffect(() => {
-    const fetchListing = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await api.get(`/listings/${id}`);
-        setListing(res.data.listing);
-        if (res.data.listing.photos && res.data.listing.photos.length > 0) {
-          setMainImage(res.data.listing.photos[0]);
-        }
-      } catch (error) {
-        console.error("Error fetching listing:", error);
-        setError("Failed to load listing. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const {
+    data: listing,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["listing", id],
+    queryFn: async () => {
+      const res = await api.get(`/listings/${id}`);
+      return (res.data.listing ?? res.data) as Listing;
+    },
+    enabled: !!id,
+  });
 
-    if (id) fetchListing();
-  }, [id]);
-
-  if (loading)
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex h-[70vh] items-center justify-center">
         <Spinner />
       </div>
     );
-
-  if (error)
-    return <div className="text-center text-red-500 mt-10">{error}</div>;
-
-  if (!listing)
-    return <div className="text-center mt-10">Listing not found</div>;
-
-  const allImages = listing.photos?.slice(0, 4) || [];
-  if (allImages.length < 4) {
-    for (let i = allImages.length; i < 4; i++) {
-      allImages.push("/placeholder.svg");
-    }
   }
 
+  if (error) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <p className="text-sm text-red-500">Failed to load listing.</p>
+      </div>
+    );
+  }
+
+  if (!listing) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <p className="text-sm text-gray-500">Listing not found.</p>
+      </div>
+    );
+  }
+
+  const images = listing.photos?.length ? listing.photos : ["/image/hero-background.jpg"];
+  const galleryImages = images.slice(0, 5);
   const mapUrl = `https://www.google.com/maps/embed/v1/place?key=${import.meta.env.VITE_GOOGLE_MAP_API_KEY}&q=${encodeURIComponent(listing.location)}`;
+  const currentImage = images[sliderIndex % images.length];
 
   const prevSlide = () =>
-    setSliderIndex((i) => (i === 0 ? allImages.length - 1 : i - 1));
+    setSliderIndex((i) => (i === 0 ? images.length - 1 : i - 1));
   const nextSlide = () =>
-    setSliderIndex((i) => (i === allImages.length - 1 ? 0 : i + 1));
+    setSliderIndex((i) => (i === images.length - 1 ? 0 : i + 1));
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="min-h-screen pb-10"
-    >
-      <header className="flex justify-between items-start mb-5 gap-4">
-        <motion.h1
-          initial={{ x: -20, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          style={{ fontFamily: "'Playfair Display', serif" }}
-          className="text-lg sm:text-2xl font-semibold leading-snug"
+    <div className="min-h-screen pb-14">
+      <div className="mb-5 flex items-center justify-between gap-4">
+        <button
+          onClick={() => navigate(-1)}
+          className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-[13px] font-semibold text-gray-700 transition-colors hover:border-(--color-primary) hover:text-(--color-primary) dark:border-white/[0.08] dark:text-gray-300"
         >
-          {listing.title} · {listing.location}
-        </motion.h1>
-        <motion.div
-          initial={{ x: 20, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="flex gap-3 shrink-0"
-        >
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setIsShared(!isShared)}
-            className="flex items-center gap-1.5 bg-transparent border-none text-sm font-medium underline cursor-pointer hover:text-(--color-primary)"
+          <ChevronLeft className="h-4 w-4" />
+          Back
+        </button>
+        <div className="flex gap-2">
+          <button className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-[13px] font-semibold text-gray-700 transition-colors hover:border-(--color-primary) hover:text-(--color-primary) dark:border-white/[0.08] dark:text-gray-300">
+            <Share2 className="h-4 w-4" />
+            Share
+          </button>
+          <button
+            onClick={() => setIsSaved((value) => !value)}
+            className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-[13px] font-semibold text-gray-700 transition-colors hover:border-(--color-primary) hover:text-(--color-primary) dark:border-white/[0.08] dark:text-gray-300"
           >
-            <Share2 className="w-4 h-4" />
-            <span className="hidden sm:inline">Share</span>
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setIsSaved(!isSaved)}
-            className="flex items-center gap-1.5 bg-transparent border-none text-sm font-medium underline cursor-pointer hover:text-(--color-primary)"
-          >
-            <motion.div
-              animate={{ scale: isSaved ? [1, 1.2, 1] : 1 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Heart
-                className={`w-4 h-4 transition-colors ${
-                  isSaved ? "fill-(--color-primary) text-(--color-primary)" : ""
-                }`}
-              />
-            </motion.div>
-            <span className="hidden sm:inline">Save</span>
-          </motion.button>
-        </motion.div>
-      </header>
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.3 }}
-        className="rounded-2xl overflow-hidden mb-9"
-      >
-        {" "}
-        <div className="block sm:hidden relative h-72 rounded-2xl overflow-hidden">
-          <AnimatePresence mode="wait">
-            <motion.img
-              key={sliderIndex}
-              src={allImages[sliderIndex]}
-              alt={listing.title}
-              initial={{ opacity: 0, x: 40 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -40 }}
-              transition={{ duration: 0.25 }}
-              className="w-full h-full object-cover"
+            <Heart
+              className={`h-4 w-4 ${isSaved ? "fill-(--color-primary) text-(--color-primary)" : ""}`}
             />
-          </AnimatePresence>
+            Save
+          </button>
+        </div>
+      </div>
+
+      <header className="mb-5">
+        <h1
+          style={{ fontFamily: "'Playfair Display', serif" }}
+          className="text-3xl font-semibold leading-tight text-gray-950 dark:text-white md:text-4xl"
+        >
+          {listing.title}
+        </h1>
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-[14px] text-gray-500 dark:text-gray-400">
+          {listing.rating && (
+            <span className="inline-flex items-center gap-1 font-semibold text-gray-950 dark:text-white">
+              <Star className="h-4 w-4 fill-amber-400 stroke-none" />
+              {listing.rating}
+            </span>
+          )}
+          <span className="inline-flex items-center gap-1">
+            <MapPin className="h-4 w-4 text-(--color-primary)" />
+            {listing.location}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <Users className="h-4 w-4" />
+            {listing.guests} guests
+          </span>
+        </div>
+      </header>
+
+      <section className="mb-10">
+        <div className="relative block overflow-hidden rounded-[1.75rem] bg-gray-100 dark:bg-white/[0.05] sm:hidden">
+          <img
+            src={currentImage}
+            alt={listing.title}
+            className="h-80 w-full object-cover"
+          />
           <button
             onClick={prevSlide}
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 dark:bg-black/50 flex items-center justify-center shadow"
+            className="absolute left-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-gray-950 shadow-sm"
+            aria-label="Previous image"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="h-4 w-4" />
           </button>
           <button
             onClick={nextSlide}
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/80 dark:bg-black/50 flex items-center justify-center shadow"
+            className="absolute right-3 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-gray-950 shadow-sm"
+            aria-label="Next image"
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="h-4 w-4" />
           </button>
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-            {allImages.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setSliderIndex(i)}
-                className={`w-1.5 h-1.5 rounded-full transition-all ${
-                  i === sliderIndex ? "bg-white w-3" : "bg-white/50"
-                }`}
-              />
-            ))}
-          </div>
         </div>
-        <div className="hidden sm:grid grid-cols-5 gap-1.5 h-80 lg:h-120">
-          <motion.img
-            key={mainImage}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4 }}
-            src={mainImage}
-            alt={listing.title}
-            className="col-span-3 w-full h-full object-cover cursor-pointer"
-            onClick={() => {
-              const currentIndex = allImages.indexOf(mainImage);
-              const nextIndex = (currentIndex + 1) % allImages.length;
-              setMainImage(allImages[nextIndex]);
-            }}
-          />
-          <div className="col-span-2 grid grid-rows-2 gap-1.5">
-            <motion.img
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              src={listing.photos[1]}
-              alt={listing.title}
-              className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => setMainImage(listing.photos[1])}
+
+        <div className="hidden h-[520px] grid-cols-4 grid-rows-2 gap-2 overflow-hidden rounded-[1.75rem] sm:grid">
+          {galleryImages.map((photo, index) => (
+            <img
+              key={`${photo}-${index}`}
+              src={photo}
+              alt={`${listing.title} ${index + 1}`}
+              className={`h-full w-full object-cover ${index === 0 ? "col-span-2 row-span-2" : ""}`}
             />
-            <div className="grid grid-cols-2 gap-1.5">
-              <motion.img
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                src={listing.photos[2]}
-                alt={listing.title}
-                className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => setMainImage(listing.photos[2])}
-              />
-              <motion.img
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                src={listing.photos[3]}
-                alt={listing.title}
-                className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                onClick={() => setMainImage(listing.photos[3])}
-              />
-            </div>
-          </div>
+          ))}
         </div>
-      </motion.div>
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8 lg:gap-16 items-start">
-        <motion.div
-          initial={{ x: -30, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          transition={{ delay: 0.4 }}
-        >
-          <motion.h2
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            style={{ fontFamily: "'Playfair Display', serif" }}
-            className="text-lg sm:text-xl font-semibold mb-4"
-          >
-            {listing.title} in {listing.location}
-          </motion.h2>
+      </section>
 
-          <motion.div
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="flex items-center gap-3 mb-6"
-          >
-            <motion.img
-              whileHover={{ scale: 1.1 }}
-              src={listing.host?.avatar || "/default-avatar.png"}
-              alt={listing.host?.name || "Host"}
-              className="w-11 h-11 rounded-full object-cover bg-[#EBEBEB]"
-            />
-            <div>
-              <p className="text-sm font-semibold">
-                Hosted by {listing.host?.name}
-              </p>
-              <p className="text-sm text-[#717171]">{listing.host?.phone}</p>
+      <div className="grid gap-10 lg:grid-cols-[1fr_360px] lg:gap-14">
+        <main>
+          <section className="border-b border-gray-200 pb-7 dark:border-white/[0.08]">
+            <div className="flex items-start gap-4">
+              {listing.host?.avatar ? (
+                <img
+                  src={listing.host.avatar}
+                  alt={listing.host.name || "Host"}
+                  className="h-14 w-14 rounded-2xl object-cover"
+                />
+              ) : (
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-(--color-primary)/10 text-lg font-semibold text-(--color-primary)">
+                  {(listing.host?.name || "H").charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div>
+                <h2 className="text-lg font-semibold text-gray-950 dark:text-white">
+                  Hosted by {listing.host?.name || "Host"}
+                </h2>
+                <p className="mt-1 text-[14px] text-gray-500 dark:text-gray-400">
+                  {listing.type} in {listing.location}
+                </p>
+              </div>
+              <BadgeCheck className="ml-auto h-5 w-5 text-(--color-primary)" />
             </div>
-          </motion.div>
+          </section>
 
-          <div className="h-px bg-[#EBEBEB] dark:bg-[#333] my-6" />
+          <section className="border-b border-gray-200 py-7 dark:border-white/[0.08]">
+            <h2 className="text-xl font-semibold text-gray-950 dark:text-white">
+              About this place
+            </h2>
+            <p className="mt-4 max-w-3xl text-[15px] leading-7 text-gray-600 dark:text-gray-300">
+              {listing.description ||
+                "This stay has all the essentials for a comfortable visit."}
+            </p>
+          </section>
 
-          <motion.p
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            className="text-[15px] leading-7 text-[#333] dark:text-[#CCC]"
-          >
-            {listing.description}
-          </motion.p>
+          <section className="border-b border-gray-200 py-7 dark:border-white/[0.08]">
+            <h2 className="text-xl font-semibold text-gray-950 dark:text-white">
+              What this place offers
+            </h2>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {(listing.amenities?.length ? listing.amenities : ["Guests", "Private stay"]).map(
+                (amenity) => {
+                  const Icon = amenityIcons[amenity.toLowerCase()] || Check;
+                  return (
+                    <div
+                      key={amenity}
+                      className="flex items-center gap-3 rounded-xl border border-gray-200 p-4 text-[14px] text-gray-700 dark:border-white/[0.08] dark:text-gray-300"
+                    >
+                      <Icon className="h-4 w-4 text-(--color-primary)" />
+                      {amenity}
+                    </div>
+                  );
+                },
+              )}
+            </div>
+          </section>
 
-          <div className="h-px bg-[#EBEBEB] dark:bg-[#333] my-6" />
-          <motion.div
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 1 }}
-          >
-            <h3
-              style={{ fontFamily: "'Playfair Display', serif" }}
-              className="text-lg font-semibold mb-4"
-            >
+          <section className="py-7">
+            <h2 className="text-xl font-semibold text-gray-950 dark:text-white">
               Location
-            </h3>
-            <div className="mb-6 rounded-xl overflow-hidden h-56 sm:h-64 bg-[#EBEBEB] dark:bg-[#333]">
+            </h2>
+            <div className="mt-5 overflow-hidden rounded-2xl border border-gray-200 bg-gray-100 dark:border-white/[0.08] dark:bg-white/[0.05]">
               <iframe
-                title="Property Location"
+                title="Property location"
                 width="100%"
-                height="100%"
+                height="300"
                 style={{ border: 0 }}
                 loading="lazy"
                 allowFullScreen
@@ -284,110 +246,73 @@ export default function ListingDetail() {
                 src={mapUrl}
               />
             </div>
-            <motion.a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(listing.location)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              whileHover={{ x: 2 }}
-              className="flex items-center gap-2 text-sm text-(--color-primary) hover:underline mb-6"
-            >
-              <MapPin className="w-4 h-4" />
-              Get directions
-            </motion.a>
-          </motion.div>
+          </section>
+        </main>
 
-          <div className="h-px bg-[#EBEBEB] dark:bg-[#333] my-6" />
-          <motion.div
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 1.3 }}
-          >
-            <h3
-              style={{ fontFamily: "'Playfair Display', serif" }}
-              className="text-lg font-semibold mb-4"
-            >
-              What this place offers
-            </h3>
-            <div className="flex items-center gap-2 text-sm text-[#717171] mb-4">
-              <Users className="w-4 h-4" />
-              <span>Up to {listing.guests} guests</span>
+        <aside className="lg:sticky lg:top-24">
+          <div className="rounded-[1.5rem] border border-gray-200 bg-white p-5 shadow-xl shadow-black/[0.06] dark:border-white/[0.08] dark:bg-[#111827] dark:shadow-black/30">
+            <div className="flex items-baseline justify-between gap-3">
+              <div>
+                <span className="text-2xl font-semibold text-gray-950 dark:text-white">
+                  ${listing.pricePerNight}
+                </span>
+                <span className="text-[14px] text-gray-500"> / night</span>
+              </div>
+              {listing.rating && (
+                <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-gray-950 dark:text-white">
+                  <Star className="h-3.5 w-3.5 fill-amber-400 stroke-none" />
+                  {listing.rating}
+                </span>
+              )}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <AnimatePresence>
-                {listing.amenities?.map((a, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ x: -10, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 1.3 + i * 0.05 }}
-                    className="flex items-center gap-2.5 text-sm"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-(--color-primary) shrink-0" />
-                    {a}
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+
+            <div className="mt-5 rounded-2xl border border-gray-200 dark:border-white/[0.08]">
+              <div className="grid grid-cols-2 divide-x divide-gray-200 dark:divide-white/[0.08]">
+                <div className="p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                    Check-in
+                  </p>
+                  <p className="mt-1 text-[13px] font-medium text-gray-950 dark:text-white">
+                    Add date
+                  </p>
+                </div>
+                <div className="p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                    Check-out
+                  </p>
+                  <p className="mt-1 text-[13px] font-medium text-gray-950 dark:text-white">
+                    Add date
+                  </p>
+                </div>
+              </div>
+              <div className="border-t border-gray-200 p-3 dark:border-white/[0.08]">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                  Guests
+                </p>
+                <p className="mt-1 text-[13px] font-medium text-gray-950 dark:text-white">
+                  Up to {listing.guests} guests
+                </p>
+              </div>
             </div>
-          </motion.div>
-        </motion.div>
-        <motion.div
-          initial={{ x: 30, opacity: 0, y: 20 }}
-          animate={{ x: 0, opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, type: "spring", stiffness: 100 }}
-          className="rounded-2xl border border-[#EBEBEB] dark:border-[#2A2A2A] p-7 lg:sticky lg:top-6"
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.5, type: "spring" }}
-            className="flex items-baseline gap-1.5 mb-5"
-          >
-            <span
-              style={{ fontFamily: "'Playfair Display', serif" }}
-              className="text-2xl font-semibold"
+
+            <button
+              onClick={() => navigate(`/bookings/${id}`)}
+              className="mt-5 w-full rounded-xl bg-(--color-primary) px-5 py-3.5 text-[14px] font-semibold text-white transition-colors hover:bg-(--color-primary-dark)"
             >
-              ${listing.pricePerNight}
-            </span>
-            <span className="text-sm text-[#717171]">per night</span>
-          </motion.div>
-
-          <motion.div
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="flex items-center gap-2 text-sm rounded-lg px-3 py-2.5 mb-5"
-          >
-            <motion.span
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-              className={`w-2 h-2 rounded-full shrink-0 ${
-                listing?.hostId ? "bg-green-500" : "bg-(--color-primary)"
-              }`}
-            />
-            {listing?.hostId
-              ? "Available for booking"
-              : "Rare find! This place is usually booked"}
-          </motion.div>
-
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => navigate(`/bookings/${id}`)}
-            className="w-full bg-(--color-primary) text-white py-3.5 rounded-xl text-[15px] font-semibold tracking-wide hover:opacity-90 transition-opacity"
-          >
-            Book Now
-          </motion.button>
-
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.7 }}
-            className="text-center text-xs text-[#717171] mt-2.5"
-          >
-            You won't be charged yet
-          </motion.p>
-        </motion.div>
+              Reserve
+            </button>
+            <p className="mt-3 text-center text-[12px] text-gray-500 dark:text-gray-400">
+              You will not be charged yet.
+            </p>
+            <Link
+              to={`/listings/${id}/reviews`}
+              className="mt-4 inline-flex w-full justify-center rounded-xl border border-gray-200 px-5 py-3 text-[13px] font-semibold text-gray-700 transition-colors hover:border-(--color-primary) hover:text-(--color-primary) dark:border-white/[0.08] dark:text-gray-300"
+            >
+              Read reviews
+            </Link>
+          </div>
+        </aside>
       </div>
-    </motion.div>
+    </div>
   );
 }

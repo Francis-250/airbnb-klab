@@ -1,4 +1,4 @@
-import { Heart, Star, Phone, Navigation, BadgeCheck } from "lucide-react";
+import { Heart, Star, MapPin, BadgeCheck, ArrowRight } from "lucide-react";
 import type { Listing } from "../../types";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -7,25 +7,29 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
 import { toast } from "sonner";
+import axios from "axios";
 
-export default function ListingCard({
-  listing,
-  type,
-}: {
+interface ListingCardProps {
   listing: Listing;
   type: "grid" | "list";
-}) {
+}
+
+export default function ListingCard({ listing, type }: ListingCardProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isLiked, setIsLiked] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
 
   const toggleFavoriteMutation = useMutation({
     mutationFn: async (listingId: string) => {
       try {
         await api.post(`/users/favorites/${listingId}`);
         return { action: "added", message: "Added to favorites" };
-      } catch (error: any) {
-        if (error.response?.status === 400 || error.response?.status === 409) {
+      } catch (error: unknown) {
+        if (
+          axios.isAxiosError(error) &&
+          (error.response?.status === 400 || error.response?.status === 409)
+        ) {
           await api.delete(`/users/favorites/${listingId}`);
           return { action: "removed", message: "Removed from favorites" };
         }
@@ -37,9 +41,13 @@ export default function ListingCard({
       toast.success(data.message);
       queryClient.invalidateQueries({ queryKey: ["favorites"] });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
+      const message = axios.isAxiosError<{ message?: string }>(error)
+        ? error.response?.data?.message
+        : undefined;
+
       toast.error(
-        error.response?.data?.message || "Failed to update favorites",
+        message || "Failed to update favorites",
       );
     },
   });
@@ -48,7 +56,7 @@ export default function ListingCard({
     e.preventDefault();
     e.stopPropagation();
     if (!user) {
-      toast.error("Please log in to add favorites");
+      toast.error("Please log in to save favorites");
       return;
     }
     toggleFavoriteMutation.mutate(listing.id);
@@ -57,124 +65,97 @@ export default function ListingCard({
   if (type === "list") {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        whileHover={{ y: -4 }}
-        transition={{ duration: 0.3 }}
-        className="flex rounded-2xl overflow-hidden bg-white dark:bg-[#1e242d] mt-2"
+        transition={{ duration: 0.25 }}
+        className="group flex rounded-2xl overflow-hidden border border-gray-100 dark:border-white/[0.07] bg-white dark:bg-[#1a1f2b] hover:border-gray-200 dark:hover:border-white/[0.12] hover:shadow-md hover:shadow-black/[0.05] transition-all duration-200"
       >
         <Link
           to={`/listings/${listing.id}`}
-          style={{
-            backgroundImage: `url(${listing.photos[0]})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-          className="relative w-50 shrink-0 overflow-hidden"
+          className="relative shrink-0 w-44 sm:w-56 overflow-hidden"
         >
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileHover={{ opacity: 0.3 }}
-            className="absolute inset-0 bg-black/20"
+          <div
+            className={`absolute inset-0 bg-gray-100 dark:bg-white/[0.05] transition-opacity duration-500 ${imgLoaded ? "opacity-0" : "opacity-100"}`}
           />
-          <div className="relative z-10 flex flex-col gap-1.5 p-2.5">
-            <motion.span
-              initial={{ x: -10, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.1 }}
-              className="self-start text-[11px] font-medium text-white bg-black/40 rounded px-2 py-0.5"
-            >
-              ★ Featured
-            </motion.span>
-            <motion.span
-              initial={{ x: -10, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="self-start text-[11px] font-medium text-white bg-black/40 rounded px-2 py-0.5"
-            >
-              $100 off ${listing.pricePerNight}: eblwc
-            </motion.span>
-          </div>
+          <img
+            src={listing.photos[0]}
+            alt={listing.title}
+            onLoad={() => setImgLoaded(true)}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
         </Link>
 
-        <div className="flex flex-col justify-between flex-1 p-4 min-w-0">
+        <div className="flex flex-col justify-between flex-1 p-5 min-w-0">
           <div>
-            <div className="flex items-start justify-between gap-2 mb-1">
-              <div>
-                <motion.div
-                  initial={{ x: -10, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.1 }}
-                  className="flex items-center gap-1.5 mb-0.5"
-                >
-                  <Star className="w-3.5 h-3.5 fill-red-500 stroke-none" />
-                  <span className="text-[13px] font-semibold text-red-500">
-                    ({listing.rating})
+            <div className="flex items-start justify-between gap-3 mb-2">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+                    {listing.type ?? "Stay"}
                   </span>
-                </motion.div>
-                <motion.div
-                  initial={{ x: -10, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.2 }}
-                  className="flex items-center gap-1.5"
-                >
-                  <h2 className="text-[15px] font-semibold text-gray-900 dark:text-gray-100">
-                    {listing.title}
-                  </h2>
-                  <BadgeCheck className="w-4 h-4 text-green-500 fill-green-500 stroke-white" />
-                </motion.div>
+                  {listing.host && (
+                    <BadgeCheck className="w-3.5 h-3.5 text-emerald-500" />
+                  )}
+                </div>
+                <h2 className="text-[15px] font-semibold text-gray-900 dark:text-white truncate">
+                  {listing.title}
+                </h2>
               </div>
+
               <motion.button
                 whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
+                whileTap={{ scale: 0.85 }}
                 onClick={handleToggleFavorite}
-                className="shrink-0 mt-0.5"
+                className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 dark:border-white/[0.1] hover:border-red-200 dark:hover:border-red-500/30 transition-colors"
+                aria-label={
+                  isLiked ? "Remove from favorites" : "Save to favorites"
+                }
               >
-                <motion.div
-                  animate={isLiked ? { scale: [1, 1.2, 1] } : {}}
-                  transition={{ duration: 0.3 }}
-                >
-                  <Heart
-                    className={`w-5 h-5 transition-colors ${
-                      isLiked ? "fill-red-500 text-red-500" : "text-red-400"
-                    }`}
-                  />
-                </motion.div>
+                <Heart
+                  className={`w-3.5 h-3.5 transition-colors ${
+                    isLiked ? "fill-red-500 stroke-red-500" : "text-gray-400"
+                  }`}
+                />
               </motion.button>
             </div>
 
-            <motion.p
-              initial={{ y: 10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2 mt-2"
-            >
+            <p className="flex items-center gap-1.5 text-[12px] text-gray-400 mb-3">
+              <MapPin className="w-3 h-3 shrink-0" />
+              {listing.location}
+            </p>
+
+            <p className="text-[13px] text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2">
               {listing.description ??
-                "It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout."}
-            </motion.p>
+                "A wonderful place to stay, carefully curated for a comfortable experience."}
+            </p>
           </div>
 
-          <motion.div
-            initial={{ y: 10, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="flex items-center gap-5 mt-4 pt-3 border-t border-gray-100 dark:border-gray-700"
-          >
-            <motion.span
-              whileHover={{ x: 2 }}
-              className="flex items-center gap-1.5 text-[13px] text-gray-500 dark:text-gray-400"
-            >
-              <Phone className="w-3.5 h-3.5" />
-              {listing.host.phone ?? "(123) 456-7890"}
-            </motion.span>
-            <motion.span
-              whileHover={{ x: 2 }}
-              className="flex items-center gap-1.5 text-[13px] text-gray-500 dark:text-gray-400"
-            >
-              <Navigation className="w-3.5 h-3.5" />
-              Directions
-            </motion.span>
-          </motion.div>
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-white/[0.06]">
+            <div className="flex items-center gap-1.5">
+              <Star className="w-3.5 h-3.5 fill-amber-400 stroke-none" />
+              <span className="text-[13px] font-semibold text-gray-900 dark:text-white">
+                {listing.rating}
+              </span>
+              <span className="text-[12px] text-gray-400">rating</span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <span className="text-[15px] font-bold text-gray-900 dark:text-white">
+                  ${listing.pricePerNight}
+                </span>
+                <span className="text-[12px] text-gray-400"> /night</span>
+              </div>
+              <Link
+                to={`/listings/${listing.id}`}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-(--color-primary) text-white text-[12px] font-semibold rounded-xl hover:opacity-90 active:scale-95 transition-all duration-150"
+              >
+                View
+                <ArrowRight className="w-3 h-3" />
+              </Link>
+            </div>
+          </div>
         </div>
       </motion.div>
     );
@@ -182,79 +163,78 @@ export default function ListingCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      whileHover={{ y: -4 }}
-      transition={{ duration: 0.3 }}
-      className="flex flex-col mt-2"
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+      className="group flex flex-col"
     >
       <Link
         to={`/listings/${listing.id}`}
-        style={{
-          backgroundImage: `url(${listing.photos[0]})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-        className="relative rounded-[10px] overflow-hidden aspect-4/3 w-full"
+        className="relative rounded-2xl overflow-hidden aspect-[4/3] block"
       >
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileHover={{ opacity: 0.5 }}
-          className="absolute inset-0 bg-black/38"
+        <div
+          className={`absolute inset-0 bg-gray-100 dark:bg-white/[0.05] transition-opacity duration-500 ${imgLoaded ? "opacity-0" : "opacity-100 animate-pulse"}`}
         />
-        <div className="relative z-10 flex items-center justify-between px-2.5 pt-2.5">
-          <motion.span
-            initial={{ x: -10, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.1 }}
-            className="text-[11px] font-medium tracking-wide text-white border border-white/30 bg-white/15 rounded-full px-2.5 py-0.5"
-          >
-            Guest Favorite
-          </motion.span>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={handleToggleFavorite}
-            className="w-7 h-7 flex items-center justify-center rounded-full border border-white/30 bg-white/15"
-          >
-            <motion.div
-              animate={isLiked ? { scale: [1, 1.2, 1] } : {}}
-              transition={{ duration: 0.3 }}
-            >
-              <Heart
-                className={`w-3.5 h-3.5 transition-colors ${
-                  isLiked ? "fill-red-500 text-red-500" : "text-white"
-                }`}
-              />
-            </motion.div>
-          </motion.button>
+
+        <img
+          src={listing.photos[0]}
+          alt={listing.title}
+          onLoad={() => setImgLoaded(true)}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        />
+
+        <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/30 to-transparent" />
+
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
+
+        <div className="absolute top-3 left-3">
+          <span className="text-[10px] font-semibold uppercase tracking-widest text-white/90 bg-black/30 backdrop-blur-sm border border-white/20 rounded-full px-2.5 py-1">
+            {listing.type ?? "Stay"}
+          </span>
+        </div>
+
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.85 }}
+          onClick={handleToggleFavorite}
+          className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-sm border border-white/20 hover:bg-white/40 transition-colors"
+          aria-label={isLiked ? "Remove from favorites" : "Save to favorites"}
+        >
+          <Heart
+            className={`w-3.5 h-3.5 transition-all ${
+              isLiked ? "fill-red-500 stroke-red-500 scale-110" : "text-white"
+            }`}
+          />
+        </motion.button>
+
+        <div className="absolute bottom-3 right-3">
+          <span className="text-[12px] font-bold text-white bg-black/40 backdrop-blur-sm rounded-lg px-2.5 py-1">
+            ${listing.pricePerNight}
+            <span className="font-normal opacity-80">/night</span>
+          </span>
         </div>
       </Link>
-      <motion.div
-        initial={{ y: 10, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="pt-2.5 min-w-0"
-      >
-        <div className="flex items-baseline justify-between gap-2 mb-0.5">
-          <h2 className="text-[13px] font-medium text-gray-900 dark:text-gray-100 truncate">
-            {listing.title}
-          </h2>
-          <span className="flex items-center gap-1 text-[12px] text-gray-500 dark:text-gray-400 shrink-0">
-            <Star className="w-3 h-3 fill-amber-400 stroke-none" />
-            {listing.rating}
-          </span>
+
+      <div className="pt-3 px-0.5">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <h2 className="text-[14px] font-semibold text-gray-900 dark:text-white truncate leading-snug">
+              {listing.title}
+            </h2>
+            <p className="flex items-center gap-1 text-[12px] text-gray-400 mt-0.5">
+              <MapPin className="w-3 h-3 shrink-0" />
+              <span className="truncate">{listing.location}</span>
+            </p>
+          </div>
+
+          <div className="flex items-center gap-1 shrink-0 mt-0.5">
+            <Star className="w-3.5 h-3.5 fill-amber-400 stroke-none" />
+            <span className="text-[13px] font-semibold text-gray-900 dark:text-white">
+              {listing.rating}
+            </span>
+          </div>
         </div>
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="text-[12px] text-gray-500 dark:text-gray-400 truncate">
-            {listing.location}
-          </span>
-          <span className="text-[12px] font-medium text-gray-900 dark:text-gray-100 shrink-0">
-            ${listing.pricePerNight}
-            <span className="font-normal text-gray-400">/night</span>
-          </span>
-        </div>
-      </motion.div>
+      </div>
     </motion.div>
   );
 }

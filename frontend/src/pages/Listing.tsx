@@ -8,6 +8,8 @@ import {
   Users,
   Sparkles,
   Lightbulb,
+  X,
+  Search,
 } from "lucide-react";
 
 import { useSearchParams } from "react-router-dom";
@@ -28,10 +30,10 @@ interface AISearchResult {
 }
 
 export default function Listing() {
-  const [type, setType] = useState<"grid" | "list">("grid");
+  const [viewType, setViewType] = useState<"grid" | "list">("grid");
   const [searchParams, setSearchParams] = useSearchParams();
   const locationParam = searchParams.get("location");
-  const [priceRange, setPriceRange] = useState(500);
+  const [priceRange, setPriceRange] = useState(1000);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [searchWish, setSearchWish] = useState("");
@@ -138,6 +140,12 @@ export default function Listing() {
 
   const displayListings = aiResults ?? filteredListings;
 
+  const hasActiveFilters =
+    selectedCategories.length > 0 ||
+    priceRange < 1000 ||
+    !!locationParam ||
+    !!aiResults;
+
   const clearAllFilters = () => {
     setSelectedCategories([]);
     setPriceRange(1000);
@@ -150,309 +158,353 @@ export default function Listing() {
     setAiResults(null);
   };
 
-  if (isLoading)
+  const renderSidebarContent = () => (
+    <div className="flex flex-col gap-6">
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-3">
+          Smart Search
+        </p>
+        <div className="relative mb-2">
+          <textarea
+            placeholder="e.g. Beach house under $300 for 4 guests in Miami..."
+            value={searchWish}
+            onChange={(e) => setSearchWish(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleAISearch();
+              }
+            }}
+            rows={3}
+            className="w-full bg-gray-50 dark:bg-white/[0.04] border border-gray-200 dark:border-white/[0.08] rounded-xl px-3.5 py-3 text-[13px] text-gray-800 dark:text-gray-200 placeholder-gray-300 dark:placeholder-gray-600 outline-none resize-none focus:border-[var(--color-primary)] transition-colors"
+          />
+        </div>
+        <button
+          onClick={handleAISearch}
+          disabled={isAiSearching || !searchWish.trim()}
+          className="w-full flex items-center justify-center gap-2 py-2.5 bg-(--color-primary) text-white rounded-xl text-[12px] font-semibold disabled:opacity-40 hover:opacity-90 active:scale-[0.98] transition-all"
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          {isAiSearching ? "Searching..." : "Search with AI"}
+        </button>
+
+        {aiFeedback && (
+          <div className="mt-3 p-3 bg-gray-50 dark:bg-white/[0.03] border border-gray-100 dark:border-white/[0.06] rounded-xl">
+            <div className="flex items-start gap-2">
+              <Sparkles className="w-3 h-3 text-(--color-primary) mt-0.5 shrink-0" />
+              <p className="text-[12px] text-gray-600 dark:text-gray-400 leading-relaxed">
+                {aiFeedback}
+              </p>
+            </div>
+            {aiSuggestion && (
+              <p className="text-[11px] text-gray-400 mt-2 pl-5 flex items-center gap-1.5">
+                <Lightbulb className="w-3 h-3 shrink-0" /> {aiSuggestion}
+              </p>
+            )}
+          </div>
+        )}
+
+        {aiSearchMessage && (
+          <div className="mt-3 p-3 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-xl text-[12px] text-red-600 dark:text-red-400">
+            {aiSearchMessage}
+          </div>
+        )}
+
+        {aiFilters && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {aiFilters.location && (
+              <span className="flex items-center gap-1 bg-gray-100 dark:bg-white/[0.06] px-2.5 py-1 rounded-lg text-[11px] text-gray-500 dark:text-gray-400">
+                <MapPin className="w-3 h-3" /> {aiFilters.location}
+              </span>
+            )}
+            {aiFilters.type && (
+              <span className="flex items-center gap-1 bg-gray-100 dark:bg-white/[0.06] px-2.5 py-1 rounded-lg text-[11px] text-gray-500 dark:text-gray-400">
+                <Home className="w-3 h-3" /> {aiFilters.type}
+              </span>
+            )}
+            {aiFilters.maxPrice && (
+              <span className="flex items-center gap-1 bg-gray-100 dark:bg-white/[0.06] px-2.5 py-1 rounded-lg text-[11px] text-gray-500 dark:text-gray-400">
+                <DollarSign className="w-3 h-3" /> ${aiFilters.maxPrice}
+              </span>
+            )}
+            {aiFilters.guests && (
+              <span className="flex items-center gap-1 bg-gray-100 dark:bg-white/[0.06] px-2.5 py-1 rounded-lg text-[11px] text-gray-500 dark:text-gray-400">
+                <Users className="w-3 h-3" /> {aiFilters.guests} guests
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="h-px bg-gray-100 dark:bg-white/[0.06]" />
+
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+            Max price
+          </p>
+          <span className="text-[13px] font-semibold text-(--color-primary)">
+            ${priceRange}
+          </span>
+        </div>
+        <input
+          type="range"
+          min={10}
+          max={1000}
+          step={10}
+          value={priceRange}
+          onChange={(e) => setPriceRange(Number(e.target.value))}
+          className="w-full accent-(--color-primary) h-1 cursor-pointer"
+        />
+        <div className="flex justify-between text-[11px] text-gray-300 dark:text-gray-600 mt-1.5">
+          <span>$10</span>
+          <span>$1,000</span>
+        </div>
+      </div>
+
+      <div className="h-px bg-gray-100 dark:bg-white/[0.06]" />
+
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-4">
+          Property type
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {Categories.map((category) => {
+            const checked = selectedCategories.includes(category.title);
+            const Icon = category.icon;
+            return (
+              <button
+                key={category.title}
+                onClick={() => toggleCategory(category.title)}
+                className={[
+                  "flex flex-col items-start gap-1.5 px-3 py-2.5 rounded-xl border text-left transition-all duration-150",
+                  checked
+                    ? "border-(--color-primary) bg-(--color-primary)/5 dark:bg-(--color-primary)/10"
+                    : "border-gray-200 dark:border-white/[0.08] hover:border-gray-300 dark:hover:border-white/20 bg-white dark:bg-white/[0.02]",
+                ].join(" ")}
+              >
+                <Icon
+                  className={[
+                    "w-4 h-4",
+                    checked
+                      ? "text-(--color-primary)"
+                      : "text-gray-400 dark:text-gray-500",
+                  ].join(" ")}
+                />
+                <span
+                  className={[
+                    "text-[12px] font-medium",
+                    checked
+                      ? "text-(--color-primary)"
+                      : "text-gray-600 dark:text-gray-400",
+                  ].join(" ")}
+                >
+                  {category.title}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {hasActiveFilters && (
+        <button
+          onClick={clearAllFilters}
+          className="w-full py-2.5 text-[12px] font-medium text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-white/[0.08] rounded-xl hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors"
+        >
+          Clear all filters
+        </button>
+      )}
+    </div>
+  );
+
+  if (isLoading) {
     return (
-      <div className="min-h-screen py-4 sm:py-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 lg:ml-[296px]">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="aspect-4/3 rounded-2xl bg-[#EBEBEB] dark:bg-[#2A2A2A] animate-pulse"
-            />
-          ))}
+      <div className="max-w-screen-xl mx-auto px-5 sm:px-8 py-8">
+        <div className="lg:grid lg:grid-cols-[260px_1fr] lg:gap-10">
+          <div className="hidden lg:block">
+            <div className="h-8 w-24 bg-gray-100 dark:bg-white/[0.06] rounded-lg animate-pulse mb-6" />
+            <div className="space-y-3">
+              {[80, 60, 70, 55].map((w, i) => (
+                <div
+                  key={i}
+                  className={`h-4 bg-gray-100 dark:bg-white/[0.06] rounded animate-pulse`}
+                  style={{ width: `${w}%` }}
+                />
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="aspect-[4/3] rounded-2xl bg-gray-100 dark:bg-white/[0.05] animate-pulse"
+              />
+            ))}
+          </div>
         </div>
       </div>
     );
+  }
 
-  if (error)
+  if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <p className="text-red-500 text-sm">{error.message}</p>
       </div>
     );
+  }
 
   return (
-    <div className="min-h-screen py-4 sm:py-6">
-      <div className="lg:grid lg:grid-cols-[280px_1fr] lg:gap-8">
-        <button
-          onClick={() => setIsFilterOpen(true)}
-          className="lg:hidden flex items-center gap-2 mb-4 px-4 py-2.5 bg-(--color-primary) text-white rounded-xl text-sm font-medium w-fit"
-        >
-          <SlidersHorizontal className="w-4 h-4" />
-          Filters
-          {(selectedCategories.length > 0 ||
-            priceRange < 1000 ||
-            locationParam) && (
-            <span className="w-4 h-4 bg-white text-(--color-primary) rounded-full text-[10px] font-bold flex items-center justify-center">
-              !
-            </span>
-          )}
-        </button>
-
-        <aside
-          className={`
-            ${isFilterOpen ? "block" : "hidden"}
-            lg:block fixed inset-y-0 left-0 z-50
-            lg:top-14 lg:bottom-auto lg:left-[9vw]
-            w-70 bg-white dark:bg-[#1A1A1A]
-            overflow-y-auto p-6 lg:p-0
-            shadow-xl lg:shadow-none
-          `}
-        >
-          {/* Mobile header */}
-          <div className="lg:hidden flex justify-between items-center mb-6">
-            <h2
-              style={{ fontFamily: "'Playfair Display', serif" }}
-              className="text-lg font-semibold text-[#111] dark:text-white"
-            >
-              Filters
-            </h2>
-            <button
-              onClick={() => setIsFilterOpen(false)}
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#F5F5F5] dark:hover:bg-[#2A2A2A] transition-colors text-[#AAAAAA]"
-            >
-              ✕
-            </button>
-          </div>
-
-          <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl p-6">
-            {/* Desktop header */}
-            <div className="hidden lg:flex items-center gap-2 mb-6">
+    <div className="max-w-screen-xl mx-auto px-5 sm:px-8 py-8 min-h-screen">
+      <div className="lg:grid lg:grid-cols-[260px_1fr] lg:gap-10">
+        <aside className="hidden lg:block">
+          <div className="sticky top-20">
+            <div className="flex items-center gap-2 mb-6">
               <SlidersHorizontal className="w-4 h-4 text-(--color-primary)" />
-              <h2
-                style={{ fontFamily: "'Playfair Display', serif" }}
-                className="text-base font-semibold text-[#111] dark:text-white"
-              >
+              <h2 className="text-[15px] font-semibold text-gray-900 dark:text-white">
                 Filters
               </h2>
             </div>
-
-            {/* Price */}
-            <div className="mb-7">
-              <div className="flex justify-between items-center mb-3">
-                <p className="text-[13px] font-semibold text-[#111] dark:text-white">
-                  Max Price
-                </p>
-                <span className="text-[13px] font-semibold text-(--color-primary)">
-                  ${priceRange}
-                </span>
-              </div>
-              <p className="text-[12px] text-[#AAAAAA] mb-3">
-                Slide to set max nightly rate
-              </p>
-              <input
-                type="range"
-                min={10}
-                max={1000}
-                value={priceRange}
-                onChange={(e) => setPriceRange(Number(e.target.value))}
-                className="w-full accent-(--color-primary) h-1 cursor-pointer"
-              />
-              <div className="flex justify-between text-[11px] text-[#CCCCCC] mt-1">
-                <span>$10</span>
-                <span>$1000</span>
-              </div>
-            </div>
-
-            <div className="h-px bg-[#EBEBEB] dark:bg-[#2A2A2A] mb-6" />
-
-            {/* Smart Search */}
-            <div>
-              <p className="text-[13px] font-semibold text-[#111] dark:text-white mb-1">
-                Smart Search
-              </p>
-              <p className="text-[12px] text-[#AAAAAA] mb-4">
-                Describe what you're looking for
-              </p>
-              <div className="flex flex-col gap-2">
-                <textarea
-                  placeholder="e.g. Beach house under $300 for 4 guests in Miami"
-                  value={searchWish}
-                  onChange={(e) => setSearchWish(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleAISearch();
-                    }
-                  }}
-                  rows={3}
-                  className="w-full bg-[#F5F5F5] dark:bg-[#2A2A2A] py-2 px-3 text-[13px] text-[#333] dark:text-[#CCCCCC] outline-none transition-colors rounded-xl resize-none"
-                />
-                <button
-                  onClick={handleAISearch}
-                  disabled={isAiSearching || !searchWish.trim()}
-                  className="flex items-center justify-center gap-2 px-3 py-2.5 bg-(--color-primary) text-white rounded-xl text-[12px] font-semibold disabled:opacity-50 transition-opacity"
-                >
-                  <Sparkles className="w-3 h-3" />
-                  {isAiSearching ? "Searching..." : "Smart Search"}
-                </button>
-              </div>
-
-              {aiFeedback && (
-                <div className="mt-3 p-2.5 bg-[#F8F8F8] dark:bg-[#222] border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-xl">
-                  <div className="flex items-start gap-2">
-                    <Sparkles className="w-3 h-3 text-(--color-primary) mt-0.5 shrink-0" />
-                    <p className="text-[12px] text-[#333] dark:text-[#CCC]">
-                      {aiFeedback}
-                    </p>
-                  </div>
-                  {aiSuggestion && (
-                    <p className="text-[11px] text-[#AAAAAA] mt-2 pl-5 flex items-center gap-1">
-                      <Lightbulb className="w-3 h-3 shrink-0" /> {aiSuggestion}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {aiSearchMessage && (
-                <div className="mt-3 p-2.5 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-[11px] text-red-700 dark:text-red-300">
-                  {aiSearchMessage}
-                </div>
-              )}
-
-              {aiFilters && (
-                <div className="mt-3 flex flex-wrap gap-1">
-                  {aiFilters.location && (
-                    <span className="flex items-center gap-1 bg-[#EBEBEB] dark:bg-[#2A2A2A] px-2 py-1 rounded-lg text-[11px] text-[#717171]">
-                      <MapPin className="w-3 h-3" /> {aiFilters.location}
-                    </span>
-                  )}
-                  {aiFilters.type && (
-                    <span className="flex items-center gap-1 bg-[#EBEBEB] dark:bg-[#2A2A2A] px-2 py-1 rounded-lg text-[11px] text-[#717171]">
-                      <Home className="w-3 h-3" /> {aiFilters.type}
-                    </span>
-                  )}
-                  {aiFilters.maxPrice && (
-                    <span className="flex items-center gap-1 bg-[#EBEBEB] dark:bg-[#2A2A2A] px-2 py-1 rounded-lg text-[11px] text-[#717171]">
-                      <DollarSign className="w-3 h-3" /> {aiFilters.maxPrice}
-                    </span>
-                  )}
-                  {aiFilters.guests && (
-                    <span className="flex items-center gap-1 bg-[#EBEBEB] dark:bg-[#2A2A2A] px-2 py-1 rounded-lg text-[11px] text-[#717171]">
-                      <Users className="w-3 h-3" /> {aiFilters.guests} guests
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="h-px bg-[#EBEBEB] dark:bg-[#2A2A2A] my-6" />
-
-            {/* Categories */}
-            <div>
-              <p className="text-[13px] font-semibold text-[#111] dark:text-white mb-1">
-                Categories
-              </p>
-              <p className="text-[12px] text-[#AAAAAA] mb-4">
-                Filter by listing type
-              </p>
-              <div className="flex flex-col gap-2.5">
-                {Categories.map((category) => {
-                  const checked = selectedCategories.includes(category.title);
-                  return (
-                    <label
-                      key={category.title}
-                      className="flex items-center gap-3 cursor-pointer group"
-                    >
-                      <span
-                        onClick={() => toggleCategory(category.title)}
-                        className={`w-4 h-4 rounded flex items-center justify-center shrink-0 transition-colors ${
-                          checked
-                            ? "bg-(--color-primary)"
-                            : "bg-[#EBEBEB] dark:bg-[#2A2A2A] group-hover:bg-[#DDDDDD] dark:group-hover:bg-[#333]"
-                        }`}
-                      >
-                        {checked && (
-                          <svg
-                            width="9"
-                            height="7"
-                            viewBox="0 0 9 7"
-                            fill="none"
-                          >
-                            <path
-                              d="M1 3.5L3.5 6L8 1"
-                              stroke="white"
-                              strokeWidth="1.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        )}
-                      </span>
-                      <span className="text-[13px] text-[#333] dark:text-[#CCCCCC]">
-                        {category.title}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
+            {renderSidebarContent()}
           </div>
         </aside>
 
-        {/* Overlay */}
         {isFilterOpen && (
-          <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden"
-            onClick={() => setIsFilterOpen(false)}
-          />
+          <>
+            <div
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
+              onClick={() => setIsFilterOpen(false)}
+            />
+            <div className="fixed inset-y-0 left-0 w-[300px] max-w-full z-50 bg-white dark:bg-[#0f1117] overflow-y-auto lg:hidden shadow-2xl">
+              <div className="p-5">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2">
+                    <SlidersHorizontal className="w-4 h-4 text-(--color-primary)" />
+                    <h2 className="text-[15px] font-semibold text-gray-900 dark:text-white">
+                      Filters
+                    </h2>
+                  </div>
+                  <button
+                    onClick={() => setIsFilterOpen(false)}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-white/[0.06] transition-colors"
+                  >
+                    <X className="w-4 h-4 text-gray-400" />
+                  </button>
+                </div>
+                {renderSidebarContent()}
+              </div>
+            </div>
+          </>
         )}
 
-        {/* Main content */}
-        <div className="lg:col-start-2">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-5">
-            <div>
-              <h1
-                style={{ fontFamily: "'Playfair Display', serif" }}
-                className="text-xl font-semibold text-[#111] dark:text-white"
+        <div>
+          <div className="flex items-center justify-between gap-4 mb-7">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsFilterOpen(true)}
+                className="lg:hidden flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 dark:border-white/[0.1] text-[13px] font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/[0.05] transition-colors"
               >
-                {displayListings.length} Listings Found
-              </h1>
-              {locationParam && (
-                <p className="text-[13px] text-[#AAAAAA] mt-0.5 flex items-center gap-1">
-                  <MapPin className="w-3 h-3" /> {locationParam}
-                </p>
-              )}
-              {(selectedCategories.length > 0 ||
-                priceRange < 1000 ||
-                locationParam ||
-                aiResults) && (
-                <button
-                  onClick={clearAllFilters}
-                  className="text-[11px] text-(--color-primary) mt-2 underline"
-                >
-                  Clear all filters
-                </button>
-              )}
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                Filters
+                {hasActiveFilters && (
+                  <span className="w-4 h-4 bg-(--color-primary) text-white rounded-full text-[9px] font-bold flex items-center justify-center">
+                    {selectedCategories.length +
+                      (locationParam ? 1 : 0) +
+                      (priceRange < 1000 ? 1 : 0)}
+                  </span>
+                )}
+              </button>
+
+              <div>
+                <h1 className="text-[15px] font-semibold text-gray-900 dark:text-white">
+                  {displayListings.length}{" "}
+                  <span className="font-normal text-gray-400">
+                    {displayListings.length === 1 ? "listing" : "listings"}
+                  </span>
+                </h1>
+                {locationParam && (
+                  <p className="text-[12px] text-gray-400 flex items-center gap-1 mt-0.5">
+                    <MapPin className="w-3 h-3" /> {locationParam}
+                  </p>
+                )}
+              </div>
             </div>
 
-            <div className="flex items-center bg-white dark:bg-[#1A1A1A] rounded-xl overflow-hidden p-1 gap-1 w-fit">
+            <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-white/[0.05] rounded-xl">
               <button
-                onClick={() => setType("grid")}
-                className={`p-2 rounded-lg transition-colors ${type === "grid" ? "bg-(--color-primary) text-white" : "text-[#AAAAAA] hover:text-[#111] dark:hover:text-white"}`}
+                onClick={() => setViewType("grid")}
+                className={[
+                  "p-2 rounded-lg transition-all duration-150",
+                  viewType === "grid"
+                    ? "bg-white dark:bg-white/[0.1] text-gray-900 dark:text-white shadow-sm"
+                    : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300",
+                ].join(" ")}
+                aria-label="Grid view"
               >
                 <Grid className="w-4 h-4" />
               </button>
               <button
-                onClick={() => setType("list")}
-                className={`p-2 rounded-lg transition-colors ${type === "list" ? "bg-(--color-primary) text-white" : "text-[#AAAAAA] hover:text-[#111] dark:hover:text-white"}`}
+                onClick={() => setViewType("list")}
+                className={[
+                  "p-2 rounded-lg transition-all duration-150",
+                  viewType === "list"
+                    ? "bg-white dark:bg-white/[0.1] text-gray-900 dark:text-white shadow-sm"
+                    : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300",
+                ].join(" ")}
+                aria-label="List view"
               >
                 <List className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          {displayListings.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#F5F5F5] dark:bg-[#2A2A2A] flex items-center justify-center">
-                <Home className="w-5 h-5 text-[#CCCCCC]" />
-              </div>
-              <p className="text-[13px] font-medium text-[#111] dark:text-white">
-                No listings match your filters
-              </p>
+          {hasActiveFilters && (
+            <div className="flex flex-wrap gap-2 mb-5">
+              {locationParam && (
+                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-white/[0.06] rounded-lg text-[12px] text-gray-600 dark:text-gray-400">
+                  <MapPin className="w-3 h-3" /> {locationParam}
+                </span>
+              )}
+              {selectedCategories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => toggleCategory(cat)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-white/[0.06] rounded-lg text-[12px] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-white/[0.1] transition-colors"
+                >
+                  {cat} <X className="w-2.5 h-2.5" />
+                </button>
+              ))}
+              {priceRange < 1000 && (
+                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-white/[0.06] rounded-lg text-[12px] text-gray-600 dark:text-gray-400">
+                  Up to ${priceRange}
+                </span>
+              )}
               <button
                 onClick={clearAllFilters}
-                className="text-[12px] text-(--color-primary) underline"
+                className="px-3 py-1.5 text-[12px] text-(--color-primary) hover:underline"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
+
+          {displayListings.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-white/[0.05] flex items-center justify-center">
+                <Search className="w-6 h-6 text-gray-300 dark:text-gray-600" />
+              </div>
+              <div className="text-center">
+                <p className="text-[14px] font-medium text-gray-900 dark:text-white mb-1">
+                  No listings found
+                </p>
+                <p className="text-[13px] text-gray-400">
+                  Try adjusting your filters or search differently
+                </p>
+              </div>
+              <button
+                onClick={clearAllFilters}
+                className="mt-2 px-5 py-2 text-[13px] font-medium bg-(--color-primary) text-white rounded-xl hover:opacity-90 transition-opacity"
               >
                 Clear all filters
               </button>
@@ -460,13 +512,17 @@ export default function Listing() {
           ) : (
             <div
               className={
-                type === "grid"
-                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
+                viewType === "grid"
+                  ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5"
                   : "flex flex-col gap-4"
               }
             >
               {displayListings.map((listing: Listing) => (
-                <ListingCard key={listing.id} listing={listing} type={type} />
+                <ListingCard
+                  key={listing.id}
+                  listing={listing}
+                  type={viewType}
+                />
               ))}
             </div>
           )}
