@@ -10,6 +10,7 @@ import {
   CalendarDays,
   User,
   LogOut,
+  Compass,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -109,20 +110,22 @@ export default function Navbar() {
         className={[
           "fixed inset-x-0 top-0 z-50 bg-white transition-all duration-300 dark:bg-[#0f1117]",
           compact
-            ? "h-[70px] border-b border-gray-200 shadow-sm dark:border-white/[0.08]"
+            ? "h-[70px] border-b border-gray-200 dark:border-white/[0.08]"
             : "h-[130px] border-b border-gray-100 dark:border-white/[0.08] md:h-[200px]",
         ].join(" ")}
       >
-        <div className="mx-auto flex h-16 items-center justify-between px-5 sm:px-8 lg:px-14">
+        <div className="mx-auto flex h-16 items-center justify-between px-4 md:px-[6vw] lg:px-[9vw]">
           <Link
             to="/"
-            className="flex items-center gap-2 text-(--color-primary)"
-            aria-label="Airbnb home"
+            className="flex items-center gap-2 shrink-0 group"
+            aria-label="Home"
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-(--color-primary)">
-              <Home className="h-4 w-4" />
+            <span className="w-8 h-8 rounded-xl bg-[var(--color-primary)] flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform duration-200">
+              <Compass className="w-4 h-4 text-white" strokeWidth={2} />
             </span>
-            <span className="text-xl font-bold tracking-tight">airbnb</span>
+            <span className="text-[17px] font-semibold tracking-tight text-gray-900 dark:text-white">
+              Air<span className="text-(--color-primary)">b</span>nb
+            </span>
           </Link>
 
           <div
@@ -223,7 +226,7 @@ export default function Navbar() {
           <LargeSearch where={where} setWhere={setWhere} onSearch={runSearch} />
         </div>
 
-        <div className="mx-5 mt-1 md:hidden">
+        <div className="mx-4 mt-1 md:hidden">
           <CompactSearch onSearch={runSearch} />
         </div>
       </header>
@@ -234,7 +237,7 @@ export default function Navbar() {
             className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
             onClick={() => setIsMobileMenuOpen(false)}
           />
-          <div className="fixed inset-x-3 top-20 z-50 rounded-2xl border border-gray-200 bg-white p-3 shadow-2xl dark:border-white/[0.08] dark:bg-[#111827] md:hidden">
+          <div className="fixed inset-x-3 top-20 z-50 rounded-2xl border border-gray-200 bg-white p-3 dark:border-white/[0.08] dark:bg-[#111827] md:hidden">
             <MobileMenu
               user={user}
               favoritesCount={favoritesCount}
@@ -261,7 +264,7 @@ function LargeSearch({
   onSearch: () => void;
 }) {
   return (
-    <div className="grid h-[64px] grid-cols-[1fr_1fr_1fr_auto] items-center rounded-full border border-gray-200 bg-white pl-6 pr-2 shadow-lg shadow-black/[0.08] dark:border-white/[0.1] dark:bg-[#111827]">
+    <div className="grid h-[64px] grid-cols-[1fr_1fr_1fr_auto] items-center rounded-full border border-gray-200 bg-white pl-6 pr-2 dark:border-white/[0.1] dark:bg-[#111827]">
       <label className="min-w-0 border-r border-gray-200 pr-5 dark:border-white/[0.1]">
         <span className="block text-xs font-semibold text-gray-950 dark:text-white">
           Where
@@ -299,7 +302,7 @@ function LargeSearch({
 
 function CompactSearch({ onSearch }: { onSearch: () => void }) {
   return (
-    <div className="flex h-[48px] items-center rounded-full border border-gray-200 bg-white pl-4 pr-2 shadow-md shadow-black/[0.08] dark:border-white/[0.1] dark:bg-[#111827]">
+    <div className="flex h-[48px] items-center rounded-full border border-gray-200 bg-white pl-4 pr-2 dark:border-white/[0.1] dark:bg-[#111827]">
       <button
         onClick={onSearch}
         className="flex items-center gap-2 border-r border-gray-200 pr-4 text-xs font-semibold text-gray-950 dark:border-white/[0.1] dark:text-white"
@@ -344,7 +347,7 @@ function ProfileMenu({
   close: () => void;
 }) {
   return (
-    <div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-2xl border border-gray-200 bg-white py-2 shadow-xl shadow-black/10 dark:border-white/[0.08] dark:bg-[#111827] dark:shadow-black/40">
+    <div className="absolute right-0 mt-2 w-56 overflow-hidden rounded-2xl border border-gray-200 bg-white py-2 dark:border-white/[0.08] dark:bg-[#111827]">
       {user ? (
         <>
           <div className="px-4 py-2">

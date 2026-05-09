@@ -118,14 +118,6 @@ export default function BookingForm() {
 
   return (
     <div className="min-h-screen py-8">
-      <button
-        onClick={() => navigate(-1)}
-        className="mb-7 inline-flex items-center gap-2 rounded-full border border-gray-200 px-4 py-2 text-[13px] font-semibold text-gray-700 transition-colors hover:bg-gray-50 dark:border-white/[0.08] dark:text-gray-300 dark:hover:bg-white/[0.04]"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back
-      </button>
-
       <div className="mb-8">
         <p className="text-[12px] font-semibold uppercase tracking-widest text-(--color-primary)">
           Reservation
@@ -307,8 +299,14 @@ export default function BookingForm() {
             </div>
 
             <div className="mt-5 overflow-hidden rounded-2xl border border-gray-200 dark:border-white/[0.08]">
-              <SummaryField label="Check-in" value={checkIn ? formatDate(checkIn) : "Add date"} />
-              <SummaryField label="Check-out" value={checkOut ? formatDate(checkOut) : "Add date"} />
+              <SummaryField
+                label="Check-in"
+                value={checkIn ? formatDate(checkIn) : "Add date"}
+              />
+              <SummaryField
+                label="Check-out"
+                value={checkOut ? formatDate(checkOut) : "Add date"}
+              />
               <SummaryField
                 label="Guests"
                 value={`Up to ${listing.guests} guests`}
