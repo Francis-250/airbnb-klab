@@ -17,7 +17,7 @@ import { Categories } from "../data";
 import ListingCard from "../components/card/ListingCard";
 import { useState } from "react";
 import { api } from "../lib/api";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { AIFilters, Listing, ListingType } from "../types";
 
 interface AISearchResult {
@@ -56,6 +56,7 @@ export default function Listing() {
   const {
     data: listingsResponse,
     error,
+    isFetching,
     isLoading,
   } = useQuery<ListingsSearchResponse>({
     queryKey: [
@@ -84,6 +85,7 @@ export default function Listing() {
       const res = await api.get(`/listings/search?${params.toString()}`);
       return res.data;
     },
+    placeholderData: keepPreviousData,
   });
 
   const handleAISearch = async () => {
@@ -432,12 +434,19 @@ export default function Listing() {
               </button>
 
               <div>
-                <h1 className="text-[15px] font-semibold text-gray-900 dark:text-white">
-                  {displayTotal}{" "}
-                  <span className="font-normal text-gray-400">
-                    {displayTotal === 1 ? "listing" : "listings"}
-                  </span>
-                </h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-[15px] font-semibold text-gray-900 dark:text-white">
+                    {displayTotal}{" "}
+                    <span className="font-normal text-gray-400">
+                      {displayTotal === 1 ? "listing" : "listings"}
+                    </span>
+                  </h1>
+                  {isFetching && !isLoading && (
+                    <span className="text-[11px] font-medium text-gray-400">
+                      Updating...
+                    </span>
+                  )}
+                </div>
                 {locationParam && (
                   <p className="text-[12px] text-gray-400 flex items-center gap-1 mt-0.5">
                     <MapPin className="w-3 h-3" /> {locationParam}
