@@ -12,6 +12,7 @@ import {
   DollarSign,
   Users,
   Home,
+  BarChart3,
 } from "lucide-react";
 import ListingForm from "../../components/form/ListingForm";
 import { api } from "../../lib/api";
@@ -36,6 +37,14 @@ const typeConfig: Record<string, string> = {
   villa:
     "bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
   cabin: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+};
+
+const chartColors = ["#2563EB", "#059669", "#D97706", "#DC2626", "#7C3AED"];
+
+const statusConfig: Record<string, string> = {
+  available: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300",
+  booked: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+  unavailable: "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300",
 };
 
 export default function DashboardListing() {
@@ -135,6 +144,33 @@ export default function DashboardListing() {
         listing.title?.toLowerCase().includes(searchText.toLowerCase()),
       )
     : [];
+  const averagePrice =
+    filteredListings.length > 0
+      ? Math.round(
+          filteredListings.reduce(
+            (sum, listing) => sum + (listing.pricePerNight || 0),
+            0,
+          ) / filteredListings.length,
+        )
+      : 0;
+  const maxPrice = Math.max(
+    ...filteredListings.map((listing) => listing.pricePerNight || 0),
+    1,
+  );
+  const typeChart = Object.entries(
+    filteredListings.reduce<Record<string, number>>((acc, listing) => {
+      const key = listing.type || "unknown";
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {}),
+  );
+  const statusChart = Object.entries(
+    filteredListings.reduce<Record<string, number>>((acc, listing) => {
+      const key = listing.status || "available";
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {}),
+  );
 
   if (error) {
     return (
@@ -271,6 +307,119 @@ export default function DashboardListing() {
         </div>
       ) : (
         <>
+          <section className="grid gap-3 py-4 lg:grid-cols-[1fr_1fr_1.25fr]">
+            <div className="rounded-2xl border border-[#EBEBEB] bg-white p-4 dark:border-[#2A2A2A] dark:bg-[#1A1A1A]">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[12px] font-semibold uppercase tracking-wide text-[#AAAAAA]">
+                    Types
+                  </p>
+                  <h2 className="mt-1 text-lg font-semibold text-[#111] dark:text-white">
+                    {filteredListings.length} listings
+                  </h2>
+                </div>
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F7F7F7] text-[#717171] dark:bg-[#222]">
+                  <BarChart3 className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="mt-4 space-y-3">
+                {typeChart.length === 0 ? (
+                  <p className="text-[13px] text-[#AAAAAA]">No data yet</p>
+                ) : (
+                  typeChart.map(([type, count], index) => (
+                    <ChartRow
+                      key={type}
+                      label={type}
+                      value={count}
+                      total={filteredListings.length}
+                      color={chartColors[index % chartColors.length]}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-[#EBEBEB] bg-white p-4 dark:border-[#2A2A2A] dark:bg-[#1A1A1A]">
+              <p className="text-[12px] font-semibold uppercase tracking-wide text-[#AAAAAA]">
+                Status
+              </p>
+              <div className="mt-4 grid grid-cols-1 gap-2">
+                {statusChart.length === 0 ? (
+                  <p className="text-[13px] text-[#AAAAAA]">No data yet</p>
+                ) : (
+                  statusChart.map(([status, count]) => (
+                    <div
+                      key={status}
+                      className="flex items-center justify-between rounded-xl border border-[#F0F0F0] px-3 py-2 dark:border-[#2A2A2A]"
+                    >
+                      <span
+                        className={`rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize ${
+                          statusConfig[status] ??
+                          "bg-[#F0F0F0] text-[#717171]"
+                        }`}
+                      >
+                        {status}
+                      </span>
+                      <span className="text-sm font-semibold text-[#111] dark:text-white">
+                        {count}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-[#EBEBEB] bg-white p-4 dark:border-[#2A2A2A] dark:bg-[#1A1A1A]">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[12px] font-semibold uppercase tracking-wide text-[#AAAAAA]">
+                    Nightly Price
+                  </p>
+                  <h2 className="mt-1 text-lg font-semibold text-[#111] dark:text-white">
+                    ${averagePrice} average
+                  </h2>
+                </div>
+                <span className="rounded-full bg-[#F7F7F7] px-3 py-1 text-[12px] font-semibold text-[#717171] dark:bg-[#222]">
+                  Max ${maxPrice}
+                </span>
+              </div>
+              <div className="mt-4 flex h-36 items-end gap-2">
+                {filteredListings.slice(0, 8).map((listing, index) => {
+                  const height = Math.max(
+                    10,
+                    Math.round(((listing.pricePerNight || 0) / maxPrice) * 100),
+                  );
+                  return (
+                    <div
+                      key={listing.id}
+                      className="flex min-w-0 flex-1 flex-col items-center gap-2"
+                      title={`${listing.title}: $${listing.pricePerNight}`}
+                    >
+                      <div className="flex h-28 w-full items-end rounded-lg bg-[#F7F7F7] dark:bg-[#222]">
+                        <div
+                          className="w-full rounded-lg transition-all"
+                          style={{
+                            height: `${height}%`,
+                            backgroundColor:
+                              chartColors[index % chartColors.length],
+                          }}
+                        />
+                      </div>
+                      <span className="w-full truncate text-center text-[10px] font-medium text-[#717171]">
+                        ${listing.pricePerNight || 0}
+                      </span>
+                    </div>
+                  );
+                })}
+                {filteredListings.length === 0 && (
+                  <div className="flex h-full w-full items-center justify-center rounded-xl bg-[#F7F7F7] text-[13px] text-[#AAAAAA] dark:bg-[#222]">
+                    No price data
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
           {/* Desktop Table */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm text-left">
@@ -521,6 +670,39 @@ export default function DashboardListing() {
           onSuccess={handleFormSuccess}
         />
       )}
+    </div>
+  );
+}
+
+function ChartRow({
+  label,
+  value,
+  total,
+  color,
+}: {
+  label: string;
+  value: number;
+  total: number;
+  color: string;
+}) {
+  const width = total > 0 ? Math.max(8, Math.round((value / total) * 100)) : 0;
+
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center justify-between gap-3">
+        <span className="text-[12px] font-medium capitalize text-[#717171]">
+          {label}
+        </span>
+        <span className="text-[12px] font-semibold text-[#111] dark:text-white">
+          {value}
+        </span>
+      </div>
+      <div className="h-2 rounded-full bg-[#F0F0F0] dark:bg-[#222]">
+        <div
+          className="h-full rounded-full"
+          style={{ width: `${width}%`, backgroundColor: color }}
+        />
+      </div>
     </div>
   );
 }

@@ -10,6 +10,18 @@ import {
   MapPin,
   ChevronRight,
 } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { useAuthStore } from "../../store/auth.store";
 
 interface Booking {
@@ -112,6 +124,15 @@ const stats_config = [
   },
 ];
 
+const chartColors = ["#2563EB", "#059669", "#D97706", "#DC2626", "#7C3AED"];
+
+const tooltipStyle = {
+  border: "1px solid #EBEBEB",
+  borderRadius: "12px",
+  boxShadow: "none",
+  fontSize: "12px",
+};
+
 export default function Dashboard() {
   const { user } = useAuthStore();
 
@@ -119,6 +140,27 @@ export default function Dashboard() {
     queryKey: ["dashboard-stats"],
     queryFn: getDashboardStats,
   });
+
+  const listingChartData =
+    stats?.topListings?.map((listing) => ({
+      name:
+        listing.title.length > 18
+          ? `${listing.title.slice(0, 18)}...`
+          : listing.title,
+      bookings: listing._count?.bookings ?? 0,
+      revenue: (listing._count?.bookings ?? 0) * listing.pricePerNight,
+    })) ?? [];
+
+  const bookingStatusData = Object.entries(
+    (stats?.recentBookings ?? []).reduce<Record<string, number>>(
+      (acc, booking) => {
+        const status = booking.status || "unknown";
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      },
+      {},
+    ),
+  ).map(([name, value]) => ({ name, value }));
 
   if (isLoading) {
     return (
@@ -176,6 +218,134 @@ export default function Dashboard() {
             </div>
           );
         })}
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 xl:grid-cols-[1.4fr_0.9fr] gap-6">
+        <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-[#F0F0F0] dark:border-[#2A2A2A] p-5">
+          <div className="flex items-start justify-between gap-3 mb-6">
+            <div>
+              <h2
+                style={{ fontFamily: "'Playfair Display', serif" }}
+                className="text-base font-semibold text-[#111] dark:text-white"
+              >
+                Listing Performance
+              </h2>
+              <p className="text-[12px] text-[#AAAAAA] mt-0.5">
+                Bookings and estimated revenue by top listing.
+              </p>
+            </div>
+          </div>
+
+          <div className="h-72">
+            {listingChartData.length ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={listingChartData} margin={{ left: -16 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 11, fill: "#717171" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    yAxisId="left"
+                    tick={{ fontSize: 11, fill: "#717171" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    tick={{ fontSize: 11, fill: "#717171" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    contentStyle={tooltipStyle}
+                    formatter={(value, name) =>
+                      name === "revenue" ? [`$${value}`, "Revenue"] : [value, "Bookings"]
+                    }
+                  />
+                  <Bar
+                    yAxisId="left"
+                    dataKey="bookings"
+                    fill="#2563EB"
+                    radius={[8, 8, 0, 0]}
+                    maxBarSize={42}
+                  />
+                  <Bar
+                    yAxisId="right"
+                    dataKey="revenue"
+                    fill="#059669"
+                    radius={[8, 8, 0, 0]}
+                    maxBarSize={42}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center rounded-xl bg-[#F7F7F7] text-[13px] text-[#AAAAAA] dark:bg-[#222]">
+                No listing performance yet
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-[#1A1A1A] rounded-2xl border border-[#F0F0F0] dark:border-[#2A2A2A] p-5">
+          <h2
+            style={{ fontFamily: "'Playfair Display', serif" }}
+            className="text-base font-semibold text-[#111] dark:text-white"
+          >
+            Booking Status
+          </h2>
+          <p className="text-[12px] text-[#AAAAAA] mt-0.5">
+            Recent booking mix by status.
+          </p>
+
+          <div className="mt-4 h-72">
+            {bookingStatusData.length ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={bookingStatusData}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={58}
+                    outerRadius={92}
+                    paddingAngle={4}
+                  >
+                    {bookingStatusData.map((entry, index) => (
+                      <Cell
+                        key={entry.name}
+                        fill={chartColors[index % chartColors.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={tooltipStyle} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center rounded-xl bg-[#F7F7F7] text-[13px] text-[#AAAAAA] dark:bg-[#222]">
+                No booking status data
+              </div>
+            )}
+          </div>
+
+          <div className="mt-2 flex flex-wrap gap-2">
+            {bookingStatusData.map((entry, index) => (
+              <span
+                key={entry.name}
+                className="inline-flex items-center gap-1.5 rounded-full border border-[#F0F0F0] px-2.5 py-1 text-[11px] font-medium capitalize text-[#717171] dark:border-[#2A2A2A]"
+              >
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: chartColors[index % chartColors.length] }}
+                />
+                {entry.name}: {entry.value}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Tables */}

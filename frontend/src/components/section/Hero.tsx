@@ -5,9 +5,9 @@ import SearchBar from "../SearchBar";
 export default function Hero() {
   return (
     <section className="pt-4">
-      <div className="grid min-h-[620px] grid-cols-1 overflow-hidden rounded-[2rem] border border-gray-200 bg-white dark:border-white/[0.08] dark:bg-[#111827] lg:grid-cols-[1.03fr_0.97fr]">
+      <div className="grid min-h-155 grid-cols-1 overflow-hidden rounded-4xl border border-gray-200 bg-white dark:border-white/8 dark:bg-[#111827] lg:grid-cols-[1.03fr_0.97fr]">
         <div className="flex flex-col justify-between px-5 py-7 sm:px-8 lg:px-10 lg:py-10">
-          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-[12px] font-medium text-gray-600 dark:border-white/[0.1] dark:text-gray-300">
+          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-gray-200 px-3 py-1.5 text-[12px] font-medium text-gray-600 dark:border-white/10 dark:text-gray-300">
             <ShieldCheck className="h-3.5 w-3.5 text-(--color-primary)" />
             Verified stays from local hosts
           </div>
@@ -40,7 +40,7 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="relative min-h-[360px] bg-gray-100 dark:bg-white/[0.04] lg:min-h-full">
+        <div className="relative min-h-90 bg-gray-100 dark:bg-white/4 lg:min-h-full">
           <img
             src="/image/hero-background.jpg"
             alt="Beautiful guest stay"
