@@ -8,7 +8,7 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const prisma_1 = __importDefault(require("../lib/prisma"));
 const helpers_1 = require("../lib/helpers");
 const crypto_1 = __importDefault(require("crypto"));
-const mailer_1 = require("../middleware/mailer");
+const resend_1 = require("../middleware/resend");
 const mail_temp_1 = require("../templates/mail.temp");
 const register = async (req, res) => {
     const { name, email, username, phone, role, bio, password } = req.body;
@@ -44,12 +44,13 @@ const register = async (req, res) => {
         const message = isHost
             ? "Registration successful! Your host account has been created."
             : "Registration successful! You can now log in.";
-        await (0, mailer_1.sendEmail)({
+        await (0, resend_1.sendEmail)({
             to: email,
             subject: "Welcome to Airbnb!",
             html: (0, mail_temp_1.welcomeEmail)(user.name),
         });
-        res.status(201).json(user);
+        const { password: _, ...userWithoutPassword } = user;
+        res.status(201).json({ message, user: userWithoutPassword });
     }
     catch (error) {
         res.status(500).json({ message: "Internal server error" });
@@ -66,7 +67,7 @@ const login = async (req, res) => {
             where: { email },
         });
         if (!user) {
-            return res.status(404).json({ message: "Invalid credentials" });
+            return res.status(401).json({ message: "Invalid credentials" });
         }
         const isMatch = await (0, helpers_1.comparePassword)(password, user.password);
         if (!isMatch) {
@@ -75,11 +76,18 @@ const login = async (req, res) => {
         const token = jsonwebtoken_1.default.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1h" });
         res.cookie("token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
+            secure: true,
+            sameSite: "none",
             maxAge: 3600000,
         });
-        return res.status(200).json({ message: "Login successful" });
+        return res.status(200).json({
+            message: "Login successful",
+            user: {
+                id: user.id,
+                email: user.email,
+                role: user.role,
+            },
+        });
     }
     catch (error) {
         console.log(error);
@@ -96,6 +104,7 @@ const getCurrentUser = async (req, res) => {
         const currentUser = await prisma_1.default.user.findUnique({
             where: { id: user },
             select: {
+                id: true,
                 name: true,
                 email: true,
                 username: true,
@@ -108,7 +117,7 @@ const getCurrentUser = async (req, res) => {
         if (!currentUser) {
             return res.status(404).json({ message: "User not found" });
         }
-        res.status(200).json(currentUser);
+        res.status(200).json({ user: currentUser });
     }
     catch (error) {
         console.log(error);
@@ -160,7 +169,7 @@ const forgotPassword = async (req, res) => {
                 where: { email },
                 data: { resetToken: otp, resetTokenExpiry },
             });
-            await (0, mailer_1.sendEmail)({
+            await (0, resend_1.sendEmail)({
                 to: email,
                 subject: "Your Password Reset OTP",
                 html: (0, mail_temp_1.passwordResetEmail)(otp),
@@ -246,6 +255,11 @@ const updateAvatar = async (req, res) => {
             where: { id: req.user },
             data: { avatar },
         });
+        const { password: _, ...userWithoutPassword } = updated;
+        res.status(201).json({
+            message: "Avatar updated successfully",
+            updated: userWithoutPassword,
+        });
         res.json(updated);
     }
     catch (error) {
@@ -264,6 +278,11 @@ const deleteUserAvatar = async (req, res) => {
         const updated = await prisma_1.default.user.update({
             where: { id: req.user },
             data: { avatar: null },
+        });
+        const { password: _, ...userWithoutPassword } = updated;
+        res.status(201).json({
+            message: "Avatar updated successfully",
+            updated: userWithoutPassword,
         });
         res.json(updated);
     }

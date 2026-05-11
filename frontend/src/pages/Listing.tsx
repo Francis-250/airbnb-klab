@@ -15,7 +15,7 @@ import {
 import { useSearchParams } from "react-router-dom";
 import { Categories } from "../data";
 import ListingCard from "../components/card/ListingCard";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { api } from "../lib/api";
 import { useQuery } from "@tanstack/react-query";
 import type { AIFilters, Listing, ListingType } from "../types";
@@ -29,10 +29,16 @@ interface AISearchResult {
   meta: { total: number; page: number; limit: number; totalPages: number };
 }
 
+interface ListingsSearchResponse {
+  data: Listing[];
+  meta: { total: number; page: number; limit: number; totalPages: number };
+}
+
 export default function Listing() {
   const [viewType, setViewType] = useState<"grid" | "list">("grid");
   const [searchParams, setSearchParams] = useSearchParams();
   const locationParam = searchParams.get("location");
+  const guestsParam = searchParams.get("guests");
   const [priceRange, setPriceRange] = useState(1000);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -45,13 +51,32 @@ export default function Listing() {
   const [aiResults, setAiResults] = useState<Listing[] | null>(null);
 
   const {
-    data: listings,
+    data: listingsResponse,
     error,
     isLoading,
-  } = useQuery<Listing[]>({
-    queryKey: ["listings"],
+  } = useQuery<ListingsSearchResponse>({
+    queryKey: [
+      "listings",
+      "search",
+      locationParam,
+      guestsParam,
+      priceRange,
+      selectedCategories,
+    ],
     queryFn: async () => {
-      const res = await api.get("/listings");
+      const params = new URLSearchParams();
+      if (locationParam) params.set("location", locationParam);
+      if (guestsParam) params.set("guests", guestsParam);
+      if (priceRange < 1000) params.set("maxPrice", String(priceRange));
+      if (selectedCategories.length > 0) {
+        params.set(
+          "type",
+          selectedCategories.map((category) => category.toLowerCase()).join(","),
+        );
+      }
+      params.set("limit", "100");
+
+      const res = await api.get(`/listings/search?${params.toString()}`);
       return res.data;
     },
   });
@@ -118,32 +143,16 @@ export default function Listing() {
     );
   };
 
-  const filteredListings = useMemo(() => {
-    if (!listings) return [];
-    return listings.filter((listing: Listing) => {
-      if (priceRange && listing.pricePerNight > priceRange) return false;
-      if (selectedCategories.length > 0) {
-        const match = selectedCategories.some(
-          (cat) => listing.type?.toLowerCase() === cat.toLowerCase(),
-        );
-        if (!match) return false;
-      }
-      if (locationParam) {
-        const match = listing.location
-          ?.toLowerCase()
-          .includes(locationParam.toLowerCase());
-        if (!match) return false;
-      }
-      return true;
-    });
-  }, [listings, priceRange, selectedCategories, locationParam]);
-
-  const displayListings = aiResults ?? filteredListings;
+  const listings = listingsResponse?.data ?? [];
+  const totalListings = listingsResponse?.meta.total ?? listings.length;
+  const displayListings = aiResults ?? listings;
+  const displayTotal = aiResults ? aiResults.length : totalListings;
 
   const hasActiveFilters =
     selectedCategories.length > 0 ||
     priceRange < 1000 ||
     !!locationParam ||
+    !!guestsParam ||
     !!aiResults;
 
   const clearAllFilters = () => {
@@ -411,6 +420,7 @@ export default function Listing() {
                   <span className="w-4 h-4 bg-(--color-primary) text-white rounded-full text-[9px] font-bold flex items-center justify-center">
                     {selectedCategories.length +
                       (locationParam ? 1 : 0) +
+                      (guestsParam ? 1 : 0) +
                       (priceRange < 1000 ? 1 : 0)}
                   </span>
                 )}
@@ -418,14 +428,19 @@ export default function Listing() {
 
               <div>
                 <h1 className="text-[15px] font-semibold text-gray-900 dark:text-white">
-                  {displayListings.length}{" "}
+                  {displayTotal}{" "}
                   <span className="font-normal text-gray-400">
-                    {displayListings.length === 1 ? "listing" : "listings"}
+                    {displayTotal === 1 ? "listing" : "listings"}
                   </span>
                 </h1>
                 {locationParam && (
                   <p className="text-[12px] text-gray-400 flex items-center gap-1 mt-0.5">
                     <MapPin className="w-3 h-3" /> {locationParam}
+                  </p>
+                )}
+                {guestsParam && (
+                  <p className="text-[12px] text-gray-400 flex items-center gap-1 mt-0.5">
+                    <Users className="w-3 h-3" /> {guestsParam} guests
                   </p>
                 )}
               </div>
@@ -478,6 +493,11 @@ export default function Listing() {
               {priceRange < 1000 && (
                 <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-white/[0.06] rounded-lg text-[12px] text-gray-600 dark:text-gray-400">
                   Up to ${priceRange}
+                </span>
+              )}
+              {guestsParam && (
+                <span className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-white/[0.06] rounded-lg text-[12px] text-gray-600 dark:text-gray-400">
+                  <Users className="w-3 h-3" /> {guestsParam} guests
                 </span>
               )}
               <button

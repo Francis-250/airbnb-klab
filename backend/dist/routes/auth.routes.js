@@ -4,6 +4,7 @@ const express_1 = require("express");
 const auth_controller_1 = require("../controllers/auth.controller");
 const auth_middleware_1 = require("../middleware/auth.middleware");
 const upload_middleware_1 = require("../middleware/upload.middleware");
+const ratelimiter_1 = require("../middleware/ratelimiter");
 const router = (0, express_1.Router)();
 /**
  * @swagger
@@ -36,7 +37,7 @@ const router = (0, express_1.Router)();
  *       400: { description: Bad request }
  *       409: { description: Email already exists }
  */
-router.post("/register", upload_middleware_1.upload.single("avatar"), auth_controller_1.register);
+router.post("/register", ratelimiter_1.registerLimiter, upload_middleware_1.upload.single("avatar"), auth_controller_1.register);
 /**
  * @swagger
  * /api/auth/login:
@@ -59,7 +60,7 @@ router.post("/register", upload_middleware_1.upload.single("avatar"), auth_contr
  *       200: { description: Login successful }
  *       401: { description: Invalid credentials }
  */
-router.post("/login", auth_controller_1.login);
+router.post("/login", ratelimiter_1.loginLimiter, auth_controller_1.login);
 /**
  * @swagger
  * /api/auth/me:
@@ -125,7 +126,7 @@ router.post("/change-password", auth_middleware_1.verifyToken, auth_controller_1
  *     responses:
  *       200: { description: Reset email sent if email exists }
  */
-router.post("/forgot-password", auth_controller_1.forgotPassword);
+router.post("/forgot-password", ratelimiter_1.forgotPasswordLimiter, auth_controller_1.forgotPassword);
 /**
  * @swagger
  * /api/auth/reset-password:
@@ -171,7 +172,7 @@ router.post("/reset-password", auth_controller_1.resetPassword);
  *       200: { description: OTP verified successfully }
  *       400: { description: Invalid OTP }
  */
-router.post("/verify-otp", auth_controller_1.verifyOtp);
+router.post("/verify-otp", ratelimiter_1.otpLimiter, auth_controller_1.verifyOtp);
 /**
  * @swagger
  * /api/auth/avatar:

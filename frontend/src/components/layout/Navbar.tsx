@@ -41,11 +41,16 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [where, setWhere] = useState("");
+  const location = useLocation();
+  const [where, setWhere] = useState(
+    () => new URLSearchParams(location.search).get("location") || "",
+  );
+  const [guests, setGuests] = useState(
+    () => new URLSearchParams(location.search).get("guests") || "",
+  );
   const profileRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
-  const location = useLocation();
   const isHome = location.pathname === "/";
   const compact = !isHome || scrolled;
 
@@ -113,7 +118,12 @@ export default function Navbar() {
   const runSearch = () => {
     const params = new URLSearchParams();
     if (where.trim()) params.set("location", where.trim());
+    const guestsCount = Number(guests);
+    if (Number.isFinite(guestsCount) && guestsCount > 0) {
+      params.set("guests", String(guestsCount));
+    }
     navigate(`/all-listings${params.toString() ? `?${params}` : ""}`);
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -148,7 +158,11 @@ export default function Navbar() {
                 : "top-20 scale-95 opacity-0 pointer-events-none",
             ].join(" ")}
           >
-            <CompactSearch onSearch={runSearch} />
+            <CompactSearch
+              where={where}
+              setWhere={setWhere}
+              onSearch={runSearch}
+            />
           </div>
 
           <nav
@@ -230,11 +244,21 @@ export default function Navbar() {
               : "top-[100px] scale-100 opacity-100",
           ].join(" ")}
         >
-          <LargeSearch where={where} setWhere={setWhere} onSearch={runSearch} />
+          <LargeSearch
+            where={where}
+            setWhere={setWhere}
+            guests={guests}
+            setGuests={setGuests}
+            onSearch={runSearch}
+          />
         </div>
 
         <div className="mx-4 mt-1 md:hidden">
-          <CompactSearch onSearch={runSearch} />
+          <CompactSearch
+            where={where}
+            setWhere={setWhere}
+            onSearch={runSearch}
+          />
         </div>
       </header>
 
@@ -264,10 +288,14 @@ export default function Navbar() {
 function LargeSearch({
   where,
   setWhere,
+  guests,
+  setGuests,
   onSearch,
 }: {
   where: string;
   setWhere: (value: string) => void;
+  guests: string;
+  setGuests: (value: string) => void;
   onSearch: () => void;
 }) {
   return (
@@ -290,12 +318,20 @@ function LargeSearch({
         </span>
         <span className="mt-0.5 block text-sm text-gray-500">Add dates</span>
       </button>
-      <button className="px-5 text-left">
+      <label className="px-5 text-left">
         <span className="block text-xs font-semibold text-gray-950 dark:text-white">
           Who
         </span>
-        <span className="mt-0.5 block text-sm text-gray-500">Add guests</span>
-      </button>
+        <input
+          type="number"
+          min={1}
+          value={guests}
+          onChange={(e) => setGuests(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && onSearch()}
+          placeholder="Add guests"
+          className="mt-0.5 w-full bg-transparent text-sm text-gray-700 outline-none placeholder:text-gray-500 dark:text-gray-200 dark:placeholder:text-gray-500"
+        />
+      </label>
       <button
         onClick={onSearch}
         className="flex h-[48px] w-[48px] items-center justify-center rounded-full bg-(--color-primary) text-white transition-colors hover:bg-(--color-primary-dark)"
@@ -307,28 +343,27 @@ function LargeSearch({
   );
 }
 
-function CompactSearch({ onSearch }: { onSearch: () => void }) {
+function CompactSearch({
+  where,
+  setWhere,
+  onSearch,
+}: {
+  where: string;
+  setWhere: (value: string) => void;
+  onSearch: () => void;
+}) {
   return (
     <div className="flex h-[48px] items-center rounded-full border border-gray-200 bg-white pl-4 pr-2 dark:border-white/[0.1] dark:bg-[#111827]">
-      <button
-        onClick={onSearch}
-        className="flex items-center gap-2 border-r border-gray-200 pr-4 text-xs font-semibold text-gray-950 dark:border-white/[0.1] dark:text-white"
-      >
+      <label className="flex min-w-0 flex-1 items-center gap-2 pr-3 text-xs font-semibold text-gray-950 dark:text-white">
         <Home className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-        Anywhere
-      </button>
-      <Link
-        to="/bookings"
-        className="border-r border-gray-200 px-4 text-xs font-semibold text-gray-950 dark:border-white/[0.1] dark:text-white"
-      >
-        Bookings
-      </Link>
-      <Link
-        to="/favorites"
-        className="px-4 text-xs font-semibold text-gray-950 dark:text-white"
-      >
-        Favorites
-      </Link>
+        <input
+          value={where}
+          onChange={(e) => setWhere(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && onSearch()}
+          placeholder="Anywhere"
+          className="min-w-0 flex-1 bg-transparent text-xs text-gray-950 outline-none placeholder:text-gray-500 dark:text-white dark:placeholder:text-gray-500"
+        />
+      </label>
       <button
         onClick={onSearch}
         className="flex h-9 w-9 items-center justify-center rounded-full bg-(--color-primary) text-white transition-colors hover:bg-(--color-primary-dark)"

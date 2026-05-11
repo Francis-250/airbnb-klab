@@ -235,7 +235,20 @@ export const searchListings = async (req: Request, res: Response) => {
   const where: any = {};
   if (location)
     where.location = { contains: location as string, mode: "insensitive" };
-  if (type) where.type = type as string;
+  if (type) {
+    const types = Array.isArray(type)
+      ? type.flatMap((item) => String(item).split(","))
+      : String(type).split(",");
+    const normalizedTypes = types
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean);
+
+    if (normalizedTypes.length === 1) {
+      where.type = normalizedTypes[0];
+    } else if (normalizedTypes.length > 1) {
+      where.type = { in: normalizedTypes };
+    }
+  }
   if (minPrice || maxPrice) {
     where.pricePerNight = {};
     if (minPrice) where.pricePerNight.gte = parseFloat(minPrice as string);

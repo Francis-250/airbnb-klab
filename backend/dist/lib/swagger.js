@@ -19,6 +19,10 @@ const options = {
                 url: "http://localhost:4000",
                 description: "Local server",
             },
+            {
+                url: "https://airbnb-api-oi1o.onrender.com",
+                description: "Production server",
+            },
         ],
         components: {
             securitySchemes: {

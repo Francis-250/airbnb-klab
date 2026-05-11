@@ -36,26 +36,31 @@ const passwordResetEmail = (otp) => `
       <p style="font-size: 14px; color: #7f8c8d;">If you did not request this password reset, please ignore this email or contact our support team.</p>
     </div>
     <div style="padding-top: 20px; text-align: center; border-top: 1px solid #e0e0e0; color: #7f8c8d; font-size: 12px;">
-      <p>© 2024 Your Company Name. All rights reserved.</p>
+      <p> 2024 Your Company Name. All rights reserved.</p>
     </div>
   </div>
 `;
 exports.passwordResetEmail = passwordResetEmail;
-const bookingStatusEmail = (status) => `
+const bookingStatusEmail = (status, listingTitle) => `
   <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px;">
-    <div style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #3498db;">
+    <div style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid ${status === "confirmed" ? "#27ae60" : "#e74c3c"};">
       <h1 style="color: #2c3e50; margin: 0;">Booking Status Update</h1>
     </div>
     <div style="padding: 20px 0;">
-      <p style="font-size: 16px; color: #34495e;">Dear Customer,</p>
-      <p style="font-size: 16px; color: #34495e; line-height: 1.5;">Your booking has been <strong style="color: #3498db; text-transform: uppercase;">${status}</strong>.</p>
-      <div style="background-color: ${status === "confirmed" ? "#e8f8f5" : status === "cancelled" ? "#fdedec" : "#fef9e7"}; padding: 15px; border-radius: 5px; margin: 20px 0;">
+      <p style="font-size: 16px; color: #34495e;">Dear Guest,</p>
+      <p style="font-size: 16px; color: #34495e; line-height: 1.5;">Your booking status has been updated. Below are the details:</p>
+      ${listingTitle
+    ? `<div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0 0 10px 0; font-size: 18px; font-weight: bold; color: #2c3e50;">${listingTitle}</p>
+        <p style="margin: 5px 0; color: #34495e;">Status: <strong>${status.toUpperCase()}</strong></p>
+      </div>`
+    : `<div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
         <p style="margin: 0; color: #2c3e50;">Status: <strong>${status.toUpperCase()}</strong></p>
-      </div>
+      </div>`}
       <p style="font-size: 16px; color: #34495e;">Thank you for choosing our service. We appreciate your business.</p>
     </div>
     <div style="padding-top: 20px; text-align: center; border-top: 1px solid #e0e0e0; color: #7f8c8d; font-size: 12px;">
-      <p>© 2024 Your Company Name. All rights reserved.</p>
+      <p> 2024 Your Company Name. All rights reserved.</p>
     </div>
   </div>
 `;

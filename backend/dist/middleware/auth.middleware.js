@@ -20,16 +20,18 @@ const verifyToken = (req, res, next) => {
         return next();
     }
     catch (error) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(401).json({ message: "Invalid token" });
     }
 };
 exports.verifyToken = verifyToken;
 const isHost = (req, res, next) => {
     if (!req.user) {
-        return res.status(401).json({ message: "Unauthorized" });
+        return res.status(401).json({ message: "You need to be authenticated" });
     }
     if (req.role !== "host") {
-        return res.status(403).json({ message: "Forbidden" });
+        return res
+            .status(403)
+            .json({ message: "Only hosts can perform this action" });
     }
     next();
 };
@@ -39,7 +41,9 @@ const isGuest = (req, res, next) => {
         return res.status(401).json({ message: "Unauthorized" });
     }
     if (req.role !== "guest") {
-        return res.status(403).json({ message: "Forbidden" });
+        return res
+            .status(403)
+            .json({ message: "Only guests can perform this action" });
     }
     next();
 };

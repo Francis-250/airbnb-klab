@@ -4,21 +4,60 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteBooking = exports.updateBooking = exports.createBooking = exports.getBookingById = exports.getAllBookings = void 0;
+const client_1 = require("@prisma/client");
 const prisma_1 = __importDefault(require("../lib/prisma"));
-const mailer_1 = require("../middleware/mailer");
+const resend_1 = require("../middleware/resend");
 const mail_temp_1 = require("../templates/mail.temp");
 const getAllBookings = async (req, res) => {
     const user = req.user;
     const role = req.role;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+    const status = req.query.status;
+    const now = new Date();
     try {
-        const bookings = await prisma_1.default.booking.findMany({
-            where: role === "guest" ? { guestId: user } : { listing: { hostId: user } },
-            include: {
-                guest: { select: { name: true, avatar: true } },
-                listing: { select: { title: true, location: true } },
-            },
+        const baseWhere = role === "guest" ? { guestId: user } : { listing: { hostId: user } };
+        const where = status === "upcoming"
+            ? {
+                ...baseWhere,
+                status: { in: [client_1.BookingStatus.pending, client_1.BookingStatus.confirmed] },
+                checkOut: { gte: now },
+            }
+            : status === "past"
+                ? {
+                    ...baseWhere,
+                    status: { not: client_1.BookingStatus.cancelled },
+                    checkOut: { lt: now },
+                }
+                : status === "cancelled"
+                    ? { ...baseWhere, status: client_1.BookingStatus.cancelled }
+                    : baseWhere;
+        const [bookings, total] = await Promise.all([
+            prisma_1.default.booking.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { createdAt: "desc" },
+                include: {
+                    guest: { select: { name: true, email: true, avatar: true } },
+                    listing: {
+                        select: {
+                            id: true,
+                            title: true,
+                            location: true,
+                            photos: true,
+                            pricePerNight: true,
+                        },
+                    },
+                },
+            }),
+            prisma_1.default.booking.count({ where }),
+        ]);
+        res.status(200).json({
+            data: bookings,
+            meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
         });
-        res.status(200).json(bookings);
     }
     catch (error) {
         res.status(500).json({ message: "Internal server error" });
@@ -78,7 +117,7 @@ const createBooking = async (req, res) => {
             },
         });
         const guest = await prisma_1.default.user.findUnique({ where: { id: user } });
-        await (0, mailer_1.sendEmail)({
+        await (0, resend_1.sendEmail)({
             to: guest?.email,
             subject: "Welcome to Airbnb!",
             html: (0, mail_temp_1.bookingConfirmationEmail)(listing.title, checkIn, checkOut),
@@ -98,7 +137,7 @@ const updateBooking = async (req, res) => {
     try {
         const booking = await prisma_1.default.booking.findUnique({
             where: { id: id },
-            include: { listing: true },
+            include: { listing: true, guest: true },
         });
         if (!booking)
             return res.status(404).json({ message: "Booking not found" });
@@ -116,14 +155,10 @@ const updateBooking = async (req, res) => {
             where: { id: id },
             data: { status },
         });
-        const message = status === "approved"
-            ? "Your booking has been approved!"
-            : "Your booking has been rejected.";
-        const guest = await prisma_1.default.user.findUnique({ where: { id: user } });
-        await (0, mailer_1.sendEmail)({
-            to: guest?.email,
-            subject: "Welcome to Airbnb!",
-            html: (0, mail_temp_1.bookingStatusEmail)(status),
+        await (0, resend_1.sendEmail)({
+            to: booking.guest?.email,
+            subject: `Booking Status Update: ${status}`,
+            html: (0, mail_temp_1.bookingStatusEmail)(status, booking.listing.title),
         });
         res.status(200).json(updated);
     }
