@@ -12,10 +12,14 @@ const resend_1 = require("../middleware/resend");
 const mail_temp_1 = require("../templates/mail.temp");
 const register = async (req, res) => {
     const { name, email, username, phone, role, bio, password } = req.body;
+    const requestedRole = role === "host" ? "host" : "guest";
     if (!name || !email || !username || !password) {
         return res
             .status(400)
             .json({ message: "Name, email, username and password are required" });
+    }
+    if (role && !["guest", "host"].includes(role)) {
+        return res.status(400).json({ message: "Invalid account role" });
     }
     try {
         const existingUser = await prisma_1.default.user.findFirst({
@@ -34,15 +38,16 @@ const register = async (req, res) => {
                 email,
                 username,
                 phone,
-                role,
+                role: requestedRole,
+                hostStatus: requestedRole === "host" ? "pending" : "approved",
                 avatar,
                 bio,
                 password: hashedpassword,
             },
         });
-        const isHost = role === "host";
+        const isHost = requestedRole === "host";
         const message = isHost
-            ? "Registration successful! Your host account has been created."
+            ? "Registration successful! Your host account is pending admin approval."
             : "Registration successful! You can now log in.";
         await (0, resend_1.sendEmail)({
             to: email,
@@ -84,8 +89,10 @@ const login = async (req, res) => {
             message: "Login successful",
             user: {
                 id: user.id,
+                name: user.name,
                 email: user.email,
                 role: user.role,
+                hostStatus: user.hostStatus,
             },
         });
     }
@@ -110,6 +117,7 @@ const getCurrentUser = async (req, res) => {
                 username: true,
                 phone: true,
                 role: true,
+                hostStatus: true,
                 avatar: true,
                 bio: true,
             },

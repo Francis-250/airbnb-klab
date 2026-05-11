@@ -1,16 +1,21 @@
 import { Link, useLocation } from "react-router-dom";
 import { ChevronLeft, X } from "lucide-react";
-import { DashboardLinks } from "../../data";
+import { AdminLinks, DashboardLinks } from "../../data";
+import { useAuthStore } from "../../store/auth.store";
 
 interface NavLinksProps {
   activeLink: string;
   collapsed: boolean;
+  role?: string;
   onClickLink?: () => void;
 }
 
-const NavLinks = ({ activeLink, collapsed, onClickLink }: NavLinksProps) => (
-  <div className="flex flex-col gap-1 px-3">
-    {DashboardLinks.map((link, index) => {
+const NavLinks = ({ activeLink, collapsed, role, onClickLink }: NavLinksProps) => {
+  const links = role === "admin" ? AdminLinks : DashboardLinks;
+
+  return (
+    <div className="flex flex-col gap-1 px-3">
+      {links.map((link, index) => {
       const Icon = link.icon;
       const isActive =
         link.url === "/dashboard"
@@ -37,8 +42,9 @@ const NavLinks = ({ activeLink, collapsed, onClickLink }: NavLinksProps) => (
         </Link>
       );
     })}
-  </div>
-);
+    </div>
+  );
+};
 
 interface SidebarProps {
   collapsed: boolean;
@@ -54,6 +60,8 @@ export default function Sidebar({
   isOpen,
 }: SidebarProps) {
   const location = useLocation();
+  const { user } = useAuthStore();
+  const title = user?.role === "admin" ? "Admin" : "Dashboard";
 
   return (
     <>
@@ -72,7 +80,7 @@ export default function Sidebar({
               style={{ fontFamily: "'Playfair Display', serif" }}
               className="text-[16px] font-semibold text-[#111] dark:text-white"
             >
-              Dashboard
+              {title}
             </span>
           )}
           <button
@@ -87,7 +95,11 @@ export default function Sidebar({
           </button>
         </div>
         <nav className="flex-1 py-4 overflow-y-auto">
-          <NavLinks activeLink={location.pathname} collapsed={collapsed} />
+          <NavLinks
+            activeLink={location.pathname}
+            collapsed={collapsed}
+            role={user?.role}
+          />
         </nav>
         {!collapsed && (
           <div className="px-5 py-4 border-t border-[#EBEBEB] dark:border-[#2A2A2A]">
@@ -107,7 +119,7 @@ export default function Sidebar({
             style={{ fontFamily: "'Playfair Display', serif" }}
             className="text-[16px] font-semibold text-[#111] dark:text-white"
           >
-            Dashboard
+            {title}
           </span>
           <button
             onClick={() => setIsOpen(false)}
@@ -121,6 +133,7 @@ export default function Sidebar({
           <NavLinks
             activeLink={location.pathname}
             collapsed={false}
+            role={user?.role}
             onClickLink={() => setIsOpen(false)}
           />
         </nav>

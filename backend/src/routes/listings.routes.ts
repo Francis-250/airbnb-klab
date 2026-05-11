@@ -9,7 +9,7 @@ import {
   getListingStats,
   getMyListings,
 } from "../controllers/listings.controller";
-import { isHost, verifyToken } from "../middleware/auth.middleware";
+import { isApprovedHost, verifyToken } from "../middleware/auth.middleware";
 import { upload } from "../middleware/upload.middleware";
 
 const router = Router();
@@ -45,7 +45,7 @@ const router = Router();
  *     responses:
  *       200: { description: Success }
  */
-router.get("/me", getMyListings);
+router.get("/me", verifyToken, isApprovedHost, getMyListings);
 
 router.get("/", getAllListings);
 
@@ -189,7 +189,13 @@ router.get("/:id", getListingById);
  *       401: { description: Unauthorized }
  *       403: { description: Forbidden - hosts only }
  */
-router.post("/", verifyToken, isHost, upload.array("photos", 5), createListing);
+router.post(
+  "/",
+  verifyToken,
+  isApprovedHost,
+  upload.array("photos", 5),
+  createListing,
+);
 
 /**
  * @swagger
@@ -221,7 +227,7 @@ router.post("/", verifyToken, isHost, upload.array("photos", 5), createListing);
 router.put(
   "/:id",
   verifyToken,
-  isHost,
+  isApprovedHost,
   upload.array("photos", 10),
   updateListing,
 );
@@ -243,6 +249,6 @@ router.put(
  *       403: { description: Forbidden }
  *       404: { description: Listing not found }
  */
-router.delete("/:id", verifyToken, isHost, deleteListing);
+router.delete("/:id", verifyToken, isApprovedHost, deleteListing);
 
 export default router;

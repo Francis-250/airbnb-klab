@@ -4,7 +4,7 @@ import Spinner from "../components/Spinner";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: "host" | "guest";
+  requiredRole?: "host" | "guest" | "admin";
 }
 
 export function ProtectedRoute({
@@ -20,7 +20,7 @@ export function ProtectedRoute({
   }
 
   if (requiredRole && user.role !== requiredRole) {
-    if (requiredRole === "host") {
+    if (requiredRole === "host" || requiredRole === "admin") {
       return <Navigate to="/" replace />;
     } else {
       return <Navigate to="/dashboard" replace />;

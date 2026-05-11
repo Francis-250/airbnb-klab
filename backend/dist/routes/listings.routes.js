@@ -36,7 +36,7 @@ const router = (0, express_1.Router)();
  *     responses:
  *       200: { description: Success }
  */
-router.get("/me", listings_controller_1.getMyListings);
+router.get("/me", auth_middleware_1.verifyToken, auth_middleware_1.isApprovedHost, listings_controller_1.getMyListings);
 router.get("/", listings_controller_1.getAllListings);
 /**
  * @swagger
@@ -176,7 +176,7 @@ router.get("/:id", listings_controller_1.getListingById);
  *       401: { description: Unauthorized }
  *       403: { description: Forbidden - hosts only }
  */
-router.post("/", auth_middleware_1.verifyToken, auth_middleware_1.isHost, upload_middleware_1.upload.array("photos", 5), listings_controller_1.createListing);
+router.post("/", auth_middleware_1.verifyToken, auth_middleware_1.isApprovedHost, upload_middleware_1.upload.array("photos", 5), listings_controller_1.createListing);
 /**
  * @swagger
  * /api/listings/{id}:
@@ -204,7 +204,7 @@ router.post("/", auth_middleware_1.verifyToken, auth_middleware_1.isHost, upload
  *       403: { description: Forbidden }
  *       404: { description: Listing not found }
  */
-router.put("/:id", auth_middleware_1.verifyToken, auth_middleware_1.isHost, upload_middleware_1.upload.array("photos", 10), listings_controller_1.updateListing);
+router.put("/:id", auth_middleware_1.verifyToken, auth_middleware_1.isApprovedHost, upload_middleware_1.upload.array("photos", 10), listings_controller_1.updateListing);
 /**
  * @swagger
  * /api/listings/{id}:
@@ -222,5 +222,5 @@ router.put("/:id", auth_middleware_1.verifyToken, auth_middleware_1.isHost, uplo
  *       403: { description: Forbidden }
  *       404: { description: Listing not found }
  */
-router.delete("/:id", auth_middleware_1.verifyToken, auth_middleware_1.isHost, listings_controller_1.deleteListing);
+router.delete("/:id", auth_middleware_1.verifyToken, auth_middleware_1.isApprovedHost, listings_controller_1.deleteListing);
 exports.default = router;

@@ -29,7 +29,12 @@ const router = (0, express_1.Router)();
  *             example:
  *               error: "Unauthorized: No token provided"
  */
-router.get("/", auth_middleware_1.verifyToken, users_controller_1.getAllUsers);
+router.get("/", auth_middleware_1.verifyToken, auth_middleware_1.isAdmin, users_controller_1.getAllUsers);
+router.get("/hosts", auth_middleware_1.verifyToken, auth_middleware_1.isAdmin, users_controller_1.getHostAccounts);
+router.patch("/hosts/:id/status", auth_middleware_1.verifyToken, auth_middleware_1.isAdmin, users_controller_1.updateHostStatus);
+router.get("/favorites", auth_middleware_1.verifyToken, users_controller_1.getFavorites);
+router.post("/favorites/:listingId", auth_middleware_1.verifyToken, users_controller_1.addFavorite);
+router.delete("/favorites/:listingId", auth_middleware_1.verifyToken, users_controller_1.removeFavorite);
 /**
  * @swagger
  * /api/users/{id}:
@@ -149,47 +154,4 @@ router.put("/:id", auth_middleware_1.verifyToken, users_controller_1.updateUser)
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 router.delete("/:id", auth_middleware_1.verifyToken, users_controller_1.deleteUser);
-/**
- * @swagger
- * /api/users/favorites:
- *   get:
- *     summary: Get user's favorite listings
- *     tags: [Users]
- *     responses:
- *       200:
- *         description: Success
- *       401:
- *         description: Unauthorized
- */
-router.get("/favorites", auth_middleware_1.verifyToken, users_controller_1.getFavorites);
-/**
- * @swagger
- * /api/users/favorites/{listingId}:
- *   post:
- *     summary: Add listing to favorites
- *     tags: [Users]
- *     responses:
- *       200:
- *         description: Added to favorites
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Listing not found
- */
-router.post("/favorites/:listingId", auth_middleware_1.verifyToken, users_controller_1.addFavorite);
-/**
- * @swagger
- * /api/users/favorites/{listingId}:
- *   delete:
- *     summary: Remove listing from favorites
- *     tags: [Users]
- *     responses:
- *       200:
- *         description: Removed from favorites
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Listing not found
- */
-router.delete("/favorites/:listingId", auth_middleware_1.verifyToken, users_controller_1.removeFavorite);
 exports.default = router;

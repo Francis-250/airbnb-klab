@@ -29,6 +29,8 @@ export default function Login() {
 
       if (redirect) {
         navigate(redirect);
+      } else if (user.role === "admin") {
+        navigate("/admin");
       } else if (user.role === "host") {
         navigate("/dashboard");
       } else {

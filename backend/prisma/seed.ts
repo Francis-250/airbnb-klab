@@ -13,6 +13,20 @@ async function main() {
 
   const hashedPassword = await bcrypt.hash("password123", 10);
 
+  await prisma.user.create({
+    data: {
+      name: "Admin User",
+      email: "admin@example.com",
+      username: "admin",
+      phone: "+1-555-0100",
+      password: hashedPassword,
+      role: "admin",
+      hostStatus: "approved",
+      bio: "Platform administrator.",
+      avatar: "https://i.pravatar.cc/150?img=12",
+    },
+  });
+
   const alice = await prisma.user.create({
     data: {
       name: "Alice Johnson",
@@ -21,6 +35,7 @@ async function main() {
       phone: "+1-555-0101",
       password: hashedPassword,
       role: "host",
+      hostStatus: "approved",
       bio: "Superhost with 5 years of experience. I love making guests feel at home.",
       avatar: "https://i.pravatar.cc/150?img=1",
     },
@@ -34,6 +49,7 @@ async function main() {
       phone: "+1-555-0102",
       password: hashedPassword,
       role: "guest",
+      hostStatus: "approved",
       bio: "Avid traveler exploring new places every month.",
       avatar: "https://i.pravatar.cc/150?img=2",
     },
@@ -47,6 +63,7 @@ async function main() {
       phone: "+1-555-0103",
       password: hashedPassword,
       role: "guest",
+      hostStatus: "approved",
       bio: "Digital nomad working remotely from beautiful places.",
       avatar: "https://i.pravatar.cc/150?img=3",
     },

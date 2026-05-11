@@ -8,6 +8,7 @@ export type User = {
   username: string;
   phone?: string;
   role: string;
+  hostStatus?: "pending" | "approved" | "restricted";
   avatar?: string;
   bio?: string;
 };
@@ -23,6 +24,7 @@ type AuthState = {
     username: string,
     email: string,
     password: string,
+    role?: "guest" | "host",
   ) => Promise<void>;
 };
 
@@ -47,7 +49,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     await api.post("/auth/logout");
     set({ user: null });
   },
-  register: async (name, username, email, password) => {
-    await api.post("/auth/register", { name, username, email, password });
+  register: async (name, username, email, password, role = "guest") => {
+    await api.post("/auth/register", { name, username, email, password, role });
   },
 }));

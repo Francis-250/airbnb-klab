@@ -13,6 +13,7 @@ model User {
   username         String    @unique
   phone            String?   @unique
   role             Role
+  hostStatus       HostStatus @default(approved)
   avatar           String?
   bio              String?
   password         String
@@ -107,8 +108,15 @@ model Review {
 }
 
 enum Role {
+  admin
   host
   guest
+}
+
+enum HostStatus {
+  pending
+  approved
+  restricted
 }
 
 enum ListingType {

@@ -3,8 +3,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteUser = exports.updateUser = exports.getUserById = exports.getAllUsers = exports.removeFavorite = exports.addFavorite = exports.getFavorites = void 0;
+exports.deleteUser = exports.updateUser = exports.updateHostStatus = exports.getHostAccounts = exports.getUserById = exports.getAllUsers = exports.removeFavorite = exports.addFavorite = exports.getFavorites = void 0;
+const client_1 = require("@prisma/client");
 const prisma_1 = __importDefault(require("../lib/prisma"));
+const cache_1 = require("../lib/cache");
+const isHostStatus = (value) => typeof value === "string" &&
+    Object.values(client_1.HostStatus).includes(value);
 const getFavorites = async (req, res) => {
     const userId = req.user;
     try {
@@ -99,13 +103,16 @@ const getAllUsers = async (req, res) => {
                     createdAt: "desc",
                 },
                 select: {
+                    id: true,
                     name: true,
                     email: true,
                     username: true,
                     phone: true,
                     role: true,
+                    hostStatus: true,
                     avatar: true,
                     bio: true,
+                    createdAt: true,
                 },
             }),
             prisma_1.default.user.count(),
@@ -129,11 +136,13 @@ const getUserById = async (req, res) => {
         const user = await prisma_1.default.user.findUnique({
             where: { id: id },
             select: {
+                id: true,
                 name: true,
                 email: true,
                 username: true,
                 phone: true,
                 role: true,
+                hostStatus: true,
                 avatar: true,
                 bio: true,
             },
@@ -148,6 +157,90 @@ const getUserById = async (req, res) => {
     }
 };
 exports.getUserById = getUserById;
+const getHostAccounts = async (req, res) => {
+    const status = req.query.status;
+    if (status && !isHostStatus(status)) {
+        return res.status(400).json({ message: "Invalid host status" });
+    }
+    const hostStatusFilter = status;
+    try {
+        const hosts = await prisma_1.default.user.findMany({
+            where: {
+                role: "host",
+                ...(hostStatusFilter ? { hostStatus: hostStatusFilter } : {}),
+            },
+            orderBy: { createdAt: "desc" },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                username: true,
+                phone: true,
+                role: true,
+                hostStatus: true,
+                avatar: true,
+                bio: true,
+                createdAt: true,
+                _count: {
+                    select: {
+                        listings: true,
+                    },
+                },
+            },
+        });
+        res.status(200).json({ data: hosts });
+    }
+    catch (error) {
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+exports.getHostAccounts = getHostAccounts;
+const updateHostStatus = async (req, res) => {
+    const { id } = req.params;
+    const { hostStatus } = req.body;
+    const hostId = String(id);
+    if (!isHostStatus(hostStatus)) {
+        return res.status(400).json({ message: "Invalid host status" });
+    }
+    try {
+        const host = await prisma_1.default.user.findUnique({
+            where: { id: hostId },
+            select: { id: true, role: true },
+        });
+        if (!host || host.role !== "host") {
+            return res.status(404).json({ message: "Host account not found" });
+        }
+        const updatedHost = await prisma_1.default.user.update({
+            where: { id: hostId },
+            data: { hostStatus },
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                username: true,
+                role: true,
+                hostStatus: true,
+                avatar: true,
+                bio: true,
+                createdAt: true,
+                _count: {
+                    select: {
+                        listings: true,
+                    },
+                },
+            },
+        });
+        (0, cache_1.deleteCacheByPrefix)("listings:");
+        res.status(200).json({
+            message: `Host account ${hostStatus}`,
+            user: updatedHost,
+        });
+    }
+    catch (error) {
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+exports.updateHostStatus = updateHostStatus;
 const updateUser = async (req, res) => {
     const { id } = req.params;
     const { name, email, username, phone, role, avatar, bio } = req.body;

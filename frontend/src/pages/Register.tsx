@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, User, Lock, AtSign } from "lucide-react";
+import { Mail, User, Lock, AtSign, Home, Briefcase } from "lucide-react";
 import axios from "axios";
 import { useAuthStore } from "../store/auth.store";
 
@@ -10,6 +10,7 @@ export default function Register() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<"guest" | "host">("guest");
   const [isLoading, setIsLoading] = useState(false);
   const { register } = useAuthStore();
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ export default function Register() {
     setIsLoading(true);
 
     try {
-      await register(name, username, email, password);
+      await register(name, username, email, password, role);
       toast.success("Registration successful");
       navigate("/login");
     } catch (error: unknown) {
@@ -90,6 +91,32 @@ export default function Register() {
             type="password"
             placeholder="Create a password"
           />
+
+          <div>
+            <span className="mb-2 block text-[12px] font-semibold uppercase tracking-widest text-gray-500 dark:text-gray-400">
+              Account type
+            </span>
+            <div className="grid grid-cols-2 gap-2 rounded-xl border border-gray-200 bg-white p-1 dark:border-white/[0.08] dark:bg-white/[0.04]">
+              {[
+                { value: "guest", label: "Guest", icon: Briefcase },
+                { value: "host", label: "Host", icon: Home },
+              ].map(({ value, label, icon: Icon }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setRole(value as "guest" | "host")}
+                  className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-[13px] font-semibold transition-colors ${
+                    role === value
+                      ? "bg-(--color-primary) text-white"
+                      : "text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-white/[0.06]"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
 
           <button
             type="submit"

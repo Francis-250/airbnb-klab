@@ -3,11 +3,11 @@ import {
   getUserStats,
   getDashboardStats,
 } from "../controllers/stats.controller";
-import { verifyToken, isHost } from "../middleware/auth.middleware";
+import { verifyToken, isApprovedHost } from "../middleware/auth.middleware";
 
 const router = Router();
 
 router.get("/users", getUserStats);
-router.get("/dashboard", verifyToken, isHost, getDashboardStats);
+router.get("/dashboard", verifyToken, isApprovedHost, getDashboardStats);
 
 export default router;

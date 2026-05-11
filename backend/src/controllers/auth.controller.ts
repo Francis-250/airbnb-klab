@@ -13,10 +13,16 @@ import { passwordResetEmail, welcomeEmail } from "../templates/mail.temp";
 
 export const register = async (req: Request, res: Response) => {
   const { name, email, username, phone, role, bio, password } = req.body;
+  const requestedRole = role === "host" ? "host" : "guest";
+
   if (!name || !email || !username || !password) {
     return res
       .status(400)
       .json({ message: "Name, email, username and password are required" });
+  }
+
+  if (role && !["guest", "host"].includes(role)) {
+    return res.status(400).json({ message: "Invalid account role" });
   }
 
   try {
@@ -38,15 +44,16 @@ export const register = async (req: Request, res: Response) => {
         email,
         username,
         phone,
-        role,
+        role: requestedRole,
+        hostStatus: requestedRole === "host" ? "pending" : "approved",
         avatar,
         bio,
         password: hashedpassword,
       },
     });
-    const isHost = role === "host";
+    const isHost = requestedRole === "host";
     const message = isHost
-      ? "Registration successful! Your host account has been created."
+      ? "Registration successful! Your host account is pending admin approval."
       : "Registration successful! You can now log in.";
 
     await sendEmail({
@@ -94,8 +101,10 @@ export const login = async (req: Request, res: Response) => {
       message: "Login successful",
       user: {
         id: user.id,
+        name: user.name,
         email: user.email,
         role: user.role,
+        hostStatus: user.hostStatus,
       },
     });
   } catch (error) {
@@ -119,6 +128,7 @@ export const getCurrentUser = async (req: Request, res: Response) => {
         username: true,
         phone: true,
         role: true,
+        hostStatus: true,
         avatar: true,
         bio: true,
       },

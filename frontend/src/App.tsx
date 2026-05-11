@@ -23,6 +23,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import VerifyOtp from "./pages/VerifyOtp";
 import ResetPassword from "./pages/ResetPassword";
 import { useAuthStore } from "./store/auth.store";
+import HostApprovals from "./pages/admin/HostApprovals";
 
 const ListingDetail = lazy(() => import("./pages/ListingDetail"));
 const Dashboard = lazy(() => import("./pages/host/Dashboard"));
@@ -37,7 +38,9 @@ export default function App() {
     fetchUser();
   }, [fetchUser]);
 
-  const isDashboard = location.pathname.startsWith("/dashboard");
+  const isDashboard =
+    location.pathname.startsWith("/dashboard") ||
+    location.pathname.startsWith("/admin");
   const isAuthPage = [
     "/login",
     "/register",
@@ -96,6 +99,16 @@ export default function App() {
               <Route path="messages" element={<Messages />} />
               <Route path="messages/:id" element={<Messages />} />
               <Route path="profile" element={<Profile />} />
+            </Route>
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <DashboardLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<HostApprovals />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -6,6 +6,7 @@ import {
   Building,
   TreePine,
   MessageCircle,
+  ShieldCheck,
 } from "lucide-react";
 import type { CategoryProps } from "../types";
 
@@ -27,6 +28,14 @@ export const DashboardLinks = [
     url: "/dashboard/messages",
     badge: null,
     icon: MessageCircle,
+  },
+];
+
+export const AdminLinks = [
+  {
+    title: "Host approvals",
+    url: "/admin",
+    icon: ShieldCheck,
   },
 ];
 

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
+import { deleteCacheByPrefix } from "../lib/cache";
 
 export const getFavorites = async (req: Request, res: Response) => {
   const userId = req.user;
@@ -106,13 +107,16 @@ export const getAllUsers = async (req: Request, res: Response) => {
           createdAt: "desc",
         },
         select: {
+          id: true,
           name: true,
           email: true,
           username: true,
           phone: true,
           role: true,
+          hostStatus: true,
           avatar: true,
           bio: true,
+          createdAt: true,
         },
       }),
       prisma.user.count(),
@@ -136,11 +140,13 @@ export const getUserById = async (req: Request, res: Response) => {
     const user = await prisma.user.findUnique({
       where: { id: id as string },
       select: {
+        id: true,
         name: true,
         email: true,
         username: true,
         phone: true,
         role: true,
+        hostStatus: true,
         avatar: true,
         bio: true,
       },
@@ -149,6 +155,96 @@ export const getUserById = async (req: Request, res: Response) => {
       return res.status(404).json({ message: "User not found" });
     }
     res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const getHostAccounts = async (req: Request, res: Response) => {
+  const status = req.query.status as string | undefined;
+  const validStatuses = ["pending", "approved", "restricted"];
+
+  if (status && !validStatuses.includes(status)) {
+    return res.status(400).json({ message: "Invalid host status" });
+  }
+
+  try {
+    const hosts = await prisma.user.findMany({
+      where: {
+        role: "host",
+        ...(status ? { hostStatus: status as any } : {}),
+      },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        username: true,
+        phone: true,
+        role: true,
+        hostStatus: true,
+        avatar: true,
+        bio: true,
+        createdAt: true,
+        _count: {
+          select: {
+            listings: true,
+          },
+        },
+      },
+    });
+
+    res.status(200).json({ data: hosts });
+  } catch (error) {
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const updateHostStatus = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const { hostStatus } = req.body;
+  const validStatuses = ["pending", "approved", "restricted"];
+
+  if (!validStatuses.includes(hostStatus)) {
+    return res.status(400).json({ message: "Invalid host status" });
+  }
+
+  try {
+    const host = await prisma.user.findUnique({
+      where: { id: id as string },
+      select: { id: true, role: true },
+    });
+
+    if (!host || host.role !== "host") {
+      return res.status(404).json({ message: "Host account not found" });
+    }
+
+    const updatedHost = await prisma.user.update({
+      where: { id: id as string },
+      data: { hostStatus },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        username: true,
+        role: true,
+        hostStatus: true,
+        avatar: true,
+        bio: true,
+        createdAt: true,
+        _count: {
+          select: {
+            listings: true,
+          },
+        },
+      },
+    });
+
+    deleteCacheByPrefix("listings:");
+    res.status(200).json({
+      message: `Host account ${hostStatus}`,
+      user: updatedHost,
+    });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
   }

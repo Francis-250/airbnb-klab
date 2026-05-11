@@ -107,8 +107,8 @@ export const createBooking = async (req: Request, res: Response) => {
   const checkOutDate = new Date(checkOut);
 
   try {
-    const listing = await prisma.listing.findUnique({
-      where: { id: listingId },
+    const listing = await prisma.listing.findFirst({
+      where: { id: listingId, host: { hostStatus: "approved" } },
     });
     if (!listing) return res.status(404).json({ message: "Listing not found" });
 
@@ -152,16 +152,30 @@ export const updateBooking = async (req: Request, res: Response) => {
 
     if (!booking) return res.status(404).json({ message: "Booking not found" });
 
+    if (role === "host") {
+      const host = await prisma.user.findUnique({
+        where: { id: user },
+        select: { hostStatus: true },
+      });
+
+      if (!host || host.hostStatus !== "approved") {
+        return res.status(403).json({
+          message:
+            "Your host account must be approved before performing this action",
+        });
+      }
+    }
+
     if (role === "host" && booking.listing.hostId !== user) {
       return res
         .status(403)
         .json({ message: "Only the host can update booking status" });
     }
 
-    if (role === "guest") {
+    if (role !== "host") {
       return res
         .status(403)
-        .json({ message: "Guests are not allowed to update booking status" });
+        .json({ message: "Only hosts can update booking status" });
     }
 
     const updated = await prisma.booking.update({

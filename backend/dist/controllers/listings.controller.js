@@ -28,6 +28,7 @@ const parseStringArray = (value) => {
 const getAllListings = async (req, res) => {
     try {
         const listings = await prisma_1.default.listing.findMany({
+            where: { host: { hostStatus: "approved" } },
             include: { host: { select: { name: true, email: true } } },
         });
         res.status(200).json(listings);
@@ -73,8 +74,8 @@ exports.getMyListings = getMyListings;
 const getListingById = async (req, res) => {
     const { id } = req.params;
     try {
-        const listing = await prisma_1.default.listing.findUnique({
-            where: { id: id },
+        const listing = await prisma_1.default.listing.findFirst({
+            where: { id: id, host: { hostStatus: "approved" } },
             include: { host: { select: { name: true, email: true, avatar: true } } },
         });
         if (listing) {
@@ -223,7 +224,7 @@ const searchListings = async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
-    const where = {};
+    const where = { host: { hostStatus: "approved" } };
     if (location)
         where.location = { contains: location, mode: "insensitive" };
     if (type) {
@@ -276,13 +277,21 @@ const getListingStats = async (req, res) => {
         return res.status(200).json(cached);
     try {
         const [totalListings, priceAggregate, byLocation, byType] = await Promise.all([
-            prisma_1.default.listing.count(),
-            prisma_1.default.listing.aggregate({ _avg: { pricePerNight: true } }),
+            prisma_1.default.listing.count({ where: { host: { hostStatus: "approved" } } }),
+            prisma_1.default.listing.aggregate({
+                where: { host: { hostStatus: "approved" } },
+                _avg: { pricePerNight: true },
+            }),
             prisma_1.default.listing.groupBy({
+                where: { host: { hostStatus: "approved" } },
                 by: ["location"],
                 _count: { location: true },
             }),
-            prisma_1.default.listing.groupBy({ by: ["type"], _count: { type: true } }),
+            prisma_1.default.listing.groupBy({
+                where: { host: { hostStatus: "approved" } },
+                by: ["type"],
+                _count: { type: true },
+            }),
         ]);
         const response = {
             totalListings,
