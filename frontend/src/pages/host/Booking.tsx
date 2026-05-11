@@ -64,8 +64,16 @@ export default function DashboardBooking() {
   const queryClient = useQueryClient();
 
   const updateBookingMutation = useMutation({
-    mutationFn: async ({ bookingId, status }: { bookingId: string; status: string }) => {
-      const response = await api.patch(`/bookings/${bookingId}/status`, { status });
+    mutationFn: async ({
+      bookingId,
+      status,
+    }: {
+      bookingId: string;
+      status: string;
+    }) => {
+      const response = await api.patch(`/bookings/${bookingId}/status`, {
+        status,
+      });
       return response.data;
     },
     onSuccess: () => {
@@ -265,7 +273,9 @@ export default function DashboardBooking() {
                       {booking.status === "pending" && (
                         <>
                           <button
-                            onClick={() => handleUpdateStatus(booking.id, "confirmed")}
+                            onClick={() =>
+                              handleUpdateStatus(booking.id, "confirmed")
+                            }
                             className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-md transition-colors"
                             disabled={updateBookingMutation.isPending}
                           >
@@ -273,7 +283,9 @@ export default function DashboardBooking() {
                             Confirm
                           </button>
                           <button
-                            onClick={() => handleUpdateStatus(booking.id, "cancelled")}
+                            onClick={() =>
+                              handleUpdateStatus(booking.id, "cancelled")
+                            }
                             className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
                             disabled={updateBookingMutation.isPending}
                           >
@@ -284,7 +296,9 @@ export default function DashboardBooking() {
                       )}
                       {booking.status === "confirmed" && (
                         <button
-                          onClick={() => handleUpdateStatus(booking.id, "cancelled")}
+                          onClick={() =>
+                            handleUpdateStatus(booking.id, "cancelled")
+                          }
                           className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
                           disabled={updateBookingMutation.isPending}
                         >
@@ -293,12 +307,16 @@ export default function DashboardBooking() {
                         </button>
                       )}
                       {booking.status === "cancelled" && (
-                        <span className="text-xs text-gray-500">No actions</span>
+                        <span className="text-xs text-gray-500">
+                          No actions
+                        </span>
                       )}
                     </div>
                   </td>
                   <td className="py-3 px-4">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusConfig[booking.status]?.class || "bg-gray-100 text-gray-700"}`}>
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${statusConfig[booking.status]?.class || "bg-gray-100 text-gray-700"}`}
+                    >
                       {statusConfig[booking.status]?.label || booking.status}
                     </span>
                   </td>
@@ -357,23 +375,37 @@ export default function DashboardBooking() {
                       </span>
                     </div>
                     <div>
-                      <p className="font-medium text-sm">{booking.guest?.name}</p>
-                      <p className="text-xs text-[#AAAAAA]">{booking.guest?.email}</p>
+                      <p className="font-medium text-sm">
+                        {booking.guest?.name}
+                      </p>
+                      <p className="text-xs text-[#AAAAAA]">
+                        {booking.guest?.email}
+                      </p>
                     </div>
                   </div>
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusConfig[booking.status]?.class || "bg-gray-100 text-gray-700"}`}>
+                  <span
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${statusConfig[booking.status]?.class || "bg-gray-100 text-gray-700"}`}
+                  >
                     {statusConfig[booking.status]?.label || booking.status}
                   </span>
                 </div>
                 <div className="space-y-2">
                   <div>
-                    <p className="font-medium text-sm">{booking.listing?.title}</p>
-                    <p className="text-xs text-[#AAAAAA]">{booking.listing?.location}</p>
+                    <p className="font-medium text-sm">
+                      {booking.listing?.title}
+                    </p>
+                    <p className="text-xs text-[#AAAAAA]">
+                      {booking.listing?.location}
+                    </p>
                   </div>
                   <div className="flex justify-between items-center">
                     <div>
-                      <p className="text-sm">{new Date(booking.checkIn).toLocaleDateString()}</p>
-                      <p className="text-xs text-[#AAAAAA]">to {new Date(booking.checkOut).toLocaleDateString()}</p>
+                      <p className="text-sm">
+                        {new Date(booking.checkIn).toLocaleDateString()}
+                      </p>
+                      <p className="text-xs text-[#AAAAAA]">
+                        to {new Date(booking.checkOut).toLocaleDateString()}
+                      </p>
                     </div>
                     <p className="font-medium text-sm">${booking.totalPrice}</p>
                   </div>
@@ -381,7 +413,9 @@ export default function DashboardBooking() {
                     {booking.status === "pending" && (
                       <>
                         <button
-                          onClick={() => handleUpdateStatus(booking.id, "confirmed")}
+                          onClick={() =>
+                            handleUpdateStatus(booking.id, "confirmed")
+                          }
                           className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded-md transition-colors"
                           disabled={updateBookingMutation.isPending}
                         >
@@ -389,7 +423,9 @@ export default function DashboardBooking() {
                           Confirm
                         </button>
                         <button
-                          onClick={() => handleUpdateStatus(booking.id, "cancelled")}
+                          onClick={() =>
+                            handleUpdateStatus(booking.id, "cancelled")
+                          }
                           className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
                           disabled={updateBookingMutation.isPending}
                         >
@@ -400,7 +436,9 @@ export default function DashboardBooking() {
                     )}
                     {booking.status === "confirmed" && (
                       <button
-                        onClick={() => handleUpdateStatus(booking.id, "cancelled")}
+                        onClick={() =>
+                          handleUpdateStatus(booking.id, "cancelled")
+                        }
                         className="flex items-center gap-1 px-2 py-1 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 rounded-md transition-colors"
                         disabled={updateBookingMutation.isPending}
                       >
@@ -433,7 +471,9 @@ export default function DashboardBooking() {
 
       {/* Pagination */}
       <div className="px-4 py-3 flex items-center justify-between border-t border-[#EBEBEB] dark:border-[#2A2A2A]">
-        <p className="text-[12px] text-[#AAAAAA]">Showing {bookings?.length || 0} bookings</p>
+        <p className="text-[12px] text-[#AAAAAA]">
+          Showing {bookings?.length || 0} bookings
+        </p>
         <div className="flex items-center gap-1">
           <button
             disabled

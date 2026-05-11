@@ -96,13 +96,12 @@ const createListing = async (req, res) => {
         return res.status(401).json({ message: "Unauthorized" });
     }
     try {
-        const { title, description, location, pricePerNight, guests, type, amenities, rating, } = req.body;
+        const { title, description, location, pricePerNight, guests, status, type, amenities, rating, } = req.body;
         const parsedPrice = parseFloat(pricePerNight);
         const parsedGuests = parseInt(guests);
         const parsedRating = parseFloat(rating);
-        const parsedAmenities = typeof amenities === "string"
-            ? amenities.split(",").map((a) => a.trim())
-            : amenities;
+        const parsedAmenities = parseStringArray(amenities);
+        const listingStatus = status || "available";
         if (parsedGuests <= 0)
             return res.status(400).json({ message: "Guests must be greater than 0" });
         if (parsedPrice <= 0)
@@ -121,9 +120,10 @@ const createListing = async (req, res) => {
                 location,
                 pricePerNight: parsedPrice,
                 guests: parsedGuests,
+                status: listingStatus,
                 type,
                 amenities: parsedAmenities,
-                rating: parsedRating,
+                rating: Number.isFinite(parsedRating) ? parsedRating : 0,
                 photos: photoUrls,
                 hostId: user,
             },
@@ -140,7 +140,7 @@ exports.createListing = createListing;
 const updateListing = async (req, res) => {
     const { id } = req.params;
     const user = req.user;
-    const { title, description, location, pricePerNight, guests, type, amenities, existingPhotos, } = req.body;
+    const { title, description, location, pricePerNight, guests, status, type, amenities, existingPhotos, } = req.body;
     try {
         const parsedPrice = parseFloat(pricePerNight);
         const parsedGuests = parseInt(guests);
@@ -184,6 +184,7 @@ const updateListing = async (req, res) => {
                 location,
                 pricePerNight: parsedPrice,
                 guests: parsedGuests,
+                status,
                 type,
                 amenities: parsedAmenities,
                 photos: allPhotos,

@@ -37,6 +37,7 @@ model Listing {
   location      String
   pricePerNight Float
   guests        Int
+  status       ListingStatus @default(available)
   type          ListingType
   amenities     String[]
   photos        String[]
@@ -124,6 +125,12 @@ enum ListingType {
   house
   villa
   cabin
+}
+
+enum ListingStatus {
+  available
+  booked
+  unavailable
 }
 
 enum BookingStatus {

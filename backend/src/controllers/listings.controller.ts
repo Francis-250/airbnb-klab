@@ -98,6 +98,7 @@ export const createListing = async (req: Request, res: Response) => {
       location,
       pricePerNight,
       guests,
+      status,
       type,
       amenities,
       rating,
@@ -106,10 +107,8 @@ export const createListing = async (req: Request, res: Response) => {
     const parsedPrice = parseFloat(pricePerNight);
     const parsedGuests = parseInt(guests);
     const parsedRating = parseFloat(rating);
-    const parsedAmenities =
-      typeof amenities === "string"
-        ? amenities.split(",").map((a: string) => a.trim())
-        : amenities;
+    const parsedAmenities = parseStringArray(amenities);
+    const listingStatus = status || "available";
 
     if (parsedGuests <= 0)
       return res.status(400).json({ message: "Guests must be greater than 0" });
@@ -131,9 +130,10 @@ export const createListing = async (req: Request, res: Response) => {
         location,
         pricePerNight: parsedPrice,
         guests: parsedGuests,
+        status: listingStatus,
         type,
         amenities: parsedAmenities,
-        rating: parsedRating,
+        rating: Number.isFinite(parsedRating) ? parsedRating : 0,
         photos: photoUrls,
         hostId: user,
       },
@@ -156,6 +156,7 @@ export const updateListing = async (req: Request, res: Response) => {
     location,
     pricePerNight,
     guests,
+    status,
     type,
     amenities,
     existingPhotos,
@@ -211,6 +212,7 @@ export const updateListing = async (req: Request, res: Response) => {
         location,
         pricePerNight: parsedPrice,
         guests: parsedGuests,
+        status,
         type,
         amenities: parsedAmenities,
         photos: allPhotos,

@@ -24,6 +24,9 @@ import VerifyOtp from "./pages/VerifyOtp";
 import ResetPassword from "./pages/ResetPassword";
 import { useAuthStore } from "./store/auth.store";
 import HostApprovals from "./pages/admin/HostApprovals";
+import DashboardListingDetail from "./pages/host/ListingDetail";
+import AddListing from "./pages/host/AddListing";
+import EditListing from "./pages/host/EditListing";
 
 const ListingDetail = lazy(() => import("./pages/ListingDetail"));
 const Dashboard = lazy(() => import("./pages/host/Dashboard"));
@@ -95,7 +98,10 @@ export default function App() {
             >
               <Route index element={<Dashboard />} />
               <Route path="bookings" element={<DashboardBooking />} />
+              <Route path="add-listing" element={<AddListing />} />
               <Route path="listings" element={<DashboardListing />} />
+              <Route path="listings/:id" element={<DashboardListingDetail />} />
+              <Route path="listings/edit/:id" element={<EditListing />} />
               <Route path="messages" element={<Messages />} />
               <Route path="messages/:id" element={<Messages />} />
               <Route path="profile" element={<Profile />} />

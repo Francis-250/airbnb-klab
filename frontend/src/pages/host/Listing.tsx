@@ -18,7 +18,7 @@ import { api } from "../../lib/api";
 import type { Listing } from "../../types";
 import Spinner from "../../components/Spinner";
 import { AMENITIES } from "../../data";
-import ListingView from "../../components/section/ListingView";
+import { Link } from "react-router-dom";
 
 const listingHeader = [
   "Title",
@@ -46,8 +46,6 @@ export default function DashboardListing() {
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [isForm, setIsForm] = useState(false);
   const [editingListing, setEditingListing] = useState<Listing | null>(null);
-  const [viewListing, setViewListing] = useState<Listing | null>(null);
-  const [isViewOpen, setIsViewOpen] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, limit: 10 });
 
   const {
@@ -124,16 +122,6 @@ export default function DashboardListing() {
     if (confirm("Are you sure you want to delete this listing?")) {
       deleteMutation.mutate(id);
     }
-  };
-
-  const handleEdit = (listing: Listing) => {
-    setEditingListing(listing);
-    setIsForm(true);
-  };
-
-  const handleView = (listing: Listing) => {
-    setViewListing(listing);
-    setIsViewOpen(true);
   };
 
   const handleFormSuccess = () => {
@@ -251,16 +239,13 @@ export default function DashboardListing() {
             )}
           </div>
 
-          <button
-            onClick={() => {
-              setEditingListing(null);
-              setIsForm(true);
-            }}
+          <Link
+            to="/dashboard/add-listing"
             className="inline-flex items-center gap-2 px-3 py-2 bg-[#111] dark:bg-white text-white dark:text-[#111] text-sm font-medium rounded-xl hover:opacity-80 active:scale-95 transition-all"
           >
             <Plus className="w-4 h-4" />
             <span className="hidden sm:inline">Add Listing</span>
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -373,22 +358,20 @@ export default function DashboardListing() {
                       </td>
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => handleView(listing)}
-                            disabled={deleteMutation.isPending}
+                          <Link
+                            to={`/dashboard/listings/${listing.id}`}
                             className="p-1.5 hover:bg-[#F0F0F0] dark:hover:bg-[#2A2A2A] rounded-lg transition-colors"
                             title="View"
                           >
                             <Eye className="w-3.5 h-3.5 text-[#717171]" />
-                          </button>
-                          <button
-                            onClick={() => handleEdit(listing)}
-                            disabled={deleteMutation.isPending}
+                          </Link>
+                          <Link
+                            to={`/dashboard/listings/edit/${listing.id}`}
                             className="p-1.5 hover:bg-[#F0F0F0] dark:hover:bg-[#2A2A2A] rounded-lg transition-colors"
                             title="Edit"
                           >
                             <Pen className="w-3.5 h-3.5 text-[#717171]" />
-                          </button>
+                          </Link>
                           <button
                             onClick={() => handleDelete(listing.id)}
                             disabled={deleteMutation.isPending}
@@ -451,18 +434,18 @@ export default function DashboardListing() {
                       </span>
                     </div>
                     <div className="flex gap-1 shrink-0">
-                      <button
-                        onClick={() => handleView(listing)}
+                      <Link
+                        to={`/dashboard/listings/${listing.id}`}
                         className="p-1.5 hover:bg-[#F0F0F0] dark:hover:bg-[#2A2A2A] rounded-lg transition-colors"
                       >
                         <Eye className="w-3.5 h-3.5 text-[#717171]" />
-                      </button>
-                      <button
-                        onClick={() => handleEdit(listing)}
+                      </Link>
+                      <Link
+                        to={`/dashboard/listings/edit/${listing.id}`}
                         className="p-1.5 hover:bg-[#F0F0F0] dark:hover:bg-[#2A2A2A] rounded-lg transition-colors"
                       >
                         <Pen className="w-3.5 h-3.5 text-[#717171]" />
-                      </button>
+                      </Link>
                       <button
                         onClick={() => handleDelete(listing.id)}
                         className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
@@ -536,17 +519,6 @@ export default function DashboardListing() {
             setEditingListing(null);
           }}
           onSuccess={handleFormSuccess}
-        />
-      )}
-
-      {isViewOpen && (
-        <ListingView
-          listing={viewListing}
-          isOpen={isViewOpen}
-          onClose={() => {
-            setIsViewOpen(false);
-            setViewListing(null);
-          }}
         />
       )}
     </div>

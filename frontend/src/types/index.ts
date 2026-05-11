@@ -5,14 +5,21 @@ export interface Listing {
   location: string;
   pricePerNight: number;
   guests: number;
+  status: ListingStatus;
   type: ListingType;
   amenities: string[];
   photos: string[];
   rating?: number;
   hostId: string;
-  host: UserProps;
+  host: Host;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface Host {
+  name: string;
+  email: string;
+  avatar?: string | null;
 }
 
 export interface UserProps {
@@ -30,6 +37,7 @@ export interface CategoryProps {
 }
 
 export type ListingType = "apartment" | "house" | "villa" | "cabin";
+export type ListingStatus = "available" | "booked" | "unavailable";
 
 export type AIFilters = {
   location: string | null;
