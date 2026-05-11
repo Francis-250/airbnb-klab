@@ -7,6 +7,24 @@ exports.getListingStats = exports.searchListings = exports.deleteListing = expor
 const prisma_1 = __importDefault(require("../lib/prisma"));
 const helpers_1 = require("../lib/helpers");
 const cache_1 = require("../lib/cache");
+const parseStringArray = (value) => {
+    if (Array.isArray(value))
+        return value.map(String).filter(Boolean);
+    if (typeof value !== "string" || !value.trim())
+        return [];
+    try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed))
+            return parsed.map(String).filter(Boolean);
+    }
+    catch {
+        return value
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean);
+    }
+    return [];
+};
 const getAllListings = async (req, res) => {
     try {
         const listings = await prisma_1.default.listing.findMany({
@@ -125,16 +143,12 @@ const updateListing = async (req, res) => {
     try {
         const parsedPrice = parseFloat(pricePerNight);
         const parsedGuests = parseInt(guests);
-        const parsedAmenities = Array.isArray(amenities)
-            ? amenities
-            : JSON.parse(amenities || "[]");
-        const parsedExistingPhotos = Array.isArray(existingPhotos)
-            ? existingPhotos
-            : JSON.parse(existingPhotos || "[]");
-        if (parsedGuests <= 0) {
+        const parsedAmenities = parseStringArray(amenities);
+        const parsedExistingPhotos = parseStringArray(existingPhotos);
+        if (!Number.isFinite(parsedGuests) || parsedGuests <= 0) {
             return res.status(400).json({ message: "Guests must be greater than 0" });
         }
-        if (parsedPrice <= 0) {
+        if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
             return res
                 .status(400)
                 .json({ message: "Price per night must be greater than 0" });
@@ -149,8 +163,16 @@ const updateListing = async (req, res) => {
         }
         let newPhotoUrls = [];
         if (req.files && Array.isArray(req.files) && req.files.length > 0) {
-            const results = await (0, helpers_1.uploadListingPhotos)(req.files);
-            newPhotoUrls = results.map((result) => result.secure_url);
+            try {
+                const results = await (0, helpers_1.uploadListingPhotos)(req.files);
+                newPhotoUrls = results.map((result) => result.secure_url);
+            }
+            catch (error) {
+                console.log("Listing photo upload failed:", error);
+                return res.status(502).json({
+                    message: "Could not upload listing photos. Please check Cloudinary/network configuration and try again.",
+                });
+            }
         }
         const allPhotos = [...parsedExistingPhotos, ...newPhotoUrls];
         const listing = await prisma_1.default.listing.update({

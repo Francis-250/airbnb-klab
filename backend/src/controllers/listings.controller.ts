@@ -3,6 +3,23 @@ import prisma from "../lib/prisma";
 import { uploadListingPhotos as uploadListingPhotosHelper } from "../lib/helpers";
 import { deleteCacheByPrefix, getCache, setCache } from "../lib/cache";
 
+const parseStringArray = (value: unknown) => {
+  if (Array.isArray(value)) return value.map(String).filter(Boolean);
+  if (typeof value !== "string" || !value.trim()) return [];
+
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed.map(String).filter(Boolean);
+  } catch {
+    return value
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+};
+
 export const getAllListings = async (req: Request, res: Response) => {
   try {
     const listings = await prisma.listing.findMany({
@@ -146,17 +163,13 @@ export const updateListing = async (req: Request, res: Response) => {
   try {
     const parsedPrice = parseFloat(pricePerNight);
     const parsedGuests = parseInt(guests);
-    const parsedAmenities = Array.isArray(amenities)
-      ? amenities
-      : JSON.parse(amenities || "[]");
-    const parsedExistingPhotos = Array.isArray(existingPhotos)
-      ? existingPhotos
-      : JSON.parse(existingPhotos || "[]");
+    const parsedAmenities = parseStringArray(amenities);
+    const parsedExistingPhotos = parseStringArray(existingPhotos);
 
-    if (parsedGuests <= 0) {
+    if (!Number.isFinite(parsedGuests) || parsedGuests <= 0) {
       return res.status(400).json({ message: "Guests must be greater than 0" });
     }
-    if (parsedPrice <= 0) {
+    if (!Number.isFinite(parsedPrice) || parsedPrice <= 0) {
       return res
         .status(400)
         .json({ message: "Price per night must be greater than 0" });
@@ -173,10 +186,18 @@ export const updateListing = async (req: Request, res: Response) => {
 
     let newPhotoUrls: string[] = [];
     if (req.files && Array.isArray(req.files) && req.files.length > 0) {
-      const results = await uploadListingPhotosHelper(
-        req.files as Express.Multer.File[],
-      );
-      newPhotoUrls = results.map((result: any) => result.secure_url);
+      try {
+        const results = await uploadListingPhotosHelper(
+          req.files as Express.Multer.File[],
+        );
+        newPhotoUrls = results.map((result: any) => result.secure_url);
+      } catch (error) {
+        console.log("Listing photo upload failed:", error);
+        return res.status(502).json({
+          message:
+            "Could not upload listing photos. Please check Cloudinary/network configuration and try again.",
+        });
+      }
     }
 
     const allPhotos = [...parsedExistingPhotos, ...newPhotoUrls];

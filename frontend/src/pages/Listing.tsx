@@ -39,7 +39,10 @@ export default function Listing() {
   const [searchParams, setSearchParams] = useSearchParams();
   const locationParam = searchParams.get("location");
   const guestsParam = searchParams.get("guests");
-  const [priceRange, setPriceRange] = useState(1000);
+  const maxPriceParam = searchParams.get("maxPrice");
+  const [priceRange, setPriceRange] = useState(
+    () => Number(maxPriceParam) || 1000,
+  );
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [searchWish, setSearchWish] = useState("");
@@ -71,7 +74,9 @@ export default function Listing() {
       if (selectedCategories.length > 0) {
         params.set(
           "type",
-          selectedCategories.map((category) => category.toLowerCase()).join(","),
+          selectedCategories
+            .map((category) => category.toLowerCase())
+            .join(","),
         );
       }
       params.set("limit", "100");
@@ -194,7 +199,7 @@ export default function Listing() {
           className="w-full flex items-center justify-center gap-2 py-2.5 bg-(--color-primary) text-white rounded-xl text-[12px] font-semibold disabled:opacity-40 hover:opacity-90 active:scale-[0.98] transition-all"
         >
           <Sparkles className="w-3.5 h-3.5" />
-          {isAiSearching ? "Searching..." : "Search with AI"}
+          {isAiSearching ? "Searching..." : "Search"}
         </button>
 
         {aiFeedback && (
@@ -533,7 +538,7 @@ export default function Listing() {
             <div
               className={
                 viewType === "grid"
-                  ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5"
+                  ? "grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5"
                   : "flex flex-col gap-4"
               }
             >

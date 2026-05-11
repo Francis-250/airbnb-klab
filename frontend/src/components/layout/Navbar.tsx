@@ -45,6 +45,9 @@ export default function Navbar() {
   const [where, setWhere] = useState(
     () => new URLSearchParams(location.search).get("location") || "",
   );
+  const [maxPrice, setMaxPrice] = useState(
+    () => new URLSearchParams(location.search).get("maxPrice") || "",
+  );
   const [guests, setGuests] = useState(
     () => new URLSearchParams(location.search).get("guests") || "",
   );
@@ -118,6 +121,10 @@ export default function Navbar() {
   const runSearch = () => {
     const params = new URLSearchParams();
     if (where.trim()) params.set("location", where.trim());
+    const price = Number(maxPrice);
+    if (Number.isFinite(price) && price > 0) {
+      params.set("maxPrice", String(price));
+    }
     const guestsCount = Number(guests);
     if (Number.isFinite(guestsCount) && guestsCount > 0) {
       params.set("guests", String(guestsCount));
@@ -247,6 +254,8 @@ export default function Navbar() {
           <LargeSearch
             where={where}
             setWhere={setWhere}
+            maxPrice={maxPrice}
+            setMaxPrice={setMaxPrice}
             guests={guests}
             setGuests={setGuests}
             onSearch={runSearch}
@@ -288,12 +297,16 @@ export default function Navbar() {
 function LargeSearch({
   where,
   setWhere,
+  maxPrice,
+  setMaxPrice,
   guests,
   setGuests,
   onSearch,
 }: {
   where: string;
   setWhere: (value: string) => void;
+  maxPrice: string;
+  setMaxPrice: (value: string) => void;
   guests: string;
   setGuests: (value: string) => void;
   onSearch: () => void;
@@ -312,15 +325,23 @@ function LargeSearch({
           className="mt-0.5 w-full bg-transparent text-sm text-gray-700 outline-none placeholder:text-gray-500 dark:text-gray-200 dark:placeholder:text-gray-500"
         />
       </label>
-      <button className="border-r border-gray-200 px-5 text-left dark:border-white/[0.1]">
+      <label className="border-r border-gray-200 px-5 text-left dark:border-white/[0.1]">
         <span className="block text-xs font-semibold text-gray-950 dark:text-white">
-          When
+          Price
         </span>
-        <span className="mt-0.5 block text-sm text-gray-500">Add dates</span>
-      </button>
+        <input
+          type="number"
+          min={1}
+          value={maxPrice}
+          onChange={(e) => setMaxPrice(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && onSearch()}
+          placeholder="Max price"
+          className="mt-0.5 w-full bg-transparent text-sm text-gray-700 outline-none placeholder:text-gray-500 dark:text-gray-200 dark:placeholder:text-gray-500"
+        />
+      </label>
       <label className="px-5 text-left">
         <span className="block text-xs font-semibold text-gray-950 dark:text-white">
-          Who
+          How Many guests
         </span>
         <input
           type="number"
@@ -520,13 +541,7 @@ function MenuLink({
   );
 }
 
-function Avatar({
-  user,
-  size,
-}: {
-  user: AuthUser | null;
-  size: number;
-}) {
+function Avatar({ user, size }: { user: AuthUser | null; size: number }) {
   if (user?.avatar) {
     return (
       <img
@@ -538,12 +553,23 @@ function Avatar({
     );
   }
 
+  if (!user) {
+    return (
+      <span
+        style={{ width: size, height: size }}
+        className="flex shrink-0 items-center justify-center rounded-full bg-gray-200 text-gray-600 dark:bg-white/[0.08] dark:text-gray-300"
+      >
+        <User className="h-4 w-4" />
+      </span>
+    );
+  }
+
   return (
     <span
       style={{ width: size, height: size, fontSize: size * 0.4 }}
       className="flex shrink-0 items-center justify-center rounded-full bg-emerald-100 font-semibold uppercase text-emerald-700"
     >
-      {user?.name?.charAt(0) || "M"}
+      {user.name?.charAt(0) || "U"}
     </span>
   );
 }

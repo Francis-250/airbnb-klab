@@ -24,7 +24,7 @@ import {
 import { api } from "../../lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { Listing } from "../../types";
-import { useEffect } from "react";
+import axios from "axios";
 
 type ListingType = "apartment" | "house" | "villa" | "cabin";
 
@@ -64,6 +64,25 @@ interface ListingFormProps {
   onSuccess?: () => void;
   listing?: Listing | null;
 }
+
+const getInitialForm = (listing?: Listing | null): FormData => ({
+  title: listing?.title || "",
+  description: listing?.description || "",
+  location: listing?.location || "",
+  pricePerNight: listing?.pricePerNight?.toString() || "",
+  guests: listing?.guests?.toString() || "",
+  type: (listing?.type as ListingType) || "",
+  amenities: listing?.amenities || [],
+  photos: listing?.photos || [],
+});
+
+const getMutationMessage = (error: unknown, fallback: string) => {
+  if (axios.isAxiosError<{ message?: string }>(error)) {
+    return error.response?.data?.message || fallback;
+  }
+
+  return fallback;
+};
 
 function Field({
   label,
@@ -131,37 +150,13 @@ export default function ListingForm({
 }: ListingFormProps) {
   const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
-  const [form, setForm] = useState<FormData>({
-    title: "",
-    description: "",
-    location: "",
-    pricePerNight: "",
-    guests: "",
-    type: "",
-    amenities: [],
-    photos: [],
-  });
+  const [form, setForm] = useState<FormData>(() => getInitialForm(listing));
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>(
     {},
   );
   const fileRef = useRef<HTMLInputElement>(null);
 
   const isEditing = !!listing;
-
-  useEffect(() => {
-    if (listing) {
-      setForm({
-        title: listing.title || "",
-        description: listing.description || "",
-        location: listing.location || "",
-        pricePerNight: listing.pricePerNight?.toString() || "",
-        guests: listing.guests?.toString() || "",
-        type: (listing.type as ListingType) || "",
-        amenities: listing.amenities || [],
-        photos: listing.photos || [],
-      });
-    }
-  }, [listing]);
 
   const mutation = useMutation({
     mutationFn: async (formData: FormData) => {
@@ -338,8 +333,10 @@ export default function ListingForm({
             <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
               <span className="text-sm text-red-700 dark:text-red-300">
-                {(mutation.error as any)?.response?.data?.message ||
-                  `Failed to ${isEditing ? "update" : "create"} listing`}
+                {getMutationMessage(
+                  mutation.error,
+                  `Failed to ${isEditing ? "update" : "create"} listing`,
+                )}
               </span>
             </div>
           )}
