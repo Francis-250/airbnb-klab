@@ -18,6 +18,7 @@ import Reviews from "./pages/Reviews";
 import Bookings from "./pages/Bookings";
 import BookingForm from "./pages/BookingForm";
 import Favorites from "./pages/Favorites";
+import Messages from "./pages/Messages";
 import ForgotPassword from "./pages/ForgotPassword";
 import VerifyOtp from "./pages/VerifyOtp";
 import ResetPassword from "./pages/ResetPassword";
@@ -48,7 +49,8 @@ export default function App() {
   const isPublic =
     PUBLIC_ROUTES.includes(location.pathname) ||
     location.pathname.startsWith("/listings/") ||
-    location.pathname.startsWith("/bookings/");
+    location.pathname.startsWith("/bookings/") ||
+    location.pathname.startsWith("/messages");
 
   const showNavbar = isPublic;
   const showFooter = isPublic;
@@ -73,6 +75,8 @@ export default function App() {
             <Route path="/bookings" element={<Bookings />} />
             <Route path="/bookings/:id" element={<BookingForm />} />
             <Route path="/favorites" element={<Favorites />} />
+            <Route path="/messages" element={<Messages />} />
+            <Route path="/messages/:id" element={<Messages />} />
             <Route
               path="/bookings/:id/calendar"
               element={<BookingCalendar />}
@@ -89,6 +93,9 @@ export default function App() {
               <Route index element={<Dashboard />} />
               <Route path="bookings" element={<DashboardBooking />} />
               <Route path="listings" element={<DashboardListing />} />
+              <Route path="messages" element={<Messages />} />
+              <Route path="messages/:id" element={<Messages />} />
+              <Route path="profile" element={<Profile />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

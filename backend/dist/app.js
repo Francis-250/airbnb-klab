@@ -15,6 +15,7 @@ const booking_routes_1 = __importDefault(require("./routes/booking.routes"));
 const stats_routes_1 = __importDefault(require("./routes/stats.routes"));
 const ai_routes_1 = __importDefault(require("./routes/ai.routes"));
 const reviews_routes_1 = __importDefault(require("./routes/reviews.routes"));
+const conversations_routes_1 = __importDefault(require("./routes/conversations.routes"));
 const swagger_1 = require("./lib/swagger");
 const ratelimiter_1 = require("./middleware/ratelimiter");
 const app = (0, express_1.default)();
@@ -53,6 +54,7 @@ app.use("/api/bookings", booking_routes_1.default);
 app.use("/api/stats", stats_routes_1.default);
 app.use("/api/ai", ai_routes_1.default);
 app.use("/api/reviews", reviews_routes_1.default);
+app.use("/api/conversations", conversations_routes_1.default);
 app.get("/", (req, res) => {
     res.status(200).json({ message: "Welcome to the Airbnb API" });
 });

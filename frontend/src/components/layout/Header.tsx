@@ -58,7 +58,7 @@ export default function Header({ setIsOpen, user }: HeaderProps) {
               <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-[#1A1A1A] border border-[#EBEBEB] dark:border-[#2A2A2A] rounded-2xl shadow-lg overflow-hidden z-30">
                 <div className="p-1.5">
                   <Link
-                    to="/admin/profile"
+                    to="/dashboard/profile"
                     onClick={() => setProfileOpen(false)}
                     className="flex items-center gap-2.5 px-3 py-2.5 text-[13px] text-[#717171] dark:text-[#AAAAAA] hover:bg-[#F5F5F5] dark:hover:bg-[#2A2A2A] hover:text-[#111] dark:hover:text-white rounded-xl transition-colors"
                   >

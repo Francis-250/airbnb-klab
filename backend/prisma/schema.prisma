@@ -22,6 +22,9 @@ model User {
   listings         Listing[] @relation("UserListings")
   bookings         Booking[]
   reviews          Review[]
+  guestConversations Conversation[] @relation("GuestConversations")
+  hostConversations  Conversation[] @relation("HostConversations")
+  messages           Message[]      @relation("MessageSender")
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 }
@@ -42,8 +45,41 @@ model Listing {
   bookings      Booking[]
   reviews       Review[]
   favoriteBy    User[]      @relation("FavoriteListings")
+  conversations Conversation[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  guestId   String
+  hostId    String
+  listingId String
+  guest     User      @relation("GuestConversations", fields: [guestId], references: [id])
+  host      User      @relation("HostConversations", fields: [hostId], references: [id])
+  listing   Listing   @relation(fields: [listingId], references: [id])
+  messages  Message[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@unique([guestId, hostId, listingId])
+  @@index([guestId])
+  @@index([hostId])
+  @@index([listingId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  senderId       String
+  body           String
+  readAt         DateTime?
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  sender         User         @relation("MessageSender", fields: [senderId], references: [id])
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId])
+  @@index([senderId])
 }
 
 model Booking {

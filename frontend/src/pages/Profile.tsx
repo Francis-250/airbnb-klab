@@ -145,6 +145,7 @@ export default function Profile() {
     .join("")
     .toUpperCase()
     .slice(0, 2);
+  const identityLabel = user.role === "host" ? "host" : "guest";
 
   return (
     <div className="min-h-screen py-8">
@@ -159,7 +160,7 @@ export default function Profile() {
           Profile
         </h1>
         <p className="mt-2 text-[14px] text-gray-500 dark:text-gray-400">
-          Manage your public details and guest identity.
+          Manage your public details and {identityLabel} identity.
         </p>
       </div>
 
@@ -248,7 +249,9 @@ export default function Profile() {
                       Personal information
                     </h2>
                     <p className="mt-1 text-[14px] text-gray-500 dark:text-gray-400">
-                      These details help hosts recognize your account.
+                      {user.role === "host"
+                        ? "Guests use these details to recognize your host account."
+                        : "These details help hosts recognize your account."}
                     </p>
                   </div>
                   <button

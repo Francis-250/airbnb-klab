@@ -12,7 +12,10 @@ const NavLinks = ({ activeLink, collapsed, onClickLink }: NavLinksProps) => (
   <div className="flex flex-col gap-1 px-3">
     {DashboardLinks.map((link, index) => {
       const Icon = link.icon;
-      const isActive = activeLink === link.url;
+      const isActive =
+        link.url === "/dashboard"
+          ? activeLink === link.url
+          : activeLink === link.url || activeLink.startsWith(`${link.url}/`);
       return (
         <Link
           to={link.url}

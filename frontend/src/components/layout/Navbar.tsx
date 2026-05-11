@@ -11,6 +11,7 @@ import {
   User,
   LogOut,
   Compass,
+  MessageCircle,
 } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -429,6 +430,12 @@ function ProfileMenu({
             label="Bookings"
           />
           <MenuLink
+            to="/messages"
+            close={close}
+            icon={MessageCircle}
+            label="Messages"
+          />
+          <MenuLink
             to="/favorites"
             close={close}
             icon={Heart}
@@ -483,6 +490,12 @@ function MobileMenu({
         close={close}
         icon={CalendarDays}
         label="Bookings"
+      />
+      <MenuLink
+        to="/messages"
+        close={close}
+        icon={MessageCircle}
+        label="Messages"
       />
       <MenuLink
         to="/favorites"

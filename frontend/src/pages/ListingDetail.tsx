@@ -18,10 +18,13 @@ import {
   Wind,
 } from "lucide-react";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type { Listing } from "../types";
 import Spinner from "../components/Spinner";
+import { useAuthStore } from "../store/auth.store";
+import { toast } from "sonner";
+import axios from "axios";
 
 const amenityIcons: Record<
   string,
@@ -38,6 +41,7 @@ const amenityIcons: Record<
 export default function ListingDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [isSaved, setIsSaved] = useState(false);
   const [sliderIndex, setSliderIndex] = useState(0);
 
@@ -52,6 +56,22 @@ export default function ListingDetail() {
       return (res.data.listing ?? res.data) as Listing;
     },
     enabled: !!id,
+  });
+
+  const conversationMutation = useMutation({
+    mutationFn: async () => {
+      const response = await api.post("/conversations", { listingId: id });
+      return response.data as { conversation: { id: string } };
+    },
+    onSuccess: (data) => {
+      navigate(`/messages/${data.conversation.id}`);
+    },
+    onError: (error: unknown) => {
+      const message = axios.isAxiosError<{ message?: string }>(error)
+        ? error.response?.data?.message
+        : undefined;
+      toast.error(message || "Could not start conversation");
+    },
   });
 
   if (isLoading) {
@@ -92,6 +112,14 @@ export default function ListingDetail() {
     setSliderIndex((index) => (index === 0 ? images.length - 1 : index - 1));
   const nextSlide = () =>
     setSliderIndex((index) => (index === images.length - 1 ? 0 : index + 1));
+  const handleMessageHost = () => {
+    if (!user) {
+      navigate(`/login?redirect=/listings/${id}`);
+      return;
+    }
+
+    conversationMutation.mutate();
+  };
 
   return (
     <div className="min-h-screen pb-14">
@@ -323,6 +351,15 @@ export default function ListingDetail() {
                 className="mt-5 h-11 w-full rounded-lg bg-(--color-primary) px-5 text-[14px] font-semibold text-white transition-colors hover:bg-(--color-primary-dark)"
               >
                 Reserve
+              </button>
+              <button
+                onClick={handleMessageHost}
+                disabled={conversationMutation.isPending}
+                className="mt-3 h-10 w-full rounded-lg border border-gray-200 px-4 text-[13px] font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-white/[0.08] dark:text-gray-300 dark:hover:bg-white/[0.04]"
+              >
+                {conversationMutation.isPending
+                  ? "Opening chat..."
+                  : "Message host"}
               </button>
               <p className="mt-3 text-center text-[12px] text-gray-500 dark:text-gray-400">
                 You will choose dates on the next step.

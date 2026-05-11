@@ -5,6 +5,7 @@ import {
   Building2,
   Building,
   TreePine,
+  MessageCircle,
 } from "lucide-react";
 import type { CategoryProps } from "../types";
 
@@ -21,6 +22,12 @@ export const DashboardLinks = [
     icon: CalendarCheck,
   },
   { title: "Listing", url: "/dashboard/listings", badge: null, icon: Home },
+  {
+    title: "Messages",
+    url: "/dashboard/messages",
+    badge: null,
+    icon: MessageCircle,
+  },
 ];
 
 export const Categories: CategoryProps[] = [
