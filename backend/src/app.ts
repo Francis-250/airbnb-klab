@@ -21,6 +21,8 @@ const allowedOrigins = [
   "http://localhost:4000",
   "https://airbnb-api-oi1o.onrender.com",
   "http://localhost:5173",
+  "http://localhost:8081",
+  "http://192.168.1.171:8081",
 ];
 
 app.use(
@@ -66,6 +68,6 @@ app.get("/health", (req: Request, res: Response) => {
   res.status(200).json({ message: "Api is running" });
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });

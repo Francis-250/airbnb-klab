@@ -37,7 +37,7 @@ model Listing {
   location      String
   pricePerNight Float
   guests        Int
-  status       ListingStatus @default(available)
+  status        ListingStatus @default(available)
   type          ListingType
   amenities     String[]
   photos        String[]
