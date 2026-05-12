@@ -1,15 +1,16 @@
 import { Listing } from "@/types";
-import { FontAwesome } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
-  Text,
   Image,
   StyleSheet,
   Dimensions,
   Pressable,
+  Text,
 } from "react-native";
+import { Heart } from "lucide-react-native";
+import { COLORS } from "@/constants/colors";
 
 interface ListingCardProps {
   listing: Listing;
@@ -19,6 +20,7 @@ const { width } = Dimensions.get("window");
 
 export default function ListingCard({ listing }: ListingCardProps) {
   const router = useRouter();
+  const [saved, setSaved] = useState(false);
 
   const handlePress = () => {
     router.push(`/(guest)/${listing.id}`);
@@ -26,86 +28,56 @@ export default function ListingCard({ listing }: ListingCardProps) {
 
   return (
     <Pressable onPress={handlePress} style={styles.card}>
-      <Image source={{ uri: listing.photos[0] }} style={styles.image} />
-      <View style={styles.info}>
-        <Text style={styles.title}>{listing.title}</Text>
-        <Text style={styles.location}>{listing.location}</Text>
-        <View style={styles.priceContainer}>
-          <Text style={styles.price}>${listing.pricePerNight}</Text>
-          <Text style={styles.priceUnit}>/ night</Text>
-        </View>
-        {listing.rating && (
-          <View style={styles.ratingContainer}>
-            <FontAwesome name="star" size={16} color="#ffb400" />
-            <Text style={styles.rating}>{listing.rating.toFixed(1)}</Text>
+      <View style={styles.imageContainer}>
+        <Image source={{ uri: listing.photos[0] }} style={styles.image} />
+        <Pressable onPress={() => setSaved(!saved)} style={styles.heartButton}>
+          <Heart
+            size={24}
+            color={COLORS.PRIMARY}
+            fill={saved ? COLORS.PRIMARY : "none"}
+          />
+        </Pressable>
+        <View style={styles.info}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Text style={{ fontSize: 16, fontWeight: "bold" }}>
+              {listing.title}
+            </Text>
           </View>
-        )}
+        </View>
       </View>
+      <View style={styles.info}></View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "white",
-    borderRadius: 10,
-    overflow: "hidden",
     marginBottom: 20,
+  },
+  imageContainer: {
+    position: "relative",
     width: width - 40,
-    alignSelf: "center",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    height: 200,
   },
   image: {
     width: "100%",
-    height: 200,
-  },
-  info: {
-    padding: 15,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 5,
-  },
-  location: {
-    fontSize: 14,
-    color: "gray",
-    marginBottom: 10,
-  },
-  priceContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 5,
-  },
-  price: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: "#ff385c",
-  },
-  priceUnit: {
-    fontSize: 14,
-    color: "gray",
-    marginLeft: 4,
-  },
-  ratingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    position: "absolute",
-    top: 15,
-    right: 15,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    height: "100%",
     borderRadius: 12,
   },
-  rating: {
-    fontSize: 14,
-    color: "white",
-    marginLeft: 5,
-    fontWeight: "bold",
+  heartButton: {
+    position: "absolute",
+    top: 10,
+    right: 20,
+    zIndex: 1,
+    backgroundColor: "rgba(255,255,255,0.8)",
+    padding: 8,
+    borderRadius: 30,
   },
+  info: {},
 });

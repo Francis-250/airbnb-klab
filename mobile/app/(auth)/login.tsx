@@ -7,21 +7,26 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { Image } from "expo-image";
 import { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "@/store/auth.store";
 import { useRouter } from "expo-router";
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react-native";
 import { COLORS } from "@/constants/colors";
+import type { AxiosError } from "axios";
 
 export default function Login() {
   const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const loading = useAuthStore((state) => state.loading);
   const login = useAuthStore((state) => state.login);
@@ -34,18 +39,48 @@ export default function Login() {
   }, [isAuthenticated, router]);
 
   const handleSubmit = async (type: "login" | "signup") => {
-    if (type === "login") {
-      await login(email, password);
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedName = name.trim();
+
+    setErrorMessage("");
+
+    if (!trimmedEmail || !password) {
+      setErrorMessage("Email and password are required.");
       return;
     }
 
-    if (password !== confirmPassword) {
-      console.warn("Passwords do not match");
+    if (type === "signup" && !trimmedName) {
+      setErrorMessage("Name is required.");
       return;
     }
 
-    const name = email.split("@")[0] || "User";
-    await signup(name, email, password);
+    if (type === "signup" && password !== confirmPassword) {
+      setErrorMessage("Passwords do not match.");
+      return;
+    }
+
+    try {
+      if (type === "login") {
+        await login(trimmedEmail, password);
+        return;
+      }
+
+      await signup(trimmedName, trimmedEmail, password);
+    } catch (error) {
+      const axiosError = error as AxiosError<{ message?: string }>;
+      setErrorMessage(
+        axiosError.response?.data?.message ||
+          (type === "login"
+            ? "Could not sign you in. Please try again."
+            : "Could not create your account. Please try again."),
+      );
+    }
+  };
+
+  const toggleMode = () => {
+    setIsLogin((current) => !current);
+    setErrorMessage("");
+    setConfirmPassword("");
   };
 
   return (
@@ -70,37 +105,82 @@ export default function Login() {
           <View style={styles.header}>
             <Text style={styles.logo}>Airbnb</Text>
             <Text style={styles.title}>
-              {isLogin ? "Login to your Account" : "Create your Account"}
+              {isLogin ? "Welcome back" : "Create your account"}
+            </Text>
+            <Text style={styles.subtitle}>
+              {isLogin
+                ? "Sign in to manage trips, saved places, and messages."
+                : "Join as a guest and start finding places to stay."}
             </Text>
           </View>
           <View style={styles.form}>
-            <TextInput
-              placeholder="Email"
-              placeholderTextColor="#777f8c"
-              value={email}
-              onChangeText={setEmail}
-              style={styles.input}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-            <TextInput
-              placeholder="Password"
-              placeholderTextColor="#777f8c"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              style={styles.input}
-            />
             {!isLogin && (
               <TextInput
-                placeholder="Confirm Password"
+                autoCapitalize="words"
+                editable={!loading}
+                onChangeText={setName}
+                placeholder="Full name"
                 placeholderTextColor="#777f8c"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry
                 style={styles.input}
+                textContentType="name"
+                value={name}
               />
             )}
+            <TextInput
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!loading}
+              keyboardType="email-address"
+              onChangeText={setEmail}
+              placeholder="Email"
+              placeholderTextColor="#777f8c"
+              style={styles.input}
+              textContentType="emailAddress"
+              value={email}
+            />
+            <View style={styles.passwordField}>
+              <TextInput
+                editable={!loading}
+                onChangeText={setPassword}
+                placeholder="Password"
+                placeholderTextColor="#777f8c"
+                secureTextEntry={!passwordVisible}
+                style={[styles.input, styles.passwordInput]}
+                textContentType={isLogin ? "password" : "newPassword"}
+                value={password}
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={
+                  passwordVisible ? "Hide password" : "Show password"
+                }
+                onPress={() => setPasswordVisible((visible) => !visible)}
+                style={styles.passwordToggle}
+              >
+                {passwordVisible ? (
+                  <EyeOff color={COLORS.TEXT_SECONDARY} size={20} />
+                ) : (
+                  <Eye color={COLORS.TEXT_SECONDARY} size={20} />
+                )}
+              </Pressable>
+            </View>
+            {!isLogin && (
+              <TextInput
+                editable={!loading}
+                onChangeText={setConfirmPassword}
+                placeholder="Confirm Password"
+                placeholderTextColor="#777f8c"
+                secureTextEntry
+                style={styles.input}
+                textContentType="newPassword"
+                value={confirmPassword}
+              />
+            )}
+            {errorMessage ? (
+              <View style={styles.errorBox}>
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              </View>
+            ) : null}
             <Pressable
               style={({ pressed }) => [
                 styles.primaryButton,
@@ -110,9 +190,13 @@ export default function Login() {
               onPress={() => handleSubmit(isLogin ? "login" : "signup")}
               disabled={loading}
             >
-              <Text style={styles.primaryButtonText}>
-                {loading ? "Please wait..." : isLogin ? "Sign in" : "Sign up"}
-              </Text>
+              {loading ? (
+                <ActivityIndicator color={COLORS.TEXT_WHITE} />
+              ) : (
+                <Text style={styles.primaryButtonText}>
+                  {isLogin ? "Sign in" : "Create account"}
+                </Text>
+              )}
             </Pressable>
           </View>
 
@@ -151,7 +235,7 @@ export default function Login() {
                 ? "Don't have an account? "
                 : "Already have an account? "}
             </Text>
-            <Pressable onPress={() => setIsLogin(!isLogin)}>
+            <Pressable onPress={toggleMode}>
               <Text style={styles.switchText}>
                 {isLogin ? "Sign up" : "Sign in"}
               </Text>
@@ -188,7 +272,7 @@ const styles = StyleSheet.create({
   header: {
     marginTop: 42,
     marginBottom: 24,
-    gap: 54,
+    gap: 10,
   },
   logo: {
     color: COLORS.PRIMARY,
@@ -199,8 +283,16 @@ const styles = StyleSheet.create({
   },
   title: {
     color: COLORS.TEXT_PRIMARY,
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: "700",
+    marginTop: 36,
+    textAlign: "center",
+  },
+  subtitle: {
+    color: COLORS.TEXT_SECONDARY,
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: "center",
   },
   form: {
     gap: 22,
@@ -242,6 +334,34 @@ const styles = StyleSheet.create({
     color: COLORS.TEXT_WHITE,
     fontSize: 15,
     fontWeight: "700",
+  },
+  errorBox: {
+    backgroundColor: "#FFF1F1",
+    borderColor: "#FFD5D5",
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  errorText: {
+    color: COLORS.ERROR,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  passwordField: {
+    position: "relative",
+  },
+  passwordInput: {
+    paddingRight: 52,
+  },
+  passwordToggle: {
+    alignItems: "center",
+    bottom: 0,
+    justifyContent: "center",
+    position: "absolute",
+    right: 10,
+    top: 0,
+    width: 40,
   },
   socialSection: {
     alignItems: "center",

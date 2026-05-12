@@ -1,10 +1,15 @@
 import { create } from "zustand";
 import { api } from "../api/api";
 import { ENDPOINTS } from "@/api/endpoints";
+import type { AxiosError } from "axios";
 
 interface User {
+  id: string;
   name: string;
   email: string;
+  username?: string;
+  role?: "guest" | "host" | "admin";
+  hostStatus?: string;
   avatar?: string;
 }
 
@@ -18,7 +23,7 @@ interface AuthState {
   fetchUser: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
   loading: false,
@@ -26,8 +31,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   fetchUser: async () => {
     set({ loading: true });
     try {
-      const response = await api.get(ENDPOINTS.AUTH.ME);
-      set({ user: response.data, isAuthenticated: true });
+      const response = await api.get<{ user: User }>(ENDPOINTS.AUTH.ME);
+      set({ user: response.data.user, isAuthenticated: true });
     } catch {
       set({ user: null, isAuthenticated: false });
     } finally {
@@ -38,33 +43,49 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (email, password) => {
     set({ loading: true });
     try {
-      await api.post(ENDPOINTS.AUTH.LOGIN, {
+      const response = await api.post(ENDPOINTS.AUTH.LOGIN, {
         email,
         password,
       });
-      await get().fetchUser();
+      set({ isAuthenticated: true, user: response.data.user });
     } finally {
       set({ loading: false });
     }
   },
 
   logout: async () => {
+    set({ user: null, isAuthenticated: false });
+
     try {
       await api.post(ENDPOINTS.AUTH.LOGOUT);
-    } finally {
-      set({ user: null, isAuthenticated: false });
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      if (axiosError.response?.status !== 401) {
+        throw error;
+      }
     }
   },
 
   register: async (name, email, password) => {
     set({ loading: true });
     try {
-      const response = await api.post(ENDPOINTS.AUTH.REGISTER, {
+      const username =
+        email.split("@")[0]?.replace(/[^a-zA-Z0-9_]/g, "") || name;
+      await api.post(ENDPOINTS.AUTH.REGISTER, {
         name,
+        email,
+        username,
+        password,
+      });
+      await api.post(ENDPOINTS.AUTH.LOGIN, {
         email,
         password,
       });
-      set({ user: response.data, isAuthenticated: true });
+      const response = await api.post(ENDPOINTS.AUTH.LOGIN, {
+        email,
+        password,
+      });
+      set({ isAuthenticated: true, user: response.data.user });
     } finally {
       set({ loading: false });
     }

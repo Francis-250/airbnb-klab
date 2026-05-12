@@ -15,7 +15,7 @@ import { setupSwagger } from "./lib/swagger";
 import { generalLimiter } from "./middleware/ratelimiter";
 
 const app = express();
-const PORT = process.env.PORT || 4000;
+const PORT = Number(process.env.PORT) || 4000;
 
 const allowedOrigins = [
   "http://localhost:4000",

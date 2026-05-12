@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,14 +7,27 @@ import {
   ScrollView,
   Image,
   StyleSheet,
+  Dimensions,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
 } from "react-native";
 import { useListingById } from "@/hooks/useListing";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { FontAwesome } from "@expo/vector-icons";
 
+const { width } = Dimensions.get("window");
+
 export default function ListingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const { data: listing, isLoading, isError } = useListingById(id as string);
+
+  const handleImageScroll = (
+    event: NativeSyntheticEvent<NativeScrollEvent>,
+  ) => {
+    const nextIndex = Math.round(event.nativeEvent.contentOffset.x / width);
+    setActiveImageIndex(nextIndex);
+  };
 
   if (isLoading) {
     return (
@@ -32,20 +45,63 @@ export default function ListingDetailScreen() {
     );
   }
 
+  const photos = listing.photos?.filter(Boolean) ?? [];
+
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
       <ScrollView>
-        <Image source={{ uri: listing.photos[0] }} style={styles.image} />
+        <View style={styles.slider}>
+          {photos.length > 0 ? (
+            <>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                pagingEnabled
+                onMomentumScrollEnd={handleImageScroll}
+              >
+                {photos.map((photo, index) => (
+                  <Image
+                    key={`${photo}-${index}`}
+                    source={{ uri: photo }}
+                    style={styles.image}
+                    resizeMode="cover"
+                  />
+                ))}
+              </ScrollView>
+
+              {photos.length > 1 && (
+                <View style={styles.dots}>
+                  {photos.map((photo, index) => (
+                    <View
+                      key={`${photo}-dot-${index}`}
+                      style={[
+                        styles.dot,
+                        activeImageIndex === index && styles.activeDot,
+                      ]}
+                    />
+                  ))}
+                </View>
+              )}
+            </>
+          ) : (
+            <View style={[styles.image, styles.imageFallback]}>
+              <Text style={styles.imageFallbackText}>No photos available</Text>
+            </View>
+          )}
+        </View>
+
         <View style={styles.container}>
           <Text style={styles.title}>{listing.title}</Text>
           <Text style={styles.location}>{listing.location}</Text>
 
           <View style={styles.hostInfo}>
             <Image
-              source={{ uri: listing.host.avatar || undefined }}
+              source={{
+                uri: listing.host?.avatar || "https://via.placeholder.com/50",
+              }}
               style={styles.hostAvatar}
             />
-            <Text style={styles.hostName}>Hosted by {listing.host.name}</Text>
+            <Text style={styles.hostName}>Hosted by {listing.host?.name}</Text>
           </View>
 
           <Text style={styles.description}>{listing.description}</Text>
@@ -53,11 +109,11 @@ export default function ListingDetailScreen() {
           <View style={styles.detailsRow}>
             <View style={styles.detailItem}>
               <FontAwesome name="users" size={20} color="#ff385c" />
-              <Text>{listing.guests} guests</Text>
+              <Text style={styles.detailText}>{listing.guests} guests</Text>
             </View>
             <View style={styles.detailItem}>
               <FontAwesome name="bed" size={20} color="#ff385c" />
-              <Text>{listing.type}</Text>
+              <Text style={styles.detailText}>{listing.type}</Text>
             </View>
           </View>
 
@@ -68,9 +124,9 @@ export default function ListingDetailScreen() {
 
           <View style={styles.amenities}>
             <Text style={styles.amenitiesTitle}>Amenities</Text>
-            {listing.amenities.map((amenity, index) => (
+            {listing.amenities?.map((amenity, index) => (
               <Text key={index} style={styles.amenity}>
-                - {amenity}
+                • {amenity}
               </Text>
             ))}
           </View>
@@ -90,8 +146,40 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   image: {
-    width: "100%",
+    width: width,
     height: 300,
+  },
+  slider: {
+    height: 300,
+    position: "relative",
+  },
+  imageFallback: {
+    alignItems: "center",
+    backgroundColor: "#f2f2f2",
+    justifyContent: "center",
+  },
+  imageFallbackText: {
+    color: "gray",
+    fontSize: 14,
+  },
+  dots: {
+    position: "absolute",
+    bottom: 14,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 6,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.65)",
+  },
+  activeDot: {
+    width: 18,
+    backgroundColor: "#fff",
   },
   title: {
     fontSize: 28,
@@ -134,6 +222,9 @@ const styles = StyleSheet.create({
   },
   detailItem: {
     alignItems: "center",
+  },
+  detailText: {
+    marginTop: 5,
   },
   price: {
     fontSize: 24,

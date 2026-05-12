@@ -10,6 +10,7 @@ const helpers_1 = require("../lib/helpers");
 const crypto_1 = __importDefault(require("crypto"));
 const resend_1 = require("../middleware/resend");
 const mail_temp_1 = require("../templates/mail.temp");
+const isProduction = process.env.NODE_ENV === "production";
 const register = async (req, res) => {
     const { name, email, username, phone, role, bio, password } = req.body;
     const requestedRole = role === "host" ? "host" : "guest";
@@ -81,12 +82,13 @@ const login = async (req, res) => {
         const token = jsonwebtoken_1.default.sign({ userId: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: "1h" });
         res.cookie("token", token, {
             httpOnly: true,
-            secure: true,
-            sameSite: "none",
+            secure: isProduction,
+            sameSite: isProduction ? "none" : "lax",
             maxAge: 3600000,
         });
         return res.status(200).json({
             message: "Login successful",
+            token,
             user: {
                 id: user.id,
                 name: user.name,
@@ -136,8 +138,8 @@ exports.getCurrentUser = getCurrentUser;
 const logout = async (req, res) => {
     res.clearCookie("token", {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
     });
     res.status(200).json({ message: "Logout successful" });
 };

@@ -11,6 +11,8 @@ import crypto from "crypto";
 import { sendEmail } from "../middleware/resend";
 import { passwordResetEmail, welcomeEmail } from "../templates/mail.temp";
 
+const isProduction = process.env.NODE_ENV === "production";
+
 export const register = async (req: Request, res: Response) => {
   const { name, email, username, phone, role, bio, password } = req.body;
   const requestedRole = role === "host" ? "host" : "guest";
@@ -93,8 +95,8 @@ export const login = async (req: Request, res: Response) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true,
-      sameSite: "none",
+      secure: isProduction,
+      sameSite: isProduction ? "none" : "lax",
       maxAge: 3600000,
     });
     return res.status(200).json({
@@ -105,6 +107,7 @@ export const login = async (req: Request, res: Response) => {
         email: user.email,
         role: user.role,
         hostStatus: user.hostStatus,
+        avatar: user.avatar,
       },
     });
   } catch (error) {
@@ -146,8 +149,8 @@ export const getCurrentUser = async (req: Request, res: Response) => {
 export const logout = async (req: Request, res: Response) => {
   res.clearCookie("token", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
+    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax",
   });
   res.status(200).json({ message: "Logout successful" });
 };

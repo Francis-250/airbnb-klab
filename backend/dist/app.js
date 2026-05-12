@@ -19,11 +19,13 @@ const conversations_routes_1 = __importDefault(require("./routes/conversations.r
 const swagger_1 = require("./lib/swagger");
 const ratelimiter_1 = require("./middleware/ratelimiter");
 const app = (0, express_1.default)();
-const PORT = process.env.PORT || 4000;
+const PORT = Number(process.env.PORT) || 4000;
 const allowedOrigins = [
     "http://localhost:4000",
     "https://airbnb-api-oi1o.onrender.com",
     "http://localhost:5173",
+    "http://localhost:8081",
+    "http://192.168.1.171:8081",
 ];
 app.use((0, cors_1.default)({
     origin: (origin, callback) => {
@@ -61,6 +63,6 @@ app.get("/", (req, res) => {
 app.get("/health", (req, res) => {
     res.status(200).json({ message: "Api is running" });
 });
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
