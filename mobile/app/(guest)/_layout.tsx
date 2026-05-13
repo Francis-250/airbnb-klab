@@ -1,86 +1,22 @@
-import { useAuthStore } from "@/store/auth.store";
-import { Tabs, useRouter } from "expo-router";
-import {
-  Heart,
-  Home,
-  Search,
-  UserCircle,
-  MessageCircle,
-} from "lucide-react-native";
-import { useThemeColors } from "@/hooks/useThemeColors";
+import { Tabs } from "expo-router";
+import AppTabBar from "@/components/commonn/tabBar";
 
 export default function GuestLayout() {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const router = useRouter();
-  const { colors } = useThemeColors();
-
   return (
     <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: colors.PRIMARY,
-        tabBarInactiveTintColor: colors.TEXT_LIGHT,
-        tabBarStyle: {
-          backgroundColor: colors.BACKGROUND,
-          borderTopColor: colors.BORDER_LIGHT,
-        },
-      }}
+      screenOptions={{ headerShown: false }}
+      tabBar={(props) => <AppTabBar {...props} />}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Explore",
-          tabBarIcon: ({ color, size }) => <Search size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="saved"
-        options={{
-          title: "WishList",
-          tabBarIcon: ({ color, size }) => <Heart size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="trip"
-        options={{
-          title: "Trip",
-          tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="message"
-        options={{
-          title: "Inbox",
-          tabBarIcon: ({ color, size }) => (
-            <MessageCircle size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Profile",
-          tabBarIcon: ({ color, size }) => (
-            <UserCircle size={size} color={color} />
-          ),
-        }}
-        listeners={
-          !isAuthenticated
-            ? {
-                tabPress: (e) => {
-                  e.preventDefault();
-                  router.push("/(auth)/login");
-                },
-              }
-            : undefined
-        }
-      />
+      <Tabs.Screen name="index" options={{ title: "Explore" }} />
+      <Tabs.Screen name="saved" options={{ title: "WishList" }} />
+      <Tabs.Screen name="trip" options={{ title: "Trip" }} />
+      <Tabs.Screen name="message" options={{ title: "Inbox" }} />
+      <Tabs.Screen name="profile" options={{ title: "Profile" }} />
       <Tabs.Screen
         name="[id]"
         options={{
           href: null,
           headerShown: false,
-          title: "Listing Details",
           tabBarStyle: { display: "none" },
         }}
       />
@@ -89,7 +25,6 @@ export default function GuestLayout() {
         options={{
           href: null,
           headerShown: false,
-          title: "Personal Information",
           tabBarStyle: { display: "none" },
         }}
       />
