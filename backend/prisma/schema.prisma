@@ -23,6 +23,7 @@ model User {
   listings         Listing[] @relation("UserListings")
   bookings         Booking[]
   reviews          Review[]
+  comments         Comment[]
   guestConversations Conversation[] @relation("GuestConversations")
   hostConversations  Conversation[] @relation("HostConversations")
   messages           Message[]      @relation("MessageSender")
@@ -46,6 +47,7 @@ model Listing {
   host          User        @relation("UserListings", fields: [hostId], references: [id])
   bookings      Booking[]
   reviews       Review[]
+  comments      Comment[]
   favoriteBy    User[]      @relation("FavoriteListings")
   conversations Conversation[]
   createdAt     DateTime    @default(now())
@@ -106,6 +108,20 @@ model Review {
   guestId   String
   listing   Listing  @relation(fields: [listingId], references: [id])
   listingId String
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  body      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  guest     User     @relation(fields: [guestId], references: [id])
+  guestId   String
+  listing   Listing  @relation(fields: [listingId], references: [id])
+  listingId String
+
+  @@index([guestId])
+  @@index([listingId])
 }
 
 enum Role {

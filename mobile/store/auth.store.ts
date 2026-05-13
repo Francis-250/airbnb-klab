@@ -8,9 +8,11 @@ interface User {
   name: string;
   email: string;
   username?: string;
+  phone?: string | null;
   role?: "guest" | "host" | "admin";
   hostStatus?: string;
-  avatar?: string;
+  avatar?: string | null;
+  bio?: string | null;
 }
 
 interface AuthState {
@@ -21,6 +23,12 @@ interface AuthState {
   logout: () => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   fetchUser: () => Promise<void>;
+  updateProfile: (data: {
+    name: string;
+    username?: string;
+    phone?: string;
+    bio?: string;
+  }) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -86,6 +94,21 @@ export const useAuthStore = create<AuthState>((set) => ({
         password,
       });
       set({ isAuthenticated: true, user: response.data.user });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  updateProfile: async (data) => {
+    set({ loading: true });
+    try {
+      const response = await api.patch<User>(ENDPOINTS.AUTH.UPDATE_PROFILE, {
+        name: data.name,
+        username: data.username,
+        phone: data.phone,
+        bio: data.bio,
+      });
+      set({ user: response.data, isAuthenticated: true });
     } finally {
       set({ loading: false });
     }

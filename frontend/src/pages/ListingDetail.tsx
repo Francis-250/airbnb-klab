@@ -9,6 +9,7 @@ import {
   Heart,
   Home,
   MapPin,
+  Send,
   Share2,
   Star,
   Users,
@@ -18,9 +19,9 @@ import {
   Wind,
 } from "lucide-react";
 import { useState } from "react";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
-import type { Listing } from "../types";
+import type { Listing, ListingCommentsResponse } from "../types";
 import Spinner from "../components/Spinner";
 import { useAuthStore } from "../store/auth.store";
 import { toast } from "sonner";
@@ -42,8 +43,10 @@ export default function ListingDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const queryClient = useQueryClient();
   const [isSaved, setIsSaved] = useState(false);
   const [sliderIndex, setSliderIndex] = useState(0);
+  const [commentBody, setCommentBody] = useState("");
 
   const {
     data: listing,
@@ -71,6 +74,36 @@ export default function ListingDetail() {
         ? error.response?.data?.message
         : undefined;
       toast.error(message || "Could not start conversation");
+    },
+  });
+
+  const { data: commentsData, isLoading: commentsLoading } = useQuery({
+    queryKey: ["comments", id],
+    queryFn: async () => {
+      const response = await api.get(`/comments/listing/${id}`);
+      return response.data as ListingCommentsResponse;
+    },
+    enabled: !!id,
+  });
+
+  const createCommentMutation = useMutation({
+    mutationFn: async (body: string) => {
+      const response = await api.post("/comments", {
+        listingId: id,
+        body,
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      setCommentBody("");
+      queryClient.invalidateQueries({ queryKey: ["comments", id] });
+      toast.success("Comment posted");
+    },
+    onError: (error: unknown) => {
+      const message = axios.isAxiosError<{ message?: string }>(error)
+        ? error.response?.data?.message
+        : undefined;
+      toast.error(message || "Could not post comment");
     },
   });
 
@@ -119,6 +152,22 @@ export default function ListingDetail() {
     }
 
     conversationMutation.mutate();
+  };
+  const handleSubmitComment = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const body = commentBody.trim();
+    if (!user) {
+      navigate(`/login?redirect=/listings/${id}`);
+      return;
+    }
+
+    if (!body) {
+      toast.error("Write a comment before posting");
+      return;
+    }
+
+    createCommentMutation.mutate(body);
   };
 
   return (
@@ -319,6 +368,97 @@ export default function ListingDetail() {
                   referrerPolicy="no-referrer-when-downgrade"
                   src={mapUrl}
                 />
+              </div>
+            </section>
+
+            <section className="border-b border-gray-200 py-7 dark:border-white/[0.08]">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-950 dark:text-white">
+                    Comments
+                  </h2>
+                  <p className="mt-1 text-[14px] text-gray-500 dark:text-gray-400">
+                    {commentsData?.pagination.total ?? 0}{" "}
+                    {(commentsData?.pagination.total ?? 0) === 1
+                      ? "comment"
+                      : "comments"}
+                  </p>
+                </div>
+              </div>
+
+              <form
+                onSubmit={handleSubmitComment}
+                className="mt-5 rounded-xl border border-gray-200 bg-white p-4 dark:border-white/[0.08] dark:bg-[#111827]"
+              >
+                <textarea
+                  value={commentBody}
+                  onChange={(event) => setCommentBody(event.target.value)}
+                  placeholder={
+                    user
+                      ? "Write a comment or question about this stay..."
+                      : "Log in to post a comment..."
+                  }
+                  rows={4}
+                  className="w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-3 text-[14px] leading-6 text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-(--color-primary) dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
+                />
+                <div className="mt-3 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={createCommentMutation.isPending}
+                    className="inline-flex h-10 items-center gap-2 rounded-lg bg-(--color-primary) px-4 text-[13px] font-semibold text-white transition-colors hover:bg-(--color-primary-dark) disabled:opacity-60"
+                  >
+                    <Send className="h-4 w-4" />
+                    {createCommentMutation.isPending
+                      ? "Posting..."
+                      : "Post comment"}
+                  </button>
+                </div>
+              </form>
+
+              <div className="mt-6 space-y-5">
+                {commentsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Spinner />
+                  </div>
+                ) : commentsData?.comments.length ? (
+                  commentsData.comments.map((comment) => (
+                    <article key={comment.id} className="flex gap-3">
+                      {comment.guest.avatar ? (
+                        <img
+                          src={comment.guest.avatar}
+                          alt={comment.guest.name}
+                          className="h-10 w-10 shrink-0 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm font-semibold text-gray-700 dark:bg-white/[0.08] dark:text-gray-200">
+                          {comment.guest.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1 rounded-xl bg-gray-50 px-4 py-3 dark:bg-white/[0.04]">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <p className="text-[14px] font-semibold text-gray-950 dark:text-white">
+                            {comment.guest.name}
+                          </p>
+                          <span className="text-[12px] text-gray-400">
+                            {new Date(comment.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="mt-2 whitespace-pre-line text-[14px] leading-6 text-gray-600 dark:text-gray-300">
+                          {comment.body}
+                        </p>
+                      </div>
+                    </article>
+                  ))
+                ) : (
+                  <div className="rounded-xl border border-dashed border-gray-200 px-5 py-8 text-center dark:border-white/[0.08]">
+                    <p className="text-[14px] font-semibold text-gray-950 dark:text-white">
+                      No comments yet
+                    </p>
+                    <p className="mt-1 text-[13px] text-gray-500 dark:text-gray-400">
+                      Ask a question or share a thought about this stay.
+                    </p>
+                  </div>
+                )}
               </div>
             </section>
           </main>

@@ -30,6 +30,28 @@ export interface UserProps {
   phone?: string | null;
 }
 
+export interface Comment {
+  id: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+  guest: {
+    id: string;
+    name: string;
+    avatar?: string | null;
+  };
+}
+
+export interface ListingCommentsResponse {
+  comments: Comment[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export interface CategoryProps {
   icon: React.ComponentType<{ className?: string }>;
   title: string;

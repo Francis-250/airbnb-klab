@@ -74,6 +74,15 @@ export default function GuestLayout() {
           tabBarStyle: { display: "none" },
         }}
       />
+      <Tabs.Screen
+        name="personal-info"
+        options={{
+          href: null,
+          headerShown: false,
+          title: "Personal Information",
+          tabBarStyle: { display: "none" },
+        }}
+      />
     </Tabs>
   );
 }

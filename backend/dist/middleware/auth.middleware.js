@@ -10,11 +10,7 @@ const verifyToken = (req, res, next) => {
     if (!process.env.JWT_SECRET) {
         throw new Error("JWT_SECRET is not defined");
     }
-    const authHeader = req.headers.authorization;
-    const bearerToken = authHeader?.startsWith("Bearer ")
-        ? authHeader.slice("Bearer ".length)
-        : null;
-    const token = req.cookies?.token || bearerToken;
+    const token = req.cookies?.token;
     if (!token) {
         return res.status(401).json({ message: "Unauthorized" });
     }

@@ -3,7 +3,11 @@ import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import { Search, SlidersHorizontal } from "lucide-react-native";
 import { COLORS } from "@/constants/colors";
 
-export default function SearchBar() {
+type SearchBarProps = {
+  onOpenFilters?: () => void;
+};
+
+export default function SearchBar({ onOpenFilters }: SearchBarProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
@@ -22,7 +26,7 @@ export default function SearchBar() {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Open filters"
-        onPress={() => {}}
+        onPress={onOpenFilters}
         style={({ pressed }) => [
           styles.filterButton,
           pressed && styles.filterButtonPressed,

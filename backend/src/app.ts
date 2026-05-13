@@ -11,6 +11,7 @@ import statsRoutes from "./routes/stats.routes";
 import aiRoute from "./routes/ai.routes";
 import reviewsRoutes from "./routes/reviews.routes";
 import conversationsRoutes from "./routes/conversations.routes";
+import commentsRoutes from "./routes/comments.routes";
 import { setupSwagger } from "./lib/swagger";
 import { generalLimiter } from "./middleware/ratelimiter";
 
@@ -59,6 +60,7 @@ app.use("/api/stats", statsRoutes);
 app.use("/api/ai", aiRoute);
 app.use("/api/reviews", reviewsRoutes);
 app.use("/api/conversations", conversationsRoutes);
+app.use("/api/comments", commentsRoutes);
 
 app.get("/", (req: Request, res: Response) => {
   res.status(200).json({ message: "Welcome to the Airbnb API" });

@@ -1,6 +1,6 @@
 import { Listing } from "@/types";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   Image,
@@ -8,76 +8,200 @@ import {
   Dimensions,
   Pressable,
   Text,
+  GestureResponderEvent,
 } from "react-native";
-import { Heart } from "lucide-react-native";
-import { COLORS } from "@/constants/colors";
+import { Heart, Star } from "lucide-react-native";
+import { useAuthStore } from "@/store/auth.store";
+import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
 
 interface ListingCardProps {
   listing: Listing;
 }
 
 const { width } = Dimensions.get("window");
+const CARD_WIDTH = width - 40;
+const IMAGE_HEIGHT = Math.round(CARD_WIDTH * 0.92);
 
 export default function ListingCard({ listing }: ListingCardProps) {
   const router = useRouter();
-  const [saved, setSaved] = useState(false);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const { data: favorites = [] } = useFavorites();
+  const toggleFavorite = useToggleFavorite();
+  const saved = favorites.some((favorite) => favorite.id === listing.id);
 
-  const handlePress = () => {
-    router.push(`/(guest)/${listing.id}`);
+  const handleToggleFavorite = (event: GestureResponderEvent) => {
+    event.stopPropagation();
+
+    if (!isAuthenticated) {
+      router.push("/(auth)/login");
+      return;
+    }
+
+    toggleFavorite.mutate({ listing, isFavorite: saved });
   };
 
   return (
-    <Pressable onPress={handlePress} style={styles.card}>
-      <View style={styles.imageContainer}>
-        <Image source={{ uri: listing.photos[0] }} style={styles.image} />
-        <Pressable onPress={() => setSaved(!saved)} style={styles.heartButton}>
+    <Pressable
+      onPress={() => router.push(`/(guest)/${listing.id}`)}
+      style={({ pressed }) => [styles.card, pressed && { opacity: 0.95 }]}
+    >
+      <View style={styles.imageWrap}>
+        <Image
+          source={{
+            uri: listing.photos?.[0] || "https://via.placeholder.com/400",
+          }}
+          style={styles.image}
+          resizeMode="cover"
+        />
+
+        <View style={styles.dots}>
+          {(listing.photos?.length ? listing.photos.slice(0, 5) : [null]).map(
+            (_, index) => (
+              <View
+                key={index}
+                style={[styles.dot, index === 0 && styles.activeDot]}
+              />
+            ),
+          )}
+        </View>
+
+        <Pressable
+          onPress={handleToggleFavorite}
+          disabled={toggleFavorite.isPending}
+          style={[
+            styles.heartBtn,
+            toggleFavorite.isPending && styles.heartBtnDisabled,
+          ]}
+          hitSlop={8}
+        >
           <Heart
-            size={24}
-            color={COLORS.PRIMARY}
-            fill={saved ? COLORS.PRIMARY : "none"}
+            size={22}
+            color={saved ? "#E8604C" : "#fff"}
+            fill={saved ? "#E8604C" : "transparent"}
+            strokeWidth={2.4}
           />
         </Pressable>
-        <View style={styles.info}>
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Text style={{ fontSize: 16, fontWeight: "bold" }}>
-              {listing.title}
-            </Text>
-          </View>
-        </View>
       </View>
-      <View style={styles.info}></View>
+
+      <View style={styles.info}>
+        <View style={styles.row}>
+          <Text style={styles.title} numberOfLines={1}>
+            {listing.location}
+          </Text>
+          {listing.rating != null && (
+            <View style={styles.ratingRow}>
+              <Star size={11} color="#111" fill="#111" />
+              <Text style={styles.rating}>{listing.rating.toFixed(2)}</Text>
+            </View>
+          )}
+        </View>
+        <Text style={styles.meta} numberOfLines={1}>
+          {listing.guests} guests
+        </Text>
+        <Text style={styles.meta}>Jul 2 - 7</Text>
+        <Text style={styles.price}>
+          ${listing.pricePerNight}
+          <Text style={styles.priceNight}> night</Text>
+        </Text>
+      </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    marginBottom: 20,
+    width: CARD_WIDTH,
+    marginBottom: 26,
+    backgroundColor: "transparent",
   },
-  imageContainer: {
+  imageWrap: {
+    width: "100%",
+    height: IMAGE_HEIGHT,
     position: "relative",
-    width: width - 40,
-    height: 200,
+    borderRadius: 8,
+    overflow: "hidden",
+    backgroundColor: "#EAEAEA",
   },
   image: {
     width: "100%",
     height: "100%",
-    borderRadius: 12,
   },
-  heartButton: {
+  dots: {
+    position: "absolute",
+    bottom: 10,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 4,
+  },
+  dot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: "rgba(255,255,255,0.72)",
+  },
+  activeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#fff",
+  },
+  heartBtn: {
     position: "absolute",
     top: 10,
-    right: 20,
-    zIndex: 1,
-    backgroundColor: "rgba(255,255,255,0.8)",
-    padding: 8,
-    borderRadius: 30,
+    right: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "transparent",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  info: {},
+  heartBtnDisabled: {
+    opacity: 0.7,
+  },
+  info: {
+    paddingTop: 9,
+    gap: 2,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  title: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#111",
+    flex: 1,
+  },
+  price: {
+    marginTop: 5,
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#111",
+  },
+  priceNight: {
+    fontSize: 12,
+    color: "#111",
+    fontWeight: "400",
+  },
+  meta: {
+    fontSize: 12,
+    color: "#717171",
+  },
+  ratingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    paddingTop: 1,
+  },
+  rating: {
+    fontSize: 11,
+    color: "#111",
+    fontWeight: "500",
+  },
 });
