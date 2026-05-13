@@ -3,9 +3,11 @@ import { Pressable, Text, ScrollView } from "react-native";
 import React, { useState } from "react";
 import { categoryData } from "@/constants/data";
 import { COLORS } from "@/constants/colors";
+import { useThemeColors } from "@/hooks/useThemeColors";
 
 export default function Categories() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const { colors } = useThemeColors();
 
   return (
     <ScrollView
@@ -29,20 +31,20 @@ export default function Categories() {
               paddingVertical: 8,
               paddingHorizontal: 4,
               opacity: pressed ? 0.7 : 1,
-              backgroundColor: isSelected ? COLORS.PRIMARY : COLORS.BACKGROUND,
+              backgroundColor: isSelected ? COLORS.PRIMARY : colors.BACKGROUND,
               borderRadius: 6,
             })}
           >
             <category.icon
               size={22}
-              color={isSelected ? COLORS.BACKGROUND : COLORS.TEXT_SECONDARY}
+              color={isSelected ? colors.BACKGROUND : colors.TEXT_SECONDARY}
             />
             <Text
               style={{
                 textTransform: "capitalize",
                 fontSize: 14,
                 fontWeight: isSelected ? "600" : "500",
-                color: isSelected ? COLORS.BACKGROUND : COLORS.TEXT_SECONDARY,
+                color: isSelected ? colors.BACKGROUND : colors.TEXT_SECONDARY,
               }}
             >
               {category.name}

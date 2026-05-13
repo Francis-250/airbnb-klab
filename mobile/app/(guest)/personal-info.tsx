@@ -25,6 +25,7 @@ import {
 import { useAuthStore } from "@/store/auth.store";
 import { COLORS } from "@/constants/colors";
 import { isAxiosError } from "axios";
+import { useThemeColors } from "@/hooks/useThemeColors";
 
 type ProfileForm = {
   name: string;
@@ -35,6 +36,7 @@ type ProfileForm = {
 
 export default function PersonalInfo() {
   const router = useRouter();
+  const { colors, isDark } = useThemeColors();
   const user = useAuthStore((state) => state.user);
   const loading = useAuthStore((state) => state.loading);
   const fetchUser = useAuthStore((state) => state.fetchUser);
@@ -124,19 +126,26 @@ export default function PersonalInfo() {
   };
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.screen, { backgroundColor: colors.BACKGROUND }]}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.BACKGROUND, borderBottomColor: colors.BORDER_LIGHT },
+        ]}
+      >
         <Pressable
           onPress={() => router.back()}
           hitSlop={10}
           style={styles.backBtn}
         >
-          <ChevronLeft size={24} color="#111" />
+          <ChevronLeft size={24} color={colors.TEXT_PRIMARY} />
         </Pressable>
-        <Text style={styles.headerTitle}>Personal information</Text>
+        <Text style={[styles.headerTitle, { color: colors.TEXT_PRIMARY }]}>
+          Personal information
+        </Text>
         {isEditing ? (
           <Pressable onPress={cancelEditing} hitSlop={10} style={styles.backBtn}>
-            <X size={22} color="#111" />
+            <X size={22} color={colors.TEXT_PRIMARY} />
           </Pressable>
         ) : (
           <Pressable
@@ -144,7 +153,7 @@ export default function PersonalInfo() {
             hitSlop={10}
             style={styles.backBtn}
           >
-            <Pen size={20} color="#111" />
+            <Pen size={20} color={colors.TEXT_PRIMARY} />
           </Pressable>
         )}
       </View>
@@ -162,19 +171,28 @@ export default function PersonalInfo() {
             {user?.avatar ? (
               <Image source={{ uri: user.avatar }} style={styles.avatar} />
             ) : (
-              <View style={styles.avatarFallback}>
+              <View
+                style={[
+                  styles.avatarFallback,
+                  { backgroundColor: isDark ? "#2B2440" : "#E8DEFF" },
+                ]}
+              >
                 <UserCircle size={42} color="#5F4B8B" />
               </View>
             )}
-            <Text style={styles.name}>{user?.name || "Guest"}</Text>
-            <Text style={styles.email}>{user?.email || "No email"}</Text>
+            <Text style={[styles.name, { color: colors.TEXT_PRIMARY }]}>
+              {user?.name || "Guest"}
+            </Text>
+            <Text style={[styles.email, { color: colors.TEXT_SECONDARY }]}>
+              {user?.email || "No email"}
+            </Text>
           </View>
 
           {!!errorMessage && (
             <Text style={styles.errorMessage}>{errorMessage}</Text>
           )}
 
-          <View style={styles.rows}>
+          <View style={[styles.rows, { borderTopColor: colors.BORDER_LIGHT }]}>
             {rows.map((row) => {
               const Icon = row.icon;
               const value = row.value ? String(row.value) : "Not provided";
@@ -182,16 +200,21 @@ export default function PersonalInfo() {
               const canEdit = isEditing && editableField;
 
               return (
-                <View key={row.label} style={styles.row}>
-                  <Icon size={18} color="#1A1A1A" strokeWidth={1.8} />
+                <View
+                  key={row.label}
+                  style={[styles.row, { borderBottomColor: colors.BORDER_LIGHT }]}
+                >
+                  <Icon size={18} color={colors.TEXT_PRIMARY} strokeWidth={1.8} />
                   <View style={styles.rowBody}>
-                    <Text style={styles.rowLabel}>{row.label}</Text>
+                    <Text style={[styles.rowLabel, { color: colors.TEXT_PRIMARY }]}>
+                      {row.label}
+                    </Text>
                     {canEdit ? (
                       <TextInput
                         value={form[editableField]}
                         onChangeText={(text) => updateField(editableField, text)}
                         placeholder={`Enter ${row.label.toLowerCase()}`}
-                        placeholderTextColor="#9A9A9A"
+                        placeholderTextColor={colors.TEXT_LIGHT}
                         multiline={row.multiline}
                         keyboardType={
                           editableField === "phone" ? "phone-pad" : "default"
@@ -201,6 +224,11 @@ export default function PersonalInfo() {
                         }
                         style={[
                           styles.input,
+                          {
+                            color: colors.TEXT_PRIMARY,
+                            borderColor: colors.BORDER,
+                            backgroundColor: colors.BACKGROUND_LIGHT,
+                          },
                           row.multiline && styles.multilineInput,
                         ]}
                         textAlignVertical={row.multiline ? "top" : "center"}
@@ -209,6 +237,7 @@ export default function PersonalInfo() {
                       <Text
                         style={[
                           styles.rowValue,
+                          { color: row.value ? colors.TEXT_SECONDARY : colors.TEXT_LIGHT },
                           !row.value && styles.emptyValue,
                           row.multiline && styles.multilineValue,
                         ]}
@@ -247,7 +276,6 @@ export default function PersonalInfo() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
   header: {
     height: 56,
@@ -255,7 +283,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#E7E7E7",
   },
   backBtn: {
     width: 40,
@@ -266,7 +293,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     textAlign: "center",
-    color: "#111111",
     fontSize: 16,
     fontWeight: "700",
   },
@@ -301,21 +327,17 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#E8DEFF",
   },
   name: {
-    color: "#111111",
     fontSize: 24,
     fontWeight: "700",
   },
   email: {
     marginTop: 4,
-    color: "#717171",
     fontSize: 14,
   },
   rows: {
     borderTopWidth: 1,
-    borderTopColor: "#E7E7E7",
     marginTop: 22,
   },
   row: {
@@ -325,31 +347,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#E7E7E7",
   },
   rowBody: {
     flex: 1,
     gap: 4,
   },
   rowLabel: {
-    color: "#111111",
     fontSize: 14,
     fontWeight: "700",
   },
   rowValue: {
-    color: "#4B4B4B",
     fontSize: 14,
     lineHeight: 20,
   },
   input: {
     minHeight: 42,
     borderWidth: 1,
-    borderColor: "#DCDCDC",
     borderRadius: 10,
     paddingHorizontal: 12,
-    color: "#111111",
     fontSize: 14,
-    backgroundColor: "#FAFAFA",
   },
   multilineInput: {
     minHeight: 96,

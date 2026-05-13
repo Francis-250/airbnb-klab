@@ -15,9 +15,11 @@ import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
 import { useAuthStore } from "@/store/auth.store";
 import { useRouter } from "expo-router";
 import { Listing } from "@/types";
+import { useThemeColors } from "@/hooks/useThemeColors";
 
 export default function Saved() {
   const router = useRouter();
+  const { colors } = useThemeColors();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const { data: favorites = [], isLoading, isError, refetch } = useFavorites();
   const toggleFavorite = useToggleFavorite();
@@ -28,12 +30,14 @@ export default function Saved() {
 
   if (!isAuthenticated) {
     return (
-      <SafeAreaView style={styles.screen}>
-        <Text style={styles.title}>Wishlist</Text>
+      <SafeAreaView style={[styles.screen, { backgroundColor: colors.BACKGROUND }]}>
+        <Text style={[styles.title, { color: colors.TEXT_PRIMARY }]}>Wishlist</Text>
         <View style={styles.centered}>
           <Heart size={28} color={COLORS.PRIMARY} />
-          <Text style={styles.emptyTitle}>Log in to view your wishlist</Text>
-          <Text style={styles.emptyText}>
+          <Text style={[styles.emptyTitle, { color: colors.TEXT_PRIMARY }]}>
+            Log in to view your wishlist
+          </Text>
+          <Text style={[styles.emptyText, { color: colors.TEXT_SECONDARY }]}>
             Save homes while browsing and they will show up here.
           </Text>
           <Pressable
@@ -48,28 +52,38 @@ export default function Saved() {
   }
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={[styles.screen, { backgroundColor: colors.BACKGROUND }]}>
       <FlatList
         data={favorites}
         keyExtractor={(listing) => listing.id}
         refreshing={isLoading}
         onRefresh={refetch}
         contentContainerStyle={styles.listContent}
-        ListHeaderComponent={<Text style={styles.title}>Wishlist</Text>}
+        ListHeaderComponent={
+          <Text style={[styles.title, { color: colors.TEXT_PRIMARY }]}>
+            Wishlist
+          </Text>
+        }
         ListEmptyComponent={
           <View style={styles.centered}>
             {isLoading ? (
               <ActivityIndicator color={COLORS.PRIMARY} />
             ) : isError ? (
               <>
-                <Text style={styles.emptyTitle}>Could not load wishlist</Text>
-                <Text style={styles.emptyText}>Pull down to try again.</Text>
+                <Text style={[styles.emptyTitle, { color: colors.TEXT_PRIMARY }]}>
+                  Could not load wishlist
+                </Text>
+                <Text style={[styles.emptyText, { color: colors.TEXT_SECONDARY }]}>
+                  Pull down to try again.
+                </Text>
               </>
             ) : (
               <>
                 <Heart size={28} color={COLORS.PRIMARY} />
-                <Text style={styles.emptyTitle}>No saved stays yet</Text>
-                <Text style={styles.emptyText}>
+                <Text style={[styles.emptyTitle, { color: colors.TEXT_PRIMARY }]}>
+                  No saved stays yet
+                </Text>
+                <Text style={[styles.emptyText, { color: colors.TEXT_SECONDARY }]}>
                   Tap the heart on a listing to add it here.
                 </Text>
               </>
@@ -91,16 +105,22 @@ export default function Saved() {
               style={styles.thumbnail}
             />
             <View style={styles.favoriteInfo}>
-              <Text style={styles.favoriteTitle} numberOfLines={1}>
+              <Text
+                style={[styles.favoriteTitle, { color: colors.TEXT_PRIMARY }]}
+                numberOfLines={1}
+              >
                 {item.title}
               </Text>
               <View style={styles.metaRow}>
-                <MapPin size={11} color="#9A9A9A" />
-                <Text style={styles.favoriteMeta} numberOfLines={1}>
+                <MapPin size={11} color={colors.TEXT_LIGHT} />
+                <Text
+                  style={[styles.favoriteMeta, { color: colors.TEXT_LIGHT }]}
+                  numberOfLines={1}
+                >
                   {item.location}
                 </Text>
               </View>
-              <Text style={styles.favoriteMeta}>
+              <Text style={[styles.favoriteMeta, { color: colors.TEXT_LIGHT }]}>
                 ${item.pricePerNight}/night
               </Text>
             </View>
@@ -111,7 +131,7 @@ export default function Saved() {
               }}
               disabled={toggleFavorite.isPending}
               hitSlop={8}
-              style={styles.removeBtn}
+              style={[styles.removeBtn, { backgroundColor: colors.BACKGROUND_LIGHT }]}
             >
               <Heart size={17} color={COLORS.PRIMARY} fill={COLORS.PRIMARY} />
             </Pressable>
@@ -125,7 +145,6 @@ export default function Saved() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: COLORS.BACKGROUND,
   },
   listContent: {
     flexGrow: 1,
@@ -134,7 +153,6 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   title: {
-    color: "#1A1A1A",
     fontSize: 22,
     fontWeight: "700",
     marginBottom: 18,
@@ -156,7 +174,6 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   favoriteTitle: {
-    color: "#1A1A1A",
     fontSize: 14,
     fontWeight: "600",
   },
@@ -166,7 +183,6 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   favoriteMeta: {
-    color: "#8F8F8F",
     fontSize: 11,
   },
   removeBtn: {
@@ -175,7 +191,6 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FFF",
   },
   centered: {
     flex: 1,
@@ -185,13 +200,11 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   emptyTitle: {
-    color: "#1A1A1A",
     fontSize: 15,
     fontWeight: "700",
     textAlign: "center",
   },
   emptyText: {
-    color: "#8F8F8F",
     fontSize: 13,
     lineHeight: 19,
     textAlign: "center",

@@ -15,12 +15,17 @@ import { useListing } from "@/hooks/useListing";
 import ListingCard from "@/components/cards/ListingCard";
 import Header from "@/components/sections/header";
 import { COLORS } from "@/constants/colors";
-import { useAuthStore } from "@/store/auth.store";
-import { CalendarDays, ChevronLeft, Heart, MapPin, Search, X } from "lucide-react-native";
-import { useRouter } from "expo-router";
+import {
+  CalendarDays,
+  ChevronLeft,
+  MapPin,
+  Search,
+  X,
+} from "lucide-react-native";
 import { api } from "@/api/api";
 import { ENDPOINTS } from "@/api/endpoints";
 import { Listing } from "@/types";
+import { useThemeColors } from "@/hooks/useThemeColors";
 
 const featuredDestinations = ["Japan", "Southeast Asia", "Italy", "Kigali"];
 const destinationSuggestions = [
@@ -37,9 +42,8 @@ type FilterStep = "home" | "destination" | "trip";
 type TripMode = "dates" | "months" | "flexible";
 
 export default function GuestScreen() {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const { colors, isDark } = useThemeColors();
   const { data: listings = [], error, isLoading, isError } = useListing();
-  const router = useRouter();
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterStep, setFilterStep] = useState<FilterStep>("home");
   const [tripMode, setTripMode] = useState<TripMode>("dates");
@@ -54,7 +58,11 @@ export default function GuestScreen() {
 
   const displayListings = filteredListings ?? listings;
   const hasActiveFilters = useMemo(
-    () => !!filteredListings || !!searchQuery || !!selectedDestination || guests > 0,
+    () =>
+      !!filteredListings ||
+      !!searchQuery ||
+      !!selectedDestination ||
+      guests > 0,
     [filteredListings, guests, searchQuery, selectedDestination],
   );
 
@@ -75,10 +83,9 @@ export default function GuestScreen() {
       const trimmedQuery = searchQuery.trim();
 
       if (trimmedQuery) {
-        const response = await api.post(
-          `${ENDPOINTS.AI.SEARCH}?limit=30`,
-          { query: trimmedQuery },
-        );
+        const response = await api.post(`${ENDPOINTS.AI.SEARCH}?limit=30`, {
+          query: trimmedQuery,
+        });
         setFilteredListings(response.data.data ?? []);
       } else {
         const params: Record<string, string | number> = { limit: 30 };
@@ -107,30 +114,11 @@ export default function GuestScreen() {
     }
   };
 
-  if (!isAuthenticated) {
-    return (
-      <SafeAreaView style={styles.screen}>
-        <Text style={styles.title}>Wishlist</Text>
-        <View style={styles.centered}>
-          <Heart size={28} color={COLORS.PRIMARY} />
-          <Text style={styles.emptyTitle}>Log in to view your wishlist</Text>
-          <Text style={styles.emptyText}>
-            Save homes while browsing and they will show up here.
-          </Text>
-          <Pressable
-            onPress={() => router.push("/(auth)/login")}
-            style={styles.primaryBtn}
-          >
-            <Text style={styles.primaryBtnText}>Sign in</Text>
-          </Pressable>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.centered}>
+      <SafeAreaView
+        style={[styles.centered, { backgroundColor: colors.BACKGROUND }]}
+      >
         <ActivityIndicator color="#C9A96E" />
       </SafeAreaView>
     );
@@ -138,8 +126,10 @@ export default function GuestScreen() {
 
   if (isError) {
     return (
-      <SafeAreaView style={styles.centered}>
-        <Text style={styles.errorText}>
+      <SafeAreaView
+        style={[styles.centered, { backgroundColor: colors.BACKGROUND }]}
+      >
+        <Text style={[styles.errorText, { color: colors.ERROR }]}>
           {error instanceof Error ? error.message : "Error loading listings"}
         </Text>
       </SafeAreaView>
@@ -147,11 +137,13 @@ export default function GuestScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={[styles.screen, { backgroundColor: colors.BACKGROUND }]}>
       <Header onOpenFilters={() => setFilterOpen(true)} />
       {filteredListings && (
-        <View style={styles.resultsBar}>
-          <Text style={styles.resultsText}>
+        <View
+          style={[styles.resultsBar, { borderBottomColor: colors.BORDER_LIGHT }]}
+        >
+          <Text style={[styles.resultsText, { color: colors.TEXT_PRIMARY }]}>
             {filteredListings.length} filtered stays
           </Text>
           <Pressable onPress={clearFilters}>
@@ -166,8 +158,10 @@ export default function GuestScreen() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>No listings yet</Text>
-            <Text style={styles.emptyText}>
+            <Text style={[styles.emptyTitle, { color: colors.TEXT_PRIMARY }]}>
+              No listings yet
+            </Text>
+            <Text style={[styles.emptyText, { color: colors.TEXT_SECONDARY }]}>
               Check back soon for new places.
             </Text>
           </View>
@@ -183,9 +177,24 @@ export default function GuestScreen() {
           setFilterStep("home");
         }}
       >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.filterSheet}>
-            <View style={styles.sheetHeader}>
+        <View
+          style={[
+            styles.modalBackdrop,
+            { backgroundColor: isDark ? "rgba(0,0,0,0.45)" : "rgba(0,0,0,0.18)" },
+          ]}
+        >
+          <View
+            style={[styles.filterSheet, { backgroundColor: colors.BACKGROUND_LIGHT }]}
+          >
+            <View
+              style={[
+                styles.sheetHeader,
+                {
+                  backgroundColor: colors.BACKGROUND,
+                  borderBottomColor: colors.BORDER_LIGHT,
+                },
+              ]}
+            >
               <Pressable
                 onPress={() => {
                   if (filterStep === "home") {
@@ -198,16 +207,24 @@ export default function GuestScreen() {
                 hitSlop={8}
               >
                 {filterStep === "home" ? (
-                  <X size={18} color="#111" />
+                  <X size={18} color={colors.TEXT_PRIMARY} />
                 ) : (
-                  <ChevronLeft size={20} color="#111" />
+                  <ChevronLeft size={20} color={colors.TEXT_PRIMARY} />
                 )}
               </Pressable>
               <View style={styles.sheetTabs}>
-                <Text style={[styles.sheetTab, styles.activeSheetTab]}>
+                <Text
+                  style={[
+                    styles.sheetTab,
+                    { color: colors.TEXT_PRIMARY, borderBottomColor: colors.TEXT_PRIMARY },
+                    styles.activeSheetTab,
+                  ]}
+                >
                   Stays
                 </Text>
-                <Text style={styles.sheetTab}>Experiences</Text>
+                <Text style={[styles.sheetTab, { color: colors.TEXT_LIGHT }]}>
+                  Experiences
+                </Text>
               </View>
               <View style={styles.closeBtn} />
             </View>
@@ -218,14 +235,35 @@ export default function GuestScreen() {
             >
               {filterStep === "home" && (
                 <>
-                  <View style={styles.whereCard}>
-                    <Text style={styles.whereTitle}>Where to?</Text>
+                  <View
+                    style={[
+                      styles.whereCard,
+                      {
+                        backgroundColor: colors.BACKGROUND,
+                        shadowColor: colors.TEXT_PRIMARY,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.whereTitle, { color: colors.TEXT_PRIMARY }]}>
+                      Where to?
+                    </Text>
                     <Pressable
                       onPress={() => setFilterStep("destination")}
-                      style={styles.destinationInput}
+                      style={[
+                        styles.destinationInput,
+                        {
+                          borderColor: colors.BORDER,
+                          backgroundColor: colors.BACKGROUND,
+                        },
+                      ]}
                     >
-                      <Search size={17} color="#111" />
-                      <Text style={styles.destinationPlaceholder}>
+                      <Search size={17} color={colors.TEXT_PRIMARY} />
+                      <Text
+                        style={[
+                          styles.destinationPlaceholder,
+                          { color: colors.TEXT_SECONDARY },
+                        ]}
+                      >
                         Search destinations
                       </Text>
                     </Pressable>
@@ -256,7 +294,12 @@ export default function GuestScreen() {
                               <View style={styles.fakeContinentOne} />
                               <View style={styles.fakeContinentTwo} />
                             </View>
-                            <Text style={styles.destinationLabel}>
+                            <Text
+                              style={[
+                                styles.destinationLabel,
+                                { color: colors.TEXT_PRIMARY },
+                              ]}
+                            >
                               {destination}
                             </Text>
                           </Pressable>
@@ -267,31 +310,55 @@ export default function GuestScreen() {
 
                   <Pressable
                     onPress={() => setFilterStep("trip")}
-                    style={styles.optionCard}
+                    style={[
+                      styles.optionCard,
+                      {
+                        backgroundColor: colors.BACKGROUND,
+                        shadowColor: colors.TEXT_PRIMARY,
+                      },
+                    ]}
                   >
-                    <Text style={styles.optionLabel}>When</Text>
-                    <Text style={styles.optionValue}>Any week</Text>
+                    <Text style={[styles.optionLabel, { color: colors.TEXT_SECONDARY }]}>
+                      When
+                    </Text>
+                    <Text style={[styles.optionValue, { color: colors.TEXT_PRIMARY }]}>
+                      Any week
+                    </Text>
                   </Pressable>
 
-                  <View style={styles.optionCard}>
-                    <Text style={styles.optionLabel}>Who</Text>
+                  <View
+                    style={[
+                      styles.optionCard,
+                      {
+                        backgroundColor: colors.BACKGROUND,
+                        shadowColor: colors.TEXT_PRIMARY,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.optionLabel, { color: colors.TEXT_SECONDARY }]}>
+                      Who
+                    </Text>
                     <View style={styles.guestControls}>
                       <Pressable
                         onPress={() =>
                           setGuests((value) => Math.max(0, value - 1))
                         }
-                        style={styles.stepper}
+                        style={[styles.stepper, { borderColor: colors.BORDER }]}
                       >
-                        <Text style={styles.stepperText}>-</Text>
+                        <Text style={[styles.stepperText, { color: colors.TEXT_PRIMARY }]}>
+                          -
+                        </Text>
                       </Pressable>
-                      <Text style={styles.optionValue}>
+                      <Text style={[styles.optionValue, { color: colors.TEXT_PRIMARY }]}>
                         {guests > 0 ? `${guests} guests` : "Add guests"}
                       </Text>
                       <Pressable
                         onPress={() => setGuests((value) => value + 1)}
-                        style={styles.stepper}
+                        style={[styles.stepper, { borderColor: colors.BORDER }]}
                       >
-                        <Text style={styles.stepperText}>+</Text>
+                        <Text style={[styles.stepperText, { color: colors.TEXT_PRIMARY }]}>
+                          +
+                        </Text>
                       </Pressable>
                     </View>
                   </View>
@@ -299,22 +366,35 @@ export default function GuestScreen() {
               )}
 
               {filterStep === "destination" && (
-                <View style={styles.destinationSearchScreen}>
-                  <View style={styles.largeSearchInput}>
-                    <Search size={17} color="#111" />
+                <View
+                  style={[
+                    styles.destinationSearchScreen,
+                    { backgroundColor: colors.BACKGROUND },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.largeSearchInput,
+                      { backgroundColor: colors.BACKGROUND_GRAY },
+                    ]}
+                  >
+                    <Search size={17} color={colors.TEXT_PRIMARY} />
                     <TextInput
                       value={searchQuery}
                       onChangeText={setSearchQuery}
                       placeholder="Search destinations"
-                      placeholderTextColor="#777"
+                      placeholderTextColor={colors.TEXT_LIGHT}
                       autoFocus
                       returnKeyType="search"
                       onSubmitEditing={() => setFilterStep("trip")}
-                      style={styles.destinationTextInput}
+                      style={[
+                        styles.destinationTextInput,
+                        { color: colors.TEXT_PRIMARY },
+                      ]}
                     />
                     {!!searchQuery && (
                       <Pressable onPress={() => setSearchQuery("")}>
-                        <X size={14} color="#111" />
+                        <X size={14} color={colors.TEXT_PRIMARY} />
                       </Pressable>
                     )}
                   </View>
@@ -334,10 +414,20 @@ export default function GuestScreen() {
                           }}
                           style={styles.suggestionRow}
                         >
-                          <View style={styles.suggestionIcon}>
-                            <MapPin size={18} color="#111" />
+                          <View
+                            style={[
+                              styles.suggestionIcon,
+                              { backgroundColor: colors.BACKGROUND_GRAY },
+                            ]}
+                          >
+                            <MapPin size={18} color={colors.TEXT_PRIMARY} />
                           </View>
-                          <Text style={styles.suggestionText}>
+                          <Text
+                            style={[
+                              styles.suggestionText,
+                              { color: colors.TEXT_PRIMARY },
+                            ]}
+                          >
                             {destination}
                           </Text>
                         </Pressable>
@@ -383,7 +473,10 @@ export default function GuestScreen() {
                         <View style={styles.weekRow}>
                           {["S", "M", "T", "W", "T", "F", "S"].map(
                             (day, index) => (
-                              <Text key={`${day}-${index}`} style={styles.weekText}>
+                              <Text
+                                key={`${day}-${index}`}
+                                style={styles.weekText}
+                              >
                                 {day}
                               </Text>
                             ),
@@ -398,11 +491,13 @@ export default function GuestScreen() {
                           ))}
                         </View>
                         <View style={styles.dateChips}>
-                          {["Exact dates", "± 1 day", "± 2 days"].map((chip) => (
-                            <View key={chip} style={styles.dateChip}>
-                              <Text style={styles.dateChipText}>{chip}</Text>
-                            </View>
-                          ))}
+                          {["Exact dates", "± 1 day", "± 2 days"].map(
+                            (chip) => (
+                              <View key={chip} style={styles.dateChip}>
+                                <Text style={styles.dateChipText}>{chip}</Text>
+                              </View>
+                            ),
+                          )}
                         </View>
                       </View>
                     )}
@@ -416,7 +511,8 @@ export default function GuestScreen() {
                           <Text style={styles.dialLabel}>months</Text>
                         </View>
                         <Text style={styles.startingText}>
-                          Starting July 1 · <Text style={styles.linkText}>Edit</Text>
+                          Starting July 1 ·{" "}
+                          <Text style={styles.linkText}>Edit</Text>
                         </Text>
                       </View>
                     )}
@@ -441,11 +537,16 @@ export default function GuestScreen() {
                         </View>
                         <View style={styles.flexSection}>
                           <Text style={styles.flexTitle}>Go anytime</Text>
-                          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                          <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                          >
                             {tripMonths.map((month) => (
                               <View key={month} style={styles.monthOption}>
                                 <CalendarDays size={22} color="#777" />
-                                <Text style={styles.monthOptionText}>{month}</Text>
+                                <Text style={styles.monthOptionText}>
+                                  {month}
+                                </Text>
                                 <Text style={styles.monthOptionYear}>2023</Text>
                               </View>
                             ))}
@@ -463,18 +564,29 @@ export default function GuestScreen() {
             </ScrollView>
 
             <View style={styles.sheetFooter}>
-              <Pressable onPress={clearFilters} disabled={!hasActiveFilters}>
+              <Pressable
+                onPress={clearFilters}
+                disabled={filterStep !== "trip" && !hasActiveFilters}
+              >
                 <Text
                   style={[
                     styles.clearAll,
-                    !hasActiveFilters && styles.disabledClear,
+                    filterStep !== "trip" &&
+                      !hasActiveFilters &&
+                      styles.disabledClear,
                   ]}
                 >
                   {filterStep === "trip" ? "Skip" : "Clear all"}
                 </Text>
               </Pressable>
               <Pressable
-                onPress={filterStep === "home" ? runSearch : filterStep === "destination" ? () => setFilterStep("trip") : runSearch}
+                onPress={
+                  filterStep === "home"
+                    ? runSearch
+                    : filterStep === "destination"
+                      ? () => setFilterStep("trip")
+                      : runSearch
+                }
                 disabled={isSearching}
                 style={[
                   styles.searchBtn,
@@ -658,6 +770,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     minHeight: 48,
   },
+  destinationPlaceholder: {
+    color: "#777",
+    fontSize: 13,
+    flex: 1,
+  },
   destinationList: {
     gap: 14,
     paddingTop: 18,
@@ -753,6 +870,266 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     paddingHorizontal: 4,
   },
+  destinationSearchScreen: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    marginHorizontal: -18,
+    marginTop: -18,
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    minHeight: 620,
+  },
+  largeSearchInput: {
+    height: 56,
+    borderRadius: 11,
+    backgroundColor: "#F5F5F5",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    gap: 10,
+    marginBottom: 18,
+  },
+  suggestionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    paddingVertical: 10,
+  },
+  suggestionIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 9,
+    backgroundColor: "#F5F5F5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  suggestionText: {
+    color: "#111",
+    fontSize: 14,
+  },
+  compactWhereCard: {
+    minHeight: 62,
+    borderRadius: 14,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 18,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
+  },
+  tripCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 18,
+    paddingTop: 24,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
+  },
+  tripTitle: {
+    color: "#111",
+    fontSize: 24,
+    fontWeight: "800",
+    paddingHorizontal: 24,
+    marginBottom: 18,
+  },
+  tripModeTabs: {
+    height: 36,
+    marginHorizontal: 24,
+    borderRadius: 18,
+    backgroundColor: "#F5F5F5",
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 2,
+    marginBottom: 22,
+  },
+  tripModeTab: {
+    flex: 1,
+    height: 32,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  activeTripModeTab: {
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#D8D8D8",
+  },
+  tripModeText: {
+    color: "#111",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  weekRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 26,
+    marginBottom: 22,
+  },
+  weekText: {
+    color: "#9A9A9A",
+    fontSize: 12,
+    width: 24,
+    textAlign: "center",
+  },
+  monthTitle: {
+    color: "#111",
+    fontSize: 15,
+    fontWeight: "700",
+    paddingHorizontal: 24,
+    marginBottom: 14,
+  },
+  calendarGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    paddingHorizontal: 24,
+    paddingBottom: 18,
+  },
+  calendarDay: {
+    width: "14.285%",
+    textAlign: "center",
+    color: "#111",
+    fontSize: 12,
+    fontWeight: "600",
+    paddingVertical: 9,
+  },
+  dateChips: {
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: "#E8E8E8",
+  },
+  dateChip: {
+    borderWidth: 1,
+    borderColor: "#D0D0D0",
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  dateChipText: {
+    color: "#111",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  monthDial: {
+    alignItems: "center",
+    paddingBottom: 28,
+  },
+  dialRing: {
+    width: 236,
+    height: 236,
+    borderRadius: 118,
+    backgroundColor: "#F1F1F1",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.16,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 5,
+  },
+  dialFill: {
+    position: "absolute",
+    right: 18,
+    top: 0,
+    width: 96,
+    height: 96,
+    borderTopRightRadius: 96,
+    backgroundColor: COLORS.PRIMARY,
+  },
+  dialKnob: {
+    position: "absolute",
+    right: 17,
+    top: 88,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 2,
+    borderColor: COLORS.PRIMARY,
+  },
+  dialNumber: {
+    color: "#111",
+    fontSize: 64,
+    fontWeight: "900",
+    lineHeight: 70,
+  },
+  dialLabel: {
+    color: "#111",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  startingText: {
+    color: "#555",
+    fontSize: 13,
+    marginTop: 24,
+  },
+  linkText: {
+    color: "#111",
+    fontWeight: "800",
+    textDecorationLine: "underline",
+  },
+  flexSection: {
+    borderTopWidth: 1,
+    borderTopColor: "#E8E8E8",
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+  },
+  flexTitle: {
+    color: "#111",
+    fontSize: 15,
+    fontWeight: "800",
+    marginBottom: 14,
+  },
+  flexChips: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  flexChip: {
+    borderWidth: 1,
+    borderColor: "#D8D8D8",
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  activeFlexChip: {
+    borderColor: "#111",
+  },
+  flexChipText: {
+    color: "#111",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  monthOption: {
+    width: 104,
+    height: 116,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 10,
+  },
+  monthOptionText: {
+    color: "#111",
+    fontSize: 13,
+    fontWeight: "800",
+    marginTop: 10,
+  },
+  monthOptionYear: {
+    color: "#999",
+    fontSize: 11,
+    marginTop: 2,
+  },
   sheetFooter: {
     position: "absolute",
     left: 0,
@@ -788,6 +1165,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 8,
     paddingHorizontal: 18,
+  },
+  nextBtn: {
+    backgroundColor: "#111111",
+    minWidth: 128,
   },
   disabledBtn: {
     opacity: 0.68,

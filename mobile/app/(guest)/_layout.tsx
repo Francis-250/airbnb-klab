@@ -7,14 +7,24 @@ import {
   UserCircle,
   MessageCircle,
 } from "lucide-react-native";
+import { useThemeColors } from "@/hooks/useThemeColors";
 
 export default function GuestLayout() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const router = useRouter();
+  const { colors } = useThemeColors();
 
   return (
     <Tabs
-      screenOptions={{ headerShown: false, tabBarActiveTintColor: "#ff385c" }}
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: colors.PRIMARY,
+        tabBarInactiveTintColor: colors.TEXT_LIGHT,
+        tabBarStyle: {
+          backgroundColor: colors.BACKGROUND,
+          borderTopColor: colors.BORDER_LIGHT,
+        },
+      }}
     >
       <Tabs.Screen
         name="index"

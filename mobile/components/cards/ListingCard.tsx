@@ -13,6 +13,7 @@ import {
 import { Heart, Star } from "lucide-react-native";
 import { useAuthStore } from "@/store/auth.store";
 import { useFavorites, useToggleFavorite } from "@/hooks/useFavorites";
+import { useThemeColors } from "@/hooks/useThemeColors";
 
 interface ListingCardProps {
   listing: Listing;
@@ -24,6 +25,7 @@ const IMAGE_HEIGHT = Math.round(CARD_WIDTH * 0.92);
 
 export default function ListingCard({ listing }: ListingCardProps) {
   const router = useRouter();
+  const { colors } = useThemeColors();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const { data: favorites = [] } = useFavorites();
   const toggleFavorite = useToggleFavorite();
@@ -85,23 +87,25 @@ export default function ListingCard({ listing }: ListingCardProps) {
 
       <View style={styles.info}>
         <View style={styles.row}>
-          <Text style={styles.title} numberOfLines={1}>
+          <Text style={[styles.title, { color: colors.TEXT_PRIMARY }]} numberOfLines={1}>
             {listing.location}
           </Text>
           {listing.rating != null && (
             <View style={styles.ratingRow}>
-              <Star size={11} color="#111" fill="#111" />
-              <Text style={styles.rating}>{listing.rating.toFixed(2)}</Text>
+              <Star size={11} color={colors.TEXT_PRIMARY} fill={colors.TEXT_PRIMARY} />
+              <Text style={[styles.rating, { color: colors.TEXT_PRIMARY }]}>
+                {listing.rating.toFixed(2)}
+              </Text>
             </View>
           )}
         </View>
-        <Text style={styles.meta} numberOfLines={1}>
+        <Text style={[styles.meta, { color: colors.TEXT_SECONDARY }]} numberOfLines={1}>
           {listing.guests} guests
         </Text>
-        <Text style={styles.meta}>Jul 2 - 7</Text>
-        <Text style={styles.price}>
+        <Text style={[styles.meta, { color: colors.TEXT_SECONDARY }]}>Jul 2 - 7</Text>
+        <Text style={[styles.price, { color: colors.TEXT_PRIMARY }]}>
           ${listing.pricePerNight}
-          <Text style={styles.priceNight}> night</Text>
+          <Text style={[styles.priceNight, { color: colors.TEXT_PRIMARY }]}> night</Text>
         </Text>
       </View>
     </Pressable>
@@ -175,23 +179,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#111",
     flex: 1,
   },
   price: {
     marginTop: 5,
     fontSize: 12,
     fontWeight: "700",
-    color: "#111",
   },
   priceNight: {
     fontSize: 12,
-    color: "#111",
     fontWeight: "400",
   },
   meta: {
     fontSize: 12,
-    color: "#717171",
   },
   ratingRow: {
     flexDirection: "row",
@@ -201,7 +201,6 @@ const styles = StyleSheet.create({
   },
   rating: {
     fontSize: 11,
-    color: "#111",
     fontWeight: "500",
   },
 });

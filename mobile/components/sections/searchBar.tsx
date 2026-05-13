@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
 import { Search, SlidersHorizontal } from "lucide-react-native";
 import { COLORS } from "@/constants/colors";
+import { useThemeColors } from "@/hooks/useThemeColors";
 
 type SearchBarProps = {
   onOpenFilters?: () => void;
@@ -9,19 +10,34 @@ type SearchBarProps = {
 
 export default function SearchBar({ onOpenFilters }: SearchBarProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const { colors } = useThemeColors();
 
   return (
-    <View style={styles.container}>
-      <View style={styles.searchIconWrap}>
-        <Search size={19} color={COLORS.TEXT_SECONDARY} strokeWidth={2.5} />
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.BACKGROUND,
+          borderColor: colors.BORDER_LIGHT,
+          shadowColor: colors.TEXT_PRIMARY,
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.searchIconWrap,
+          { backgroundColor: colors.BACKGROUND_GRAY },
+        ]}
+      >
+        <Search size={19} color={colors.TEXT_SECONDARY} strokeWidth={2.5} />
       </View>
       <TextInput
         value={searchQuery}
         onChangeText={setSearchQuery}
         placeholder="Where are you going?"
-        placeholderTextColor={COLORS.TEXT_LIGHT}
+        placeholderTextColor={colors.TEXT_LIGHT}
         returnKeyType="search"
-        style={styles.input}
+        style={[styles.input, { color: colors.TEXT_PRIMARY }]}
       />
       <Pressable
         accessibilityRole="button"
@@ -34,7 +50,7 @@ export default function SearchBar({ onOpenFilters }: SearchBarProps) {
       >
         <SlidersHorizontal
           size={18}
-          color={COLORS.TEXT_WHITE}
+          color={colors.TEXT_WHITE}
           strokeWidth={2.5}
         />
       </Pressable>
@@ -45,8 +61,6 @@ export default function SearchBar({ onOpenFilters }: SearchBarProps) {
 const styles = StyleSheet.create({
   container: {
     alignItems: "center",
-    backgroundColor: COLORS.BACKGROUND,
-    borderColor: COLORS.BORDER_LIGHT,
     borderRadius: 28,
     borderWidth: 1,
     elevation: 4,
@@ -54,7 +68,6 @@ const styles = StyleSheet.create({
     minHeight: 56,
     paddingLeft: 14,
     paddingRight: 8,
-    shadowColor: COLORS.TEXT_PRIMARY,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08,
     shadowRadius: 18,
@@ -72,7 +85,6 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.97 }],
   },
   input: {
-    color: COLORS.TEXT_PRIMARY,
     flex: 1,
     fontSize: 15,
     fontWeight: "600",
@@ -81,7 +93,6 @@ const styles = StyleSheet.create({
   },
   searchIconWrap: {
     alignItems: "center",
-    backgroundColor: COLORS.BACKGROUND_GRAY,
     borderRadius: 18,
     height: 36,
     justifyContent: "center",

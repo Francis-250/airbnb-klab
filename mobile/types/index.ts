@@ -108,6 +108,37 @@ export interface Conversation {
   updatedAt: string;
 }
 
+export interface Booking {
+  id: string;
+  checkIn: string;
+  checkOut: string;
+  totalPrice: number;
+  status: "pending" | "confirmed" | "cancelled";
+  createdAt: string;
+  guest: {
+    name: string;
+    email: string;
+    avatar?: string | null;
+  };
+  listing: {
+    id: string;
+    title: string;
+    location: string;
+    photos: string[];
+    pricePerNight: number;
+  };
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
 export type ListingType = "apartment" | "house" | "villa" | "cabin";
 export type ListingStatus = "available" | "booked" | "unavailable";
 

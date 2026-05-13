@@ -1,4 +1,4 @@
-export const COLORS = {
+export const LIGHT_COLORS = {
   PRIMARY: "#FF5A5F",
   PRIMARY_DARK: "#E04E52",
   PRIMARY_LIGHT: "#FF7B7F",
@@ -25,3 +25,41 @@ export const COLORS = {
 
   OVERLAY: "rgba(0, 0, 0, 0.5)",
 };
+
+export const DARK_COLORS = {
+  PRIMARY: "#FF5A5F",
+  PRIMARY_DARK: "#E04E52",
+  PRIMARY_LIGHT: "#FF7B7F",
+
+  SECONDARY: "#00A699",
+  SECONDARY_DARK: "#008489",
+
+  TEXT_PRIMARY: "#F5F5F5",
+  TEXT_SECONDARY: "#C7C7C7",
+  TEXT_LIGHT: "#9CA3AF",
+  TEXT_WHITE: "#FFFFFF",
+
+  BACKGROUND: "#0F1115",
+  BACKGROUND_LIGHT: "#171A21",
+  BACKGROUND_GRAY: "#222630",
+
+  BORDER: "#30343D",
+  BORDER_LIGHT: "#242832",
+
+  SUCCESS: "#34C759",
+  ERROR: "#FF6B6B",
+  WARNING: "#FFB020",
+  INFO: "#64B5F6",
+
+  OVERLAY: "rgba(0, 0, 0, 0.65)",
+};
+
+export const THEME_COLORS = {
+  light: LIGHT_COLORS,
+  dark: DARK_COLORS,
+};
+
+export type AppColorScheme = keyof typeof THEME_COLORS;
+export type AppThemeColors = typeof LIGHT_COLORS;
+
+export const COLORS = LIGHT_COLORS;

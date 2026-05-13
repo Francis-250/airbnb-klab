@@ -18,10 +18,14 @@ import {
   Globe2,
   Lock,
   LogOut,
+  Moon,
+  Sun,
   UserCircle,
 } from "lucide-react-native";
 import { useAuthStore } from "@/store/auth.store";
 import { COLORS } from "@/constants/colors";
+import { useThemeColors } from "@/hooks/useThemeColors";
+import { useThemeStore } from "@/store/theme.store";
 
 const settings = [
   { label: "Personal information", icon: UserCircle },
@@ -36,6 +40,12 @@ export default function Profile() {
   const router = useRouter();
   const logout = useAuthStore((state) => state.logout);
   const user = useAuthStore((state) => state.user);
+  const { colors, isDark, preference } = useThemeColors();
+  const cyclePreference = useThemeStore((state) => state.cyclePreference);
+  const themeLabel =
+    preference === "system"
+      ? `System (${isDark ? "Dark" : "Light"})`
+      : preference;
 
   const handleLogout = async () => {
     await logout();
@@ -56,7 +66,9 @@ export default function Profile() {
   };
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView
+      style={[styles.screen, { backgroundColor: colors.BACKGROUND }]}
+    >
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
@@ -65,17 +77,51 @@ export default function Profile() {
           {user?.avatar ? (
             <Image source={{ uri: user.avatar }} style={styles.avatar} />
           ) : (
-            <View style={styles.avatarFallback}>
+            <View
+              style={[
+                styles.avatarFallback,
+                { backgroundColor: isDark ? "#2B2440" : "#E8DEFF" },
+              ]}
+            >
               <UserCircle size={34} color="#5F4B8B" />
             </View>
           )}
 
-          <Text style={styles.name}>{user?.name || "Guest"}</Text>
+          <Text style={[styles.name, { color: colors.TEXT_PRIMARY }]}>
+            {user?.name || "Guest"}
+          </Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account Settings</Text>
-          <View style={styles.rows}>
+          <Text style={[styles.sectionTitle, { color: colors.TEXT_PRIMARY }]}>
+            Account Settings
+          </Text>
+          <View style={[styles.rows, { borderColor: colors.BORDER_LIGHT }]}>
+            <Pressable
+              onPress={cyclePreference}
+              style={({ pressed }) => [
+                styles.row,
+                {
+                  backgroundColor: colors.BACKGROUND,
+                  borderColor: colors.BORDER_LIGHT,
+                },
+                pressed && { backgroundColor: colors.BACKGROUND_GRAY },
+              ]}
+            >
+              {isDark ? (
+                <Moon size={18} color={colors.TEXT_PRIMARY} strokeWidth={1.8} />
+              ) : (
+                <Sun size={18} color={colors.TEXT_PRIMARY} strokeWidth={1.8} />
+              )}
+              <Text style={[styles.rowLabel, { color: colors.TEXT_PRIMARY }]}>
+                Theme
+              </Text>
+              <Text
+                style={[styles.themeValue, { color: colors.TEXT_SECONDARY }]}
+              >
+                {themeLabel}
+              </Text>
+            </Pressable>
             {settings.map((item) => {
               const Icon = item.icon;
 
@@ -85,12 +131,28 @@ export default function Profile() {
                   onPress={() => handleSettingPress(item)}
                   style={({ pressed }) => [
                     styles.row,
-                    pressed && styles.pressedRow,
+                    {
+                      backgroundColor: colors.BACKGROUND,
+                      borderColor: colors.BORDER_LIGHT,
+                    },
+                    pressed && { backgroundColor: colors.BACKGROUND_GRAY },
                   ]}
                 >
-                  <Icon size={18} color="#1A1A1A" strokeWidth={1.8} />
-                  <Text style={styles.rowLabel}>{item.label}</Text>
-                  <ChevronRight size={20} color="#111" strokeWidth={2.2} />
+                  <Icon
+                    size={18}
+                    color={colors.TEXT_PRIMARY}
+                    strokeWidth={1.8}
+                  />
+                  <Text
+                    style={[styles.rowLabel, { color: colors.TEXT_PRIMARY }]}
+                  >
+                    {item.label}
+                  </Text>
+                  <ChevronRight
+                    size={20}
+                    color={colors.TEXT_PRIMARY}
+                    strokeWidth={2.2}
+                  />
                 </Pressable>
               );
             })}
@@ -101,7 +163,8 @@ export default function Profile() {
           onPress={handleLogout}
           style={({ pressed }) => [
             styles.logoutRow,
-            pressed && styles.pressedRow,
+            { borderColor: colors.BORDER_LIGHT },
+            pressed && { backgroundColor: colors.BACKGROUND_GRAY },
           ]}
         >
           <LogOut size={18} color={COLORS.PRIMARY} strokeWidth={1.9} />
@@ -211,9 +274,13 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     flex: 1,
-    color: "#1A1A1A",
     fontSize: 14,
     fontWeight: "400",
+  },
+  themeValue: {
+    fontSize: 13,
+    fontWeight: "700",
+    textTransform: "capitalize",
   },
   logoutRow: {
     minHeight: 56,

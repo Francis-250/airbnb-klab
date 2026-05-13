@@ -14,11 +14,13 @@ import { COLORS } from "@/constants/colors";
 import { useConversations } from "@/hooks/useConversations";
 import { Conversation } from "@/types";
 import { MessageCircle } from "lucide-react-native";
+import { useThemeColors } from "@/hooks/useThemeColors";
 
 type InboxTab = "messages" | "notifications";
 
 export default function Message() {
   const [activeTab, setActiveTab] = useState<InboxTab>("messages");
+  const { colors } = useThemeColors();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
   const {
@@ -41,9 +43,11 @@ export default function Message() {
 
   if (!isAuthenticated) {
     return (
-      <SafeAreaView style={styles.screen}>
+      <SafeAreaView
+        style={[styles.screen, { backgroundColor: colors.BACKGROUND }]}
+      >
         <View style={styles.centered}>
-          <Text style={styles.emptyText}>
+          <Text style={[styles.emptyText, { color: colors.TEXT_SECONDARY }]}>
             Please log in to view your inbox.
           </Text>
         </View>
@@ -52,27 +56,35 @@ export default function Message() {
   }
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Inbox</Text>
+    <SafeAreaView
+      style={[styles.screen, { backgroundColor: colors.BACKGROUND }]}
+    >
+      <View style={[styles.header, { borderBottomColor: colors.BORDER_LIGHT }]}>
+        <Text style={[styles.title, { color: colors.TEXT_PRIMARY }]}>
+          Inbox
+        </Text>
         <View style={styles.tabs}>
           <TabButton
             label="Messages"
             count={unreadCount || conversations.length}
             active={activeTab === "messages"}
             onPress={() => setActiveTab("messages")}
+            colors={colors}
           />
           <TabButton
             label="Notifications"
             active={activeTab === "notifications"}
             onPress={() => setActiveTab("notifications")}
+            colors={colors}
           />
         </View>
       </View>
 
       {activeTab === "notifications" ? (
         <View style={styles.notifications}>
-          <Text style={styles.caughtUpText}>You are all caught up</Text>
+          <Text style={[styles.caughtUpText, { color: colors.TEXT_LIGHT }]}>
+            You are all caught up
+          </Text>
         </View>
       ) : isLoading ? (
         <View style={styles.centered}>
@@ -80,7 +92,9 @@ export default function Message() {
         </View>
       ) : isError ? (
         <View style={styles.centered}>
-          <Text style={styles.emptyText}>Could not load messages.</Text>
+          <Text style={[styles.emptyText, { color: colors.TEXT_SECONDARY }]}>
+            Could not load messages.
+          </Text>
           <Pressable onPress={() => refetch()} style={styles.retryBtn}>
             <Text style={styles.retryText}>Try again</Text>
           </Pressable>
@@ -98,11 +112,19 @@ export default function Message() {
           ListEmptyComponent={
             <View style={styles.centered}>
               <MessageCircle size={30} color="#9A9A9A" />
-              <Text style={styles.emptyText}>No messages yet</Text>
+              <Text
+                style={[styles.emptyText, { color: colors.TEXT_SECONDARY }]}
+              >
+                No messages yet
+              </Text>
             </View>
           }
           renderItem={({ item }) => (
-            <ConversationRow conversation={item} currentUserId={user?.id} />
+            <ConversationRow
+              conversation={item}
+              currentUserId={user?.id}
+              colors={colors}
+            />
           )}
         />
       )}
@@ -115,23 +137,38 @@ function TabButton({
   count,
   active,
   onPress,
+  colors,
 }: {
   label: string;
   count?: number;
   active: boolean;
   onPress: () => void;
+  colors: ReturnType<typeof useThemeColors>["colors"];
 }) {
   return (
     <Pressable onPress={onPress} style={styles.tabBtn}>
-      <Text style={[styles.tabText, active && styles.activeTabText]}>
+      <Text
+        style={[
+          styles.tabText,
+          { color: colors.TEXT_LIGHT },
+          active && [styles.activeTabText, { color: colors.TEXT_PRIMARY }],
+        ]}
+      >
         {label}
       </Text>
       {count != null && count > 0 && (
-        <View style={styles.badge}>
+        <View style={[styles.badge, { backgroundColor: colors.TEXT_PRIMARY }]}>
           <Text style={styles.badgeText}>{count}</Text>
         </View>
       )}
-      {active && <View style={styles.activeIndicator} />}
+      {active && (
+        <View
+          style={[
+            styles.activeIndicator,
+            { backgroundColor: colors.TEXT_PRIMARY },
+          ]}
+        />
+      )}
     </Pressable>
   );
 }
@@ -139,9 +176,11 @@ function TabButton({
 function ConversationRow({
   conversation,
   currentUserId,
+  colors,
 }: {
   conversation: Conversation;
   currentUserId?: string;
+  colors: ReturnType<typeof useThemeColors>["colors"];
 }) {
   const otherUser =
     conversation.guest.id === currentUserId
@@ -155,11 +194,22 @@ function ConversationRow({
     lastMessage.readAt == null;
 
   return (
-    <Pressable style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+    <Pressable
+      style={({ pressed }) => [
+        styles.row,
+        { borderBottomColor: colors.BORDER_LIGHT },
+        pressed && { backgroundColor: colors.BACKGROUND_GRAY },
+      ]}
+    >
       {avatar ? (
         <Image source={{ uri: avatar }} style={styles.avatar} />
       ) : (
-        <View style={styles.avatarFallback}>
+        <View
+          style={[
+            styles.avatarFallback,
+            { backgroundColor: colors.TEXT_PRIMARY },
+          ]}
+        >
           <Text style={styles.avatarInitial}>
             {otherUser.name.charAt(0).toUpperCase()}
           </Text>
@@ -167,19 +217,31 @@ function ConversationRow({
       )}
       <View style={styles.rowBody}>
         <View style={styles.nameLine}>
-          <Text style={[styles.name, isUnread && styles.unreadName]}>
+          <Text
+            style={[
+              styles.name,
+              { color: colors.TEXT_PRIMARY },
+              isUnread && styles.unreadName,
+            ]}
+          >
             {otherUser.name}
           </Text>
-          <Text style={styles.locationText}>
+          <Text style={[styles.locationText, { color: colors.TEXT_SECONDARY }]}>
             {" "}
             · {conversation.listing.location}
           </Text>
         </View>
-        <Text style={[styles.messageText, isUnread && styles.unreadMessage]}>
+        <Text
+          style={[
+            styles.messageText,
+            { color: colors.TEXT_PRIMARY },
+            isUnread && styles.unreadMessage,
+          ]}
+        >
           {lastMessage?.body ||
             `Conversation about ${conversation.listing.title}`}
         </Text>
-        <Text style={styles.metaText}>
+        <Text style={[styles.metaText, { color: colors.TEXT_LIGHT }]}>
           {lastMessage
             ? formatInboxDate(lastMessage.createdAt)
             : formatInboxDate(conversation.createdAt)}
@@ -206,15 +268,12 @@ function formatInboxDate(value: string) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
   header: {
     paddingTop: 2,
     borderBottomWidth: 1,
-    borderBottomColor: "#E7E7E7",
   },
   title: {
-    color: "#111111",
     fontSize: 32,
     fontWeight: "800",
     paddingHorizontal: 6,
@@ -234,18 +293,14 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   tabText: {
-    color: "#9B9B9B",
     fontSize: 12,
     fontWeight: "700",
   },
-  activeTabText: {
-    color: "#111111",
-  },
+  activeTabText: {},
   badge: {
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: "#111111",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 5,
@@ -262,7 +317,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: -1,
     height: 2,
-    backgroundColor: "#111111",
   },
   listContent: {
     paddingBottom: 26,
@@ -277,11 +331,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: "#E7E7E7",
     gap: 12,
-  },
-  pressed: {
-    backgroundColor: "#F7F7F7",
   },
   avatar: {
     width: 52,
@@ -295,7 +345,6 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#111111",
   },
   avatarInitial: {
     color: "#FFFFFF",
@@ -311,7 +360,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   name: {
-    color: "#111111",
     fontSize: 13,
     fontWeight: "700",
   },
@@ -320,11 +368,9 @@ const styles = StyleSheet.create({
   },
   locationText: {
     flex: 1,
-    color: "#6F6F6F",
     fontSize: 12,
   },
   messageText: {
-    color: "#111111",
     fontSize: 13,
     marginTop: 2,
   },
@@ -332,7 +378,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   metaText: {
-    color: "#9A9A9A",
     fontSize: 11,
     marginTop: 2,
   },
@@ -340,7 +385,6 @@ const styles = StyleSheet.create({
     paddingTop: 42,
   },
   caughtUpText: {
-    color: "#8A8A8A",
     fontSize: 16,
   },
   centered: {
@@ -351,7 +395,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   emptyText: {
-    color: "#7A7A7A",
     fontSize: 14,
     textAlign: "center",
   },
