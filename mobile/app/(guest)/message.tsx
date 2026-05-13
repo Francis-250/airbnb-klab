@@ -8,9 +8,9 @@ import {
   Text,
   View,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "@/store/auth.store";
-import { COLORS } from "@/constants/colors";
 import { useConversations } from "@/hooks/useConversations";
 import { Conversation } from "@/types";
 import { MessageCircle } from "lucide-react-native";
@@ -21,6 +21,7 @@ type InboxTab = "messages" | "notifications";
 export default function Message() {
   const [activeTab, setActiveTab] = useState<InboxTab>("messages");
   const { colors } = useThemeColors();
+  const router = useRouter();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
   const {
@@ -88,14 +89,17 @@ export default function Message() {
         </View>
       ) : isLoading ? (
         <View style={styles.centered}>
-          <ActivityIndicator color={COLORS.PRIMARY} />
+          <ActivityIndicator color={colors.PRIMARY} />
         </View>
       ) : isError ? (
         <View style={styles.centered}>
           <Text style={[styles.emptyText, { color: colors.TEXT_SECONDARY }]}>
             Could not load messages.
           </Text>
-          <Pressable onPress={() => refetch()} style={styles.retryBtn}>
+          <Pressable
+            onPress={() => refetch()}
+            style={[styles.retryBtn, { backgroundColor: colors.PRIMARY }]}
+          >
             <Text style={styles.retryText}>Try again</Text>
           </Pressable>
         </View>
@@ -124,6 +128,12 @@ export default function Message() {
               conversation={item}
               currentUserId={user?.id}
               colors={colors}
+              onPress={() =>
+                router.push({
+                  pathname: "/(guest)/conversation/[id]",
+                  params: { id: item.id },
+                })
+              }
             />
           )}
         />
@@ -177,10 +187,12 @@ function ConversationRow({
   conversation,
   currentUserId,
   colors,
+  onPress,
 }: {
   conversation: Conversation;
   currentUserId?: string;
   colors: ReturnType<typeof useThemeColors>["colors"];
+  onPress: () => void;
 }) {
   const otherUser =
     conversation.guest.id === currentUserId
@@ -195,6 +207,7 @@ function ConversationRow({
 
   return (
     <Pressable
+      onPress={onPress}
       style={({ pressed }) => [
         styles.row,
         { borderBottomColor: colors.BORDER_LIGHT },
@@ -402,7 +415,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 9,
     borderRadius: 10,
-    backgroundColor: COLORS.PRIMARY,
   },
   retryText: {
     color: "#FFFFFF",

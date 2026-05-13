@@ -21,7 +21,7 @@ const TAB_CONFIG = [
   { name: "profile", title: "Profile", Icon: UserCircle },
 ];
 
-const HIDDEN_TABS = new Set(["[id]", "personal-info"]);
+const HIDDEN_TABS = new Set(["[id]", "personal-info", "conversation/[id]"]);
 
 export default function AppTabBar({
   state,
@@ -98,37 +98,26 @@ export default function AppTabBar({
             >
               <View
                 style={[
-                  styles.activeShell,
-                  !isFocused && styles.inactiveShell,
-                  {
-                    backgroundColor: isFocused
-                      ? colors.PRIMARY
-                      : "transparent",
-                  },
-                  isFocused && {
-                    borderColor: colors.PRIMARY_LIGHT,
-                    shadowColor: colors.PRIMARY,
-                  },
                   styles.iconWrap,
+                  isFocused && { backgroundColor: colors.PRIMARY },
                 ]}
               >
                 <Icon
-                  size={isFocused ? 22 : 18}
+                  size={18}
                   color={isFocused ? colors.TEXT_WHITE : colors.TEXT_SECONDARY}
                   strokeWidth={isFocused ? 2.4 : 1.9}
                 />
               </View>
-              {!isFocused ? (
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    styles.label,
-                    { color: colors.TEXT_LIGHT },
-                  ]}
-                >
-                  {title}
-                </Text>
-              ) : null}
+              <Text
+                numberOfLines={1}
+                style={[
+                  styles.label,
+                  { color: isFocused ? colors.TEXT_PRIMARY : colors.TEXT_LIGHT },
+                  isFocused && styles.focusedLabel,
+                ]}
+              >
+                {title}
+              </Text>
             </Pressable>
           );
         })}
@@ -145,54 +134,40 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   shell: {
-    minHeight: 82,
-    width: "94%",
-    maxWidth: 420,
-    borderRadius: 999,
+    minHeight: 74,
+    width: "92%",
+    maxWidth: 380,
+    borderRadius: 38,
     borderWidth: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 10,
-    paddingVertical: 12,
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 10,
   },
   item: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    minWidth: 0,
-  },
-  activeShell: {
-    minWidth: 52,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    borderWidth: 1,
-  },
-  inactiveShell: {
-    minWidth: 40,
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-    borderWidth: 0,
+    gap: 4,
   },
   iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
+    backgroundColor: "transparent",
   },
   label: {
     fontSize: 10,
     fontWeight: "500",
-    textAlign: "center",
+  },
+  focusedLabel: {
+    fontWeight: "700",
   },
 });

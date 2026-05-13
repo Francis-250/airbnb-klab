@@ -1,7 +1,7 @@
 import { api } from "@/api/api";
 import { ENDPOINTS } from "@/api/endpoints";
 import { Booking, PaginatedResponse } from "@/types";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export const useBookings = (status?: "upcoming" | "past" | "cancelled") => {
   return useQuery<PaginatedResponse<Booking>>({
@@ -14,6 +14,24 @@ export const useBookings = (status?: "upcoming" | "past" | "cancelled") => {
         },
       );
       return response.data;
+    },
+  });
+};
+
+export const useCreateBooking = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: {
+      listingId: string;
+      checkIn: string;
+      checkOut: string;
+    }) => {
+      const response = await api.post<Booking>(ENDPOINTS.BOOKINGS.CREATE, payload);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
     },
   });
 };

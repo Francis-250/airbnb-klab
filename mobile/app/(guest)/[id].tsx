@@ -13,10 +13,12 @@ import {
   TouchableOpacity,
   StatusBar,
   TextInput,
+  Modal,
 } from "react-native";
 import { useListingById } from "@/hooks/useListing";
 import { useListingReviews } from "@/hooks/useReviews";
 import { useCreateComment, useListingComments } from "@/hooks/useComments";
+import { useCreateBooking } from "@/hooks/useBookings";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Heart, Share2 } from "lucide-react-native";
@@ -44,6 +46,10 @@ export default function ListingDetailScreen() {
   const [isSaved, setIsSaved] = useState(false);
   const [commentBody, setCommentBody] = useState("");
   const [commentMessage, setCommentMessage] = useState("");
+  const [bookingModalVisible, setBookingModalVisible] = useState(false);
+  const [checkIn, setCheckIn] = useState(defaultDateOffset(1));
+  const [checkOut, setCheckOut] = useState(defaultDateOffset(2));
+  const [bookingMessage, setBookingMessage] = useState("");
   const { data: listing, isLoading, isError } = useListingById(id as string);
   const { data: reviewsData, isLoading: reviewsLoading } = useListingReviews(
     id as string,
@@ -52,7 +58,9 @@ export default function ListingDetailScreen() {
     id as string,
   );
   const createComment = useCreateComment(id as string);
+  const createBooking = useCreateBooking();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = useAuthStore((state) => state.user);
   const router = useRouter();
 
   const handleImageScroll = (
@@ -111,6 +119,47 @@ export default function ListingDetailScreen() {
         setCommentMessage(message || "Could not post your comment.");
       },
     });
+  };
+
+  const handleReserve = async () => {
+    if (!isAuthenticated) {
+      router.push("/(auth)/login");
+      return;
+    }
+
+    if (user?.role !== "guest") {
+      setBookingMessage("Only guests can make a reservation.");
+      return;
+    }
+
+    if (!isValidDateInput(checkIn) || !isValidDateInput(checkOut)) {
+      setBookingMessage("Enter valid dates in YYYY-MM-DD format.");
+      return;
+    }
+
+    if (new Date(checkOut) <= new Date(checkIn)) {
+      setBookingMessage("Check-out must be after check-in.");
+      return;
+    }
+
+    setBookingMessage("");
+
+    try {
+      await createBooking.mutateAsync({
+        listingId: listing.id,
+        checkIn,
+        checkOut,
+      });
+      setBookingModalVisible(false);
+      setBookingMessage("");
+      router.push("/(guest)/trip");
+    } catch (error) {
+      const message = isAxiosError<{ message?: string }>(error)
+        ? error.response?.data?.message
+        : undefined;
+
+      setBookingMessage(message || "Could not create reservation.");
+    }
   };
 
   return (
@@ -420,12 +469,118 @@ export default function ListingDetailScreen() {
             </View>
           )}
         </View>
-        <TouchableOpacity style={styles.bookBtn}>
+        <TouchableOpacity
+          style={styles.bookBtn}
+          onPress={() => {
+            if (!isAuthenticated) {
+              router.push("/(auth)/login");
+              return;
+            }
+
+            setBookingMessage("");
+            setBookingModalVisible(true);
+          }}
+        >
           <Text style={styles.bookBtnText}>Reserve</Text>
         </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={bookingModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setBookingModalVisible(false)}
+      >
+        <View style={styles.bookingOverlay}>
+          <View style={styles.bookingSheet}>
+            <View style={styles.bookingSheetHeader}>
+              <Text style={styles.bookingSheetTitle}>Reserve this stay</Text>
+              <TouchableOpacity
+                style={styles.bookingCloseBtn}
+                onPress={() => setBookingModalVisible(false)}
+              >
+                <Ionicons name="close" size={18} color="#1A1A1A" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.bookingField}>
+              <Text style={styles.bookingFieldLabel}>Check-in</Text>
+              <TextInput
+                value={checkIn}
+                onChangeText={setCheckIn}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor="#9A9A9A"
+                style={styles.bookingInput}
+                autoCapitalize="none"
+              />
+            </View>
+
+            <View style={styles.bookingField}>
+              <Text style={styles.bookingFieldLabel}>Check-out</Text>
+              <TextInput
+                value={checkOut}
+                onChangeText={setCheckOut}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor="#9A9A9A"
+                style={styles.bookingInput}
+                autoCapitalize="none"
+              />
+            </View>
+
+            <Text style={styles.bookingHint}>
+              Total: {formatTotalPrice(listing.pricePerNight, checkIn, checkOut)}
+            </Text>
+
+            {!!bookingMessage && (
+              <Text style={styles.bookingError}>{bookingMessage}</Text>
+            )}
+
+            <TouchableOpacity
+              onPress={handleReserve}
+              disabled={createBooking.isPending}
+              style={[
+                styles.bookingSubmitBtn,
+                createBooking.isPending && styles.submitReviewBtnDisabled,
+              ]}
+            >
+              <Text style={styles.bookingSubmitText}>
+                {createBooking.isPending ? "Reserving..." : "Confirm reservation"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
+}
+
+function defaultDateOffset(daysFromToday: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + daysFromToday);
+  return date.toISOString().slice(0, 10);
+}
+
+function isValidDateInput(value: string) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(new Date(value).getTime());
+}
+
+function formatTotalPrice(pricePerNight: number, checkIn: string, checkOut: string) {
+  if (!isValidDateInput(checkIn) || !isValidDateInput(checkOut)) {
+    return `$${pricePerNight.toFixed(0)}`;
+  }
+
+  const nights = Math.ceil(
+    (new Date(checkOut).getTime() - new Date(checkIn).getTime()) /
+      (1000 * 60 * 60 * 24),
+  );
+
+  if (nights <= 0) {
+    return `$${pricePerNight.toFixed(0)}`;
+  }
+
+  return `$${(nights * pricePerNight).toFixed(0)} for ${nights} ${
+    nights === 1 ? "night" : "nights"
+  }`;
 }
 
 const styles = StyleSheet.create({
@@ -956,5 +1111,77 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     letterSpacing: 0.5,
+  },
+  bookingOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.28)",
+    justifyContent: "flex-end",
+  },
+  bookingSheet: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 28,
+    gap: 14,
+  },
+  bookingSheetHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  bookingSheetTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#1A1A1A",
+  },
+  bookingCloseBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F4F4F4",
+  },
+  bookingField: {
+    gap: 6,
+  },
+  bookingFieldLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#6F6F6F",
+  },
+  bookingInput: {
+    height: 50,
+    borderWidth: 1,
+    borderColor: "#E6E1DA",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    fontSize: 15,
+    color: "#1A1A1A",
+    backgroundColor: "#FAFAF8",
+  },
+  bookingHint: {
+    fontSize: 14,
+    color: "#5E5E5E",
+  },
+  bookingError: {
+    color: "#C44B3A",
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  bookingSubmitBtn: {
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: COLORS.PRIMARY,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 4,
+  },
+  bookingSubmitText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "700",
   },
 });

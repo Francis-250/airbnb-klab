@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -14,30 +14,24 @@ import { Heart } from "lucide-react-native";
 import { COLORS } from "@/constants/colors";
 import { useAuthStore } from "@/store/auth.store";
 import { useBookings } from "@/hooks/useBookings";
-import { useListing } from "@/hooks/useListing";
+import { Booking } from "@/types";
 import { useThemeColors } from "@/hooks/useThemeColors";
 
 export default function Trip() {
   const router = useRouter();
   const { colors } = useThemeColors();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const { data, isLoading, isError, refetch } = useBookings("upcoming");
-  const { data: listings = [] } = useListing();
+  const { data, isLoading, isError, refetch } = useBookings();
 
-  const upcomingBooking = data?.data?.[0];
-  const city =
-    upcomingBooking?.listing.location.split(",")[0]?.trim() || "your stay";
-  const nearbyListings = upcomingBooking
-    ? listings
-        .filter(
-          (listing) =>
-            listing.id !== upcomingBooking.listing.id &&
-            listing.location
-              .toLowerCase()
-              .includes(city.toLowerCase()),
-        )
-        .slice(0, 4)
-    : [];
+  const bookings = useMemo(() => data?.data ?? [], [data?.data]);
+  const groupedBookings = useMemo(
+    () => ({
+      pending: bookings.filter((booking) => booking.status === "pending"),
+      confirmed: bookings.filter((booking) => booking.status === "confirmed"),
+      cancelled: bookings.filter((booking) => booking.status === "cancelled"),
+    }),
+    [bookings],
+  );
 
   if (!isAuthenticated) {
     return (
@@ -48,7 +42,7 @@ export default function Trip() {
             Log in to view your trips
           </Text>
           <Text style={[styles.emptyText, { color: colors.TEXT_SECONDARY }]}>
-            Upcoming reservations will appear here.
+            Pending, confirmed, and cancelled reservations will appear here.
           </Text>
           <Pressable
             onPress={() => router.push("/(auth)/login")}
@@ -89,18 +83,71 @@ export default function Trip() {
         contentContainerStyle={styles.content}
       >
         <Text style={[styles.pageTitle, { color: colors.TEXT_PRIMARY }]}>Trips</Text>
-        <Text style={[styles.sectionTitle, { color: colors.TEXT_PRIMARY }]}>
-          Upcoming reservations
-        </Text>
 
-        {upcomingBooking ? (
+        {bookings.length === 0 ? (
+          <View style={styles.centeredBlock}>
+            <Text style={[styles.emptyTitle, { color: colors.TEXT_PRIMARY }]}>
+              No bookings yet
+            </Text>
+            <Text style={[styles.emptyText, { color: colors.TEXT_SECONDARY }]}>
+              When you reserve a stay, it will show up here.
+            </Text>
+          </View>
+        ) : (
+          <>
+            <BookingSection
+              title="Pending"
+              bookings={groupedBookings.pending}
+              colors={colors}
+            />
+            <BookingSection
+              title="Confirmed"
+              bookings={groupedBookings.confirmed}
+              colors={colors}
+            />
+            <BookingSection
+              title="Cancelled"
+              bookings={groupedBookings.cancelled}
+              colors={colors}
+            />
+          </>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function BookingSection({
+  title,
+  bookings,
+  colors,
+}: {
+  title: string;
+  bookings: Booking[];
+  colors: ReturnType<typeof useThemeColors>["colors"];
+}) {
+  if (bookings.length === 0) {
+    return null;
+  }
+
+  return (
+    <View style={styles.section}>
+      <Text style={[styles.sectionTitle, { color: colors.TEXT_PRIMARY }]}>
+        {title}
+      </Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.sectionList}
+      >
+        {bookings.map((booking) => (
           <View
+            key={booking.id}
             style={[
               styles.bookingCard,
               {
                 backgroundColor: colors.BACKGROUND,
                 borderColor: colors.BORDER_LIGHT,
-                shadowColor: colors.TEXT_PRIMARY,
               },
             ]}
           >
@@ -108,24 +155,34 @@ export default function Trip() {
               <Image
                 source={{
                   uri:
-                    upcomingBooking.listing.photos?.[0] ||
+                    booking.listing.photos?.[0] ||
                     "https://via.placeholder.com/600x360",
                 }}
                 style={styles.bookingImage}
               />
-              <View style={styles.statusPill}>
-                <Text style={styles.statusText}>
-                  {capitalize(upcomingBooking.status)}
+              <View
+                style={[
+                  styles.statusPill,
+                  { backgroundColor: getStatusBg(booking.status, colors) },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.statusText,
+                    { color: getStatusText(booking.status) },
+                  ]}
+                >
+                  {capitalize(booking.status)}
                 </Text>
               </View>
             </View>
 
             <View style={styles.cardBody}>
               <Text style={[styles.bookingTitle, { color: colors.TEXT_PRIMARY }]}>
-                {city}
+                {booking.listing.location.split(",")[0]?.trim() || booking.listing.title}
               </Text>
               <Text style={[styles.bookingSubtitle, { color: colors.TEXT_SECONDARY }]}>
-                Reservation for {upcomingBooking.listing.title}
+                {booking.listing.title}
               </Text>
 
               <View
@@ -136,16 +193,13 @@ export default function Trip() {
               >
                 <View style={styles.dateColumn}>
                   <Text style={[styles.dateMonth, { color: colors.TEXT_PRIMARY }]}>
-                    {formatMonth(upcomingBooking.checkIn)}
+                    {formatMonth(booking.checkIn)}
                   </Text>
                   <Text style={[styles.dateRange, { color: colors.TEXT_PRIMARY }]}>
-                    {formatDayRange(
-                      upcomingBooking.checkIn,
-                      upcomingBooking.checkOut,
-                    )}
+                    {formatDayRange(booking.checkIn, booking.checkOut)}
                   </Text>
                   <Text style={[styles.dateYear, { color: colors.TEXT_SECONDARY }]}>
-                    {new Date(upcomingBooking.checkIn).getFullYear()}
+                    {new Date(booking.checkIn).getFullYear()}
                   </Text>
                 </View>
                 <View
@@ -156,86 +210,34 @@ export default function Trip() {
                 />
                 <View style={styles.locationColumn}>
                   <Text style={[styles.locationPrimary, { color: colors.TEXT_PRIMARY }]}>
-                    {upcomingBooking.listing.location.split(",").slice(0, 2).join(",")}
+                    {booking.listing.location}
                   </Text>
                   <Text style={[styles.locationSecondary, { color: colors.TEXT_SECONDARY }]}>
-                    {upcomingBooking.listing.location}
+                    ${booking.totalPrice.toFixed(0)} total
                   </Text>
                 </View>
               </View>
             </View>
           </View>
-        ) : (
-          <View style={styles.centeredBlock}>
-            <Text style={[styles.emptyTitle, { color: colors.TEXT_PRIMARY }]}>
-              No upcoming trips
-            </Text>
-            <Text style={[styles.emptyText, { color: colors.TEXT_SECONDARY }]}>
-              Your next reservation will show up here.
-            </Text>
-          </View>
-        )}
-
-        {nearbyListings.length > 0 && (
-          <>
-            <Text
-              style={[
-                styles.sectionTitle,
-                styles.exploreTitle,
-                { color: colors.TEXT_PRIMARY },
-              ]}
-            >
-              Explore stays near {city}
-            </Text>
-
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {nearbyListings.map((listing) => (
-                <View
-                  key={listing.id}
-                  style={[
-                    styles.exploreCard,
-                    {
-                      backgroundColor: colors.BACKGROUND,
-                      borderColor: colors.BORDER_LIGHT,
-                    },
-                  ]}
-                >
-                  <Image
-                    source={{
-                      uri:
-                        listing.photos?.[0] ||
-                        "https://via.placeholder.com/300x200",
-                    }}
-                    style={styles.exploreImage}
-                  />
-                  <View style={styles.exploreBody}>
-                    <Text
-                      style={[
-                        styles.exploreCardTitle,
-                        { color: colors.TEXT_PRIMARY },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {listing.title}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.exploreCardSubtitle,
-                        { color: colors.TEXT_SECONDARY },
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {listing.guests} guests · ${listing.pricePerNight}/night
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </ScrollView>
-          </>
-        )}
+        ))}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
+}
+
+function getStatusBg(
+  status: Booking["status"],
+  colors: ReturnType<typeof useThemeColors>["colors"],
+) {
+  if (status === "confirmed") return "#E8F7ED";
+  if (status === "cancelled") return "#FDECEC";
+  return colors.BACKGROUND_GRAY;
+}
+
+function getStatusText(status: Booking["status"]) {
+  if (status === "confirmed") return "#1E7A45";
+  if (status === "cancelled") return "#B33A3A";
+  return "#4B5563";
 }
 
 function formatMonth(value: string) {
@@ -266,23 +268,28 @@ const styles = StyleSheet.create({
     marginTop: 6,
     marginBottom: 18,
   },
+  section: {
+    marginBottom: 28,
+  },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 16,
     fontWeight: "700",
     marginBottom: 14,
   },
+  sectionList: {
+    gap: 14,
+    paddingRight: 14,
+  },
   bookingCard: {
-    borderRadius: 18,
+    width: 286,
+    borderRadius: 0,
     overflow: "hidden",
-    borderWidth: 1,
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 4,
   },
   imageWrap: {
     height: 188,
     position: "relative",
+    borderRadius: 18,
+    overflow: "hidden",
   },
   bookingImage: {
     width: "100%",
@@ -292,20 +299,18 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 12,
     top: 12,
-    backgroundColor: "#FFFFFF",
     borderRadius: 14,
     paddingHorizontal: 10,
     paddingVertical: 5,
   },
   statusText: {
-    color: "#111111",
     fontSize: 11,
     fontWeight: "700",
   },
   cardBody: {
-    paddingHorizontal: 14,
-    paddingTop: 16,
-    paddingBottom: 18,
+    paddingHorizontal: 2,
+    paddingTop: 12,
+    paddingBottom: 6,
   },
   bookingTitle: {
     fontSize: 16,
@@ -341,7 +346,7 @@ const styles = StyleSheet.create({
   },
   metaDivider: {
     width: 1,
-    marginHorizontal: 12,
+    marginHorizontal: 14,
   },
   locationColumn: {
     flex: 1,
@@ -349,70 +354,46 @@ const styles = StyleSheet.create({
   },
   locationPrimary: {
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
+    lineHeight: 20,
   },
   locationSecondary: {
     fontSize: 12,
-    marginTop: 2,
-  },
-  exploreTitle: {
-    marginTop: 34,
-  },
-  exploreCard: {
-    width: 156,
-    marginRight: 12,
-    borderRadius: 14,
-    overflow: "hidden",
-    borderWidth: 1,
-  },
-  exploreImage: {
-    width: "100%",
-    height: 82,
-  },
-  exploreBody: {
-    padding: 10,
-  },
-  exploreCardTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  exploreCardSubtitle: {
-    fontSize: 12,
-    marginTop: 2,
+    marginTop: 4,
+    lineHeight: 18,
   },
   centered: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 24,
+    padding: 24,
     gap: 10,
   },
   centeredBlock: {
+    paddingVertical: 40,
     alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 48,
     gap: 8,
   },
   emptyTitle: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: "700",
     textAlign: "center",
   },
   emptyText: {
-    fontSize: 13,
+    fontSize: 14,
     textAlign: "center",
-    lineHeight: 18,
+    lineHeight: 21,
   },
   primaryBtn: {
     marginTop: 8,
     backgroundColor: COLORS.PRIMARY,
-    borderRadius: 10,
+    borderRadius: 14,
     paddingHorizontal: 18,
-    paddingVertical: 11,
+    paddingVertical: 12,
   },
   primaryBtnText: {
-    color: "#FFF",
-    fontSize: 13,
+    color: "#FFFFFF",
     fontWeight: "700",
+    fontSize: 14,
   },
 });
