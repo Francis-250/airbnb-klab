@@ -26,6 +26,7 @@ import { api } from "@/api/api";
 import { ENDPOINTS } from "@/api/endpoints";
 import { Listing } from "@/types";
 import { useThemeColors } from "@/hooks/useThemeColors";
+import { categoryData } from "@/constants/data";
 
 const featuredDestinations = ["Japan", "Southeast Asia", "Italy", "Kigali"];
 const destinationSuggestions = [
@@ -53,17 +54,39 @@ export default function GuestScreen() {
   const [filteredListings, setFilteredListings] = useState<Listing[] | null>(
     null,
   );
+  const [selectedCategory, setSelectedCategory] = useState<
+    (typeof categoryData)[number] | null
+  >(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
 
-  const displayListings = filteredListings ?? listings;
+  const baseListings = filteredListings ?? listings;
+  const displayListings = useMemo(() => {
+    if (!selectedCategory) {
+      return baseListings;
+    }
+
+    if (selectedCategory.kind === "type") {
+      return baseListings.filter(
+        (listing) => listing.type === selectedCategory.value,
+      );
+    }
+
+    return baseListings.filter((listing) =>
+      listing.amenities?.some(
+        (amenity) =>
+          amenity.toLowerCase() === selectedCategory.value.toLowerCase(),
+      ),
+    );
+  }, [baseListings, selectedCategory]);
   const hasActiveFilters = useMemo(
     () =>
       !!filteredListings ||
       !!searchQuery ||
       !!selectedDestination ||
-      guests > 0,
-    [filteredListings, guests, searchQuery, selectedDestination],
+      guests > 0 ||
+      selectedCategory != null,
+    [filteredListings, guests, searchQuery, selectedCategory, selectedDestination],
   );
 
   const clearFilters = () => {
@@ -71,6 +94,7 @@ export default function GuestScreen() {
     setSelectedDestination("");
     setGuests(0);
     setFilteredListings(null);
+    setSelectedCategory(null);
     setSearchError("");
     setFilterStep("home");
   };
@@ -138,13 +162,17 @@ export default function GuestScreen() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.BACKGROUND }]}>
-      <Header onOpenFilters={() => setFilterOpen(true)} />
-      {filteredListings && (
+      <Header
+        onOpenFilters={() => setFilterOpen(true)}
+        selectedCategory={selectedCategory?.name ?? null}
+        onSelectCategory={setSelectedCategory}
+      />
+      {hasActiveFilters && (
         <View
           style={[styles.resultsBar, { borderBottomColor: colors.BORDER_LIGHT }]}
         >
           <Text style={[styles.resultsText, { color: colors.TEXT_PRIMARY }]}>
-            {filteredListings.length} filtered stays
+            {displayListings.length} filtered stays
           </Text>
           <Pressable onPress={clearFilters}>
             <Text style={styles.clearSmall}>Clear</Text>

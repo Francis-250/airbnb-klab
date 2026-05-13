@@ -9,7 +9,6 @@ import {
   ScrollView,
   ActivityIndicator,
 } from "react-native";
-import { Image } from "expo-image";
 import { useEffect, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "@/store/auth.store";
@@ -64,7 +63,6 @@ export default function Login() {
         await login(trimmedEmail, password);
         return;
       }
-
       await signup(trimmedName, trimmedEmail, password);
     } catch (error) {
       const axiosError = error as AxiosError<{ message?: string }>;
@@ -99,11 +97,12 @@ export default function Login() {
               style={styles.backButton}
               onPress={() => setIsLogin(true)}
             >
-              <ArrowLeft color="#0b2f7f" size={24} strokeWidth={2.3} />
+              <ArrowLeft color={COLORS.PRIMARY} size={24} strokeWidth={2.3} />
             </Pressable>
           )}
+
           <View style={styles.header}>
-            <Text style={styles.logo}>Airbnb</Text>
+            <Text style={styles.logo}>airbnb</Text>
             <Text style={styles.title}>
               {isLogin ? "Welcome back" : "Create your account"}
             </Text>
@@ -113,6 +112,7 @@ export default function Login() {
                 : "Join as a guest and start finding places to stay."}
             </Text>
           </View>
+
           <View style={styles.form}>
             {!isLogin && (
               <TextInput
@@ -120,7 +120,7 @@ export default function Login() {
                 editable={!loading}
                 onChangeText={setName}
                 placeholder="Full name"
-                placeholderTextColor="#777f8c"
+                placeholderTextColor={COLORS.TEXT_LIGHT}
                 style={styles.input}
                 textContentType="name"
                 value={name}
@@ -132,8 +132,8 @@ export default function Login() {
               editable={!loading}
               keyboardType="email-address"
               onChangeText={setEmail}
-              placeholder="Email"
-              placeholderTextColor="#777f8c"
+              placeholder="Email address"
+              placeholderTextColor={COLORS.TEXT_LIGHT}
               style={styles.input}
               textContentType="emailAddress"
               value={email}
@@ -143,7 +143,7 @@ export default function Login() {
                 editable={!loading}
                 onChangeText={setPassword}
                 placeholder="Password"
-                placeholderTextColor="#777f8c"
+                placeholderTextColor={COLORS.TEXT_LIGHT}
                 secureTextEntry={!passwordVisible}
                 style={[styles.input, styles.passwordInput]}
                 textContentType={isLogin ? "password" : "newPassword"}
@@ -154,7 +154,7 @@ export default function Login() {
                 accessibilityLabel={
                   passwordVisible ? "Hide password" : "Show password"
                 }
-                onPress={() => setPasswordVisible((visible) => !visible)}
+                onPress={() => setPasswordVisible((v) => !v)}
                 style={styles.passwordToggle}
               >
                 {passwordVisible ? (
@@ -164,23 +164,26 @@ export default function Login() {
                 )}
               </Pressable>
             </View>
+
             {!isLogin && (
               <TextInput
                 editable={!loading}
                 onChangeText={setConfirmPassword}
-                placeholder="Confirm Password"
-                placeholderTextColor="#777f8c"
+                placeholder="Confirm password"
+                placeholderTextColor={COLORS.TEXT_LIGHT}
                 secureTextEntry
                 style={styles.input}
                 textContentType="newPassword"
                 value={confirmPassword}
               />
             )}
+
             {errorMessage ? (
               <View style={styles.errorBox}>
                 <Text style={styles.errorText}>{errorMessage}</Text>
               </View>
             ) : null}
+
             <Pressable
               style={({ pressed }) => [
                 styles.primaryButton,
@@ -200,33 +203,10 @@ export default function Login() {
             </Pressable>
           </View>
 
-          <View style={styles.socialSection}>
-            <Text style={styles.socialLabel}>
-              {isLogin ? "- Or sign in with -" : "- Or sign up with -"}
-            </Text>
-            <View style={styles.socialRow}>
-              <Pressable style={styles.socialButton}>
-                <Image
-                  source={require("../../assets/icons/google.png")}
-                  style={styles.socialIcon}
-                  contentFit="contain"
-                />
-              </Pressable>
-              <Pressable style={styles.socialButton}>
-                <Image
-                  source={require("../../assets/icons/facebook.png")}
-                  style={styles.socialIcon}
-                  contentFit="contain"
-                />
-              </Pressable>
-              <Pressable style={styles.socialButton}>
-                <Image
-                  source={require("../../assets/icons/twitter.png")}
-                  style={styles.socialIcon}
-                  contentFit="contain"
-                />
-              </Pressable>
-            </View>
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
           </View>
 
           <View style={styles.footer}>
@@ -241,6 +221,12 @@ export default function Login() {
               </Text>
             </Pressable>
           </View>
+
+          <Text style={styles.terms}>
+            By continuing, you agree to our{" "}
+            <Text style={styles.termsLink}>Terms of Service</Text> and{" "}
+            <Text style={styles.termsLink}>Privacy Policy</Text>.
+          </Text>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -271,21 +257,21 @@ const styles = StyleSheet.create({
   },
   header: {
     marginTop: 42,
-    marginBottom: 24,
+    marginBottom: 28,
     gap: 10,
   },
   logo: {
     color: COLORS.PRIMARY,
-    fontSize: 34,
+    fontSize: 32,
     fontWeight: "800",
-    letterSpacing: 0,
     textAlign: "center",
+    letterSpacing: -0.5,
   },
   title: {
     color: COLORS.TEXT_PRIMARY,
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: "700",
-    marginTop: 36,
+    marginTop: 32,
     textAlign: "center",
   },
   subtitle: {
@@ -295,40 +281,47 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   form: {
-    gap: 22,
+    gap: 14,
   },
   input: {
-    height: 56,
-    borderRadius: 3,
+    height: 52,
+    borderRadius: 8,
     backgroundColor: COLORS.BACKGROUND,
     color: COLORS.TEXT_PRIMARY,
     fontSize: 14,
     paddingHorizontal: 16,
-    shadowColor: COLORS.BORDER_LIGHT,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.55,
-    shadowRadius: 14,
-    elevation: 7,
+    borderWidth: 1,
+    borderColor: COLORS.BORDER_LIGHT,
+  },
+  passwordField: {
+    position: "relative",
+  },
+  passwordInput: {
+    paddingRight: 52,
+  },
+  passwordToggle: {
+    alignItems: "center",
+    bottom: 0,
+    justifyContent: "center",
+    position: "absolute",
+    right: 10,
+    top: 0,
+    width: 40,
   },
   primaryButton: {
-    height: 56,
-    borderRadius: 5,
+    height: 52,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: COLORS.PRIMARY,
-    marginTop: 8,
-    shadowColor: COLORS.PRIMARY,
-    shadowOffset: { width: 0, height: 9 },
-    shadowOpacity: 0.32,
-    shadowRadius: 11,
-    elevation: 8,
+    marginTop: 6,
   },
   primaryButtonPressed: {
+    opacity: 0.88,
     transform: [{ scale: 0.99 }],
-    opacity: 0.92,
   },
   primaryButtonDisabled: {
-    opacity: 0.7,
+    opacity: 0.65,
   },
   primaryButtonText: {
     color: COLORS.TEXT_WHITE,
@@ -348,57 +341,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
   },
-  passwordField: {
-    position: "relative",
-  },
-  passwordInput: {
-    paddingRight: 52,
-  },
-  passwordToggle: {
-    alignItems: "center",
-    bottom: 0,
-    justifyContent: "center",
-    position: "absolute",
-    right: 10,
-    top: 0,
-    width: 40,
-  },
-  socialSection: {
-    alignItems: "center",
-    marginTop: 62,
-    gap: 24,
-  },
-  socialLabel: {
-    color: COLORS.TEXT_LIGHT,
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  socialRow: {
+  dividerRow: {
     flexDirection: "row",
-    gap: 8,
-  },
-  socialButton: {
-    width: 88,
-    height: 48,
-    borderRadius: 3,
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: COLORS.BACKGROUND,
-    shadowColor: COLORS.BORDER_LIGHT,
-    shadowOffset: { width: 0, height: 7 },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 6,
+    marginTop: 28,
+    marginBottom: 20,
+    gap: 12,
   },
-  socialIcon: {
-    width: 24,
-    height: 24,
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.BORDER_LIGHT,
+  },
+  dividerText: {
+    color: COLORS.TEXT_LIGHT,
+    fontSize: 13,
   },
   footer: {
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: "auto",
   },
   footerText: {
     color: COLORS.TEXT_LIGHT,
@@ -408,5 +370,16 @@ const styles = StyleSheet.create({
     color: COLORS.PRIMARY,
     fontSize: 13,
     fontWeight: "700",
+  },
+  terms: {
+    color: COLORS.TEXT_LIGHT,
+    fontSize: 12,
+    textAlign: "center",
+    lineHeight: 18,
+    marginTop: 24,
+  },
+  termsLink: {
+    color: COLORS.TEXT_SECONDARY,
+    textDecorationLine: "underline",
   },
 });

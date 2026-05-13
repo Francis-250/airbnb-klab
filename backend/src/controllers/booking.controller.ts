@@ -106,11 +106,42 @@ export const createBooking = async (req: Request, res: Response) => {
   const checkInDate = new Date(checkIn);
   const checkOutDate = new Date(checkOut);
 
+  if (
+    Number.isNaN(checkInDate.getTime()) ||
+    Number.isNaN(checkOutDate.getTime())
+  ) {
+    return res
+      .status(400)
+      .json({ message: "Valid check-in and check-out dates are required" });
+  }
+
+  if (checkOutDate <= checkInDate) {
+    return res
+      .status(400)
+      .json({ message: "Check-out must be after check-in" });
+  }
+
   try {
     const listing = await prisma.listing.findFirst({
       where: { id: listingId, host: { hostStatus: "approved" } },
     });
     if (!listing) return res.status(404).json({ message: "Listing not found" });
+
+    const overlappingBooking = await prisma.booking.findFirst({
+      where: {
+        listingId,
+        status: { not: BookingStatus.cancelled },
+        checkIn: { lt: checkOutDate },
+        checkOut: { gt: checkInDate },
+      },
+      select: { id: true },
+    });
+
+    if (overlappingBooking) {
+      return res.status(409).json({
+        message: "These dates are unavailable because the listing is already booked",
+      });
+    }
 
     const nights = Math.ceil(
       (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24),
@@ -129,7 +160,7 @@ export const createBooking = async (req: Request, res: Response) => {
     const guest = await prisma.user.findUnique({ where: { id: user } });
     await sendEmail({
       to: guest?.email as string,
-      subject: "Welcome to Airbnb!",
+      subject: `Booking Confirmation - ${listing.title}`,
       html: bookingConfirmationEmail(listing.title, checkIn, checkOut),
     });
     res.status(201).json(booking);

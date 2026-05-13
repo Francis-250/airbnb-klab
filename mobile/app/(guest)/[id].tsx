@@ -12,14 +12,15 @@ import {
   NativeSyntheticEvent,
   TouchableOpacity,
   StatusBar,
-  TextInput,
   Modal,
+  TextInput,
 } from "react-native";
 import { useListingById } from "@/hooks/useListing";
 import { useListingReviews } from "@/hooks/useReviews";
 import { useCreateComment, useListingComments } from "@/hooks/useComments";
 import { useCreateBooking } from "@/hooks/useBookings";
 import { SafeAreaView } from "react-native-safe-area-context";
+import BookingDatePicker from "@/components/commonn/bookingDatePicker";
 import { Ionicons } from "@expo/vector-icons";
 import { Heart, Share2 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -503,29 +504,14 @@ export default function ListingDetailScreen() {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.bookingField}>
-              <Text style={styles.bookingFieldLabel}>Check-in</Text>
-              <TextInput
-                value={checkIn}
-                onChangeText={setCheckIn}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor="#9A9A9A"
-                style={styles.bookingInput}
-                autoCapitalize="none"
-              />
-            </View>
-
-            <View style={styles.bookingField}>
-              <Text style={styles.bookingFieldLabel}>Check-out</Text>
-              <TextInput
-                value={checkOut}
-                onChangeText={setCheckOut}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor="#9A9A9A"
-                style={styles.bookingInput}
-                autoCapitalize="none"
-              />
-            </View>
+            <BookingDatePicker
+              checkIn={checkIn}
+              checkOut={checkOut}
+              onCheckInChange={setCheckIn}
+              onCheckOutChange={setCheckOut}
+              onValidationMessage={setBookingMessage}
+              isVisible={bookingModalVisible}
+            />
 
             <Text style={styles.bookingHint}>
               Total: {formatTotalPrice(listing.pricePerNight, checkIn, checkOut)}
@@ -557,7 +543,7 @@ export default function ListingDetailScreen() {
 function defaultDateOffset(daysFromToday: number) {
   const date = new Date();
   date.setDate(date.getDate() + daysFromToday);
-  return date.toISOString().slice(0, 10);
+  return `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, "0")}-${`${date.getDate()}`.padStart(2, "0")}`;
 }
 
 function isValidDateInput(value: string) {
@@ -1143,24 +1129,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#F4F4F4",
-  },
-  bookingField: {
-    gap: 6,
-  },
-  bookingFieldLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#6F6F6F",
-  },
-  bookingInput: {
-    height: 50,
-    borderWidth: 1,
-    borderColor: "#E6E1DA",
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    fontSize: 15,
-    color: "#1A1A1A",
-    backgroundColor: "#FAFAF8",
   },
   bookingHint: {
     fontSize: 14,

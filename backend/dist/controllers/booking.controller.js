@@ -99,12 +99,37 @@ const createBooking = async (req, res) => {
     }
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
+    if (Number.isNaN(checkInDate.getTime()) ||
+        Number.isNaN(checkOutDate.getTime())) {
+        return res
+            .status(400)
+            .json({ message: "Valid check-in and check-out dates are required" });
+    }
+    if (checkOutDate <= checkInDate) {
+        return res
+            .status(400)
+            .json({ message: "Check-out must be after check-in" });
+    }
     try {
         const listing = await prisma_1.default.listing.findFirst({
             where: { id: listingId, host: { hostStatus: "approved" } },
         });
         if (!listing)
             return res.status(404).json({ message: "Listing not found" });
+        const overlappingBooking = await prisma_1.default.booking.findFirst({
+            where: {
+                listingId,
+                status: { not: client_1.BookingStatus.cancelled },
+                checkIn: { lt: checkOutDate },
+                checkOut: { gt: checkInDate },
+            },
+            select: { id: true },
+        });
+        if (overlappingBooking) {
+            return res.status(409).json({
+                message: "These dates are unavailable because the listing is already booked",
+            });
+        }
         const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
         const totalPrice = nights * listing.pricePerNight;
         const booking = await prisma_1.default.booking.create({
@@ -119,7 +144,7 @@ const createBooking = async (req, res) => {
         const guest = await prisma_1.default.user.findUnique({ where: { id: user } });
         await (0, resend_1.sendEmail)({
             to: guest?.email,
-            subject: "Welcome to Airbnb!",
+            subject: `Booking Confirmation - ${listing.title}`,
             html: (0, mail_temp_1.bookingConfirmationEmail)(listing.title, checkIn, checkOut),
         });
         res.status(201).json(booking);

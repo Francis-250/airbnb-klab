@@ -13,8 +13,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "@/store/auth.store";
 import { useConversations } from "@/hooks/useConversations";
 import { Conversation } from "@/types";
-import { MessageCircle } from "lucide-react-native";
+import { Heart, MessageCircle } from "lucide-react-native";
 import { useThemeColors } from "@/hooks/useThemeColors";
+import { COLORS } from "@/constants/colors";
 
 type InboxTab = "messages" | "notifications";
 
@@ -47,10 +48,23 @@ export default function Message() {
       <SafeAreaView
         style={[styles.screen, { backgroundColor: colors.BACKGROUND }]}
       >
+        <Text style={[styles.title, { color: colors.TEXT_PRIMARY }]}>
+          Wishlist
+        </Text>
         <View style={styles.centered}>
-          <Text style={[styles.emptyText, { color: colors.TEXT_SECONDARY }]}>
-            Please log in to view your inbox.
+          <Heart size={28} color={COLORS.PRIMARY} />
+          <Text style={[styles.emptyTitle, { color: colors.TEXT_PRIMARY }]}>
+            Log in to view your Inbox
           </Text>
+          <Text style={[styles.emptyText, { color: colors.TEXT_SECONDARY }]}>
+            View and manage your messages with hosts and guests.
+          </Text>
+          <Pressable
+            onPress={() => router.push("/(auth)/login")}
+            style={styles.primaryBtn}
+          >
+            <Text style={styles.primaryBtnText}>Sign in</Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     );
@@ -282,6 +296,28 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
   },
+  emptyTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  emptyText: {
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: "center",
+  },
+  primaryBtn: {
+    marginTop: 8,
+    backgroundColor: COLORS.PRIMARY,
+    borderRadius: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+  },
+  primaryBtnText: {
+    color: "#FFF",
+    fontSize: 13,
+    fontWeight: "700",
+  },
   header: {
     paddingTop: 2,
     borderBottomWidth: 1,
@@ -406,10 +442,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 24,
     gap: 10,
-  },
-  emptyText: {
-    fontSize: 14,
-    textAlign: "center",
   },
   retryBtn: {
     paddingHorizontal: 16,

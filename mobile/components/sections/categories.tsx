@@ -1,12 +1,19 @@
 // Categories.tsx
 import { Pressable, Text, ScrollView } from "react-native";
-import React, { useState } from "react";
+import React from "react";
 import { categoryData } from "@/constants/data";
 import { COLORS } from "@/constants/colors";
 import { useThemeColors } from "@/hooks/useThemeColors";
 
-export default function Categories() {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+type CategoriesProps = {
+  selectedCategory?: string | null;
+  onSelectCategory?: (category: (typeof categoryData)[number] | null) => void;
+};
+
+export default function Categories({
+  selectedCategory = null,
+  onSelectCategory,
+}: CategoriesProps) {
   const { colors } = useThemeColors();
 
   return (
@@ -21,7 +28,7 @@ export default function Categories() {
 
         return (
           <Pressable
-            onPress={() => setSelectedCategory(category.name)}
+            onPress={() => onSelectCategory?.(isSelected ? null : category)}
             key={category.name}
             style={({ pressed }) => ({
               flexDirection: "row",
