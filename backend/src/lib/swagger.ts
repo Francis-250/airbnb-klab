@@ -16,7 +16,7 @@ const options = {
         description: "Local server",
       },
       {
-        url: "https://airbnb-api-oi1o.onrender.com",
+        url: "https://airbnb-klab-api.onrender.com",
         description: "Production server",
       },
     ],
