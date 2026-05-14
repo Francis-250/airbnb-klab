@@ -22,14 +22,21 @@ const ratelimiter_1 = require("./middleware/ratelimiter");
 const app = (0, express_1.default)();
 const PORT = Number(process.env.PORT) || 4000;
 const isProduction = process.env.NODE_ENV === "production";
+const envAllowedOrigins = (process.env.CORS_ORIGINS || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 const allowedOrigins = [
     "http://localhost:4000",
     "https://airbnb-api-oi1o.onrender.com",
+    "https://airbnb-klab-api.onrender.com",
+    "https://airbnb-914d.onrender.com",
     "http://localhost:5173",
     "http://localhost:8081",
     "http://192.168.1.171:8081",
     process.env.FRONTEND_URL,
     process.env.MOBILE_URL,
+    ...envAllowedOrigins,
 ].filter(Boolean);
 const devOriginPattern = /^https?:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+|192\.168\.\d+\.\d+)(:\d+)?$/;
 function isAllowedOrigin(origin) {

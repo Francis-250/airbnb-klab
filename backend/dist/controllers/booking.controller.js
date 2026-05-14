@@ -222,9 +222,7 @@ const deleteBooking = async (req, res) => {
         ? req.body.cancellationReason.trim()
         : "";
     if (!cancellationReason) {
-        return res
-            .status(400)
-            .json({ message: "Cancellation reason is required" });
+        return res.status(400).json({ message: "Cancellation reason is required" });
     }
     try {
         const booking = await prisma_1.default.booking.findUnique({

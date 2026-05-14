@@ -18,15 +18,22 @@ import { generalLimiter } from "./middleware/ratelimiter";
 const app = express();
 const PORT = Number(process.env.PORT) || 4000;
 const isProduction = process.env.NODE_ENV === "production";
+const envAllowedOrigins = (process.env.CORS_ORIGINS || "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
 
 const allowedOrigins = [
   "http://localhost:4000",
   "https://airbnb-api-oi1o.onrender.com",
+  "https://airbnb-klab-api.onrender.com",
+  "https://airbnb-914d.onrender.com",
   "http://localhost:5173",
   "http://localhost:8081",
   "http://192.168.1.171:8081",
   process.env.FRONTEND_URL,
   process.env.MOBILE_URL,
+  ...envAllowedOrigins,
 ].filter(Boolean) as string[];
 
 const devOriginPattern =
