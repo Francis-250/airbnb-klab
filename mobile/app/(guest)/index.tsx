@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -44,7 +45,14 @@ type TripMode = "dates" | "months" | "flexible";
 
 export default function GuestScreen() {
   const { colors, isDark } = useThemeColors();
-  const { data: listings = [], error, isLoading, isError } = useListing();
+  const {
+    data: listings = [],
+    error,
+    isLoading,
+    isError,
+    isRefetching,
+    refetch,
+  } = useListing();
   const [filterOpen, setFilterOpen] = useState(false);
   const [filterStep, setFilterStep] = useState<FilterStep>("home");
   const [tripMode, setTripMode] = useState<TripMode>("dates");
@@ -86,7 +94,13 @@ export default function GuestScreen() {
       !!selectedDestination ||
       guests > 0 ||
       selectedCategory != null,
-    [filteredListings, guests, searchQuery, selectedCategory, selectedDestination],
+    [
+      filteredListings,
+      guests,
+      searchQuery,
+      selectedCategory,
+      selectedDestination,
+    ],
   );
 
   const clearFilters = () => {
@@ -138,6 +152,10 @@ export default function GuestScreen() {
     }
   };
 
+  const handleRefresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
   if (isLoading) {
     return (
       <SafeAreaView
@@ -161,7 +179,9 @@ export default function GuestScreen() {
   }
 
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: colors.BACKGROUND }]}>
+    <SafeAreaView
+      style={[styles.screen, { backgroundColor: colors.BACKGROUND }]}
+    >
       <Header
         onOpenFilters={() => setFilterOpen(true)}
         selectedCategory={selectedCategory?.name ?? null}
@@ -169,7 +189,10 @@ export default function GuestScreen() {
       />
       {hasActiveFilters && (
         <View
-          style={[styles.resultsBar, { borderBottomColor: colors.BORDER_LIGHT }]}
+          style={[
+            styles.resultsBar,
+            { borderBottomColor: colors.BORDER_LIGHT },
+          ]}
         >
           <Text style={[styles.resultsText, { color: colors.TEXT_PRIMARY }]}>
             {displayListings.length} filtered stays
@@ -184,6 +207,14 @@ export default function GuestScreen() {
         keyExtractor={(listing) => listing.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={handleRefresh}
+            tintColor={COLORS.PRIMARY}
+            colors={[COLORS.PRIMARY]}
+          />
+        }
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={[styles.emptyTitle, { color: colors.TEXT_PRIMARY }]}>
@@ -208,11 +239,16 @@ export default function GuestScreen() {
         <View
           style={[
             styles.modalBackdrop,
-            { backgroundColor: isDark ? "rgba(0,0,0,0.45)" : "rgba(0,0,0,0.18)" },
+            {
+              backgroundColor: isDark ? "rgba(0,0,0,0.45)" : "rgba(0,0,0,0.18)",
+            },
           ]}
         >
           <View
-            style={[styles.filterSheet, { backgroundColor: colors.BACKGROUND_LIGHT }]}
+            style={[
+              styles.filterSheet,
+              { backgroundColor: colors.BACKGROUND_LIGHT },
+            ]}
           >
             <View
               style={[
@@ -244,7 +280,10 @@ export default function GuestScreen() {
                 <Text
                   style={[
                     styles.sheetTab,
-                    { color: colors.TEXT_PRIMARY, borderBottomColor: colors.TEXT_PRIMARY },
+                    {
+                      color: colors.TEXT_PRIMARY,
+                      borderBottomColor: colors.TEXT_PRIMARY,
+                    },
                     styles.activeSheetTab,
                   ]}
                 >
@@ -272,7 +311,12 @@ export default function GuestScreen() {
                       },
                     ]}
                   >
-                    <Text style={[styles.whereTitle, { color: colors.TEXT_PRIMARY }]}>
+                    <Text
+                      style={[
+                        styles.whereTitle,
+                        { color: colors.TEXT_PRIMARY },
+                      ]}
+                    >
                       Where to?
                     </Text>
                     <Pressable
@@ -346,10 +390,20 @@ export default function GuestScreen() {
                       },
                     ]}
                   >
-                    <Text style={[styles.optionLabel, { color: colors.TEXT_SECONDARY }]}>
+                    <Text
+                      style={[
+                        styles.optionLabel,
+                        { color: colors.TEXT_SECONDARY },
+                      ]}
+                    >
                       When
                     </Text>
-                    <Text style={[styles.optionValue, { color: colors.TEXT_PRIMARY }]}>
+                    <Text
+                      style={[
+                        styles.optionValue,
+                        { color: colors.TEXT_PRIMARY },
+                      ]}
+                    >
                       Any week
                     </Text>
                   </Pressable>
@@ -363,7 +417,12 @@ export default function GuestScreen() {
                       },
                     ]}
                   >
-                    <Text style={[styles.optionLabel, { color: colors.TEXT_SECONDARY }]}>
+                    <Text
+                      style={[
+                        styles.optionLabel,
+                        { color: colors.TEXT_SECONDARY },
+                      ]}
+                    >
                       Who
                     </Text>
                     <View style={styles.guestControls}>
@@ -373,18 +432,33 @@ export default function GuestScreen() {
                         }
                         style={[styles.stepper, { borderColor: colors.BORDER }]}
                       >
-                        <Text style={[styles.stepperText, { color: colors.TEXT_PRIMARY }]}>
+                        <Text
+                          style={[
+                            styles.stepperText,
+                            { color: colors.TEXT_PRIMARY },
+                          ]}
+                        >
                           -
                         </Text>
                       </Pressable>
-                      <Text style={[styles.optionValue, { color: colors.TEXT_PRIMARY }]}>
+                      <Text
+                        style={[
+                          styles.optionValue,
+                          { color: colors.TEXT_PRIMARY },
+                        ]}
+                      >
                         {guests > 0 ? `${guests} guests` : "Add guests"}
                       </Text>
                       <Pressable
                         onPress={() => setGuests((value) => value + 1)}
                         style={[styles.stepper, { borderColor: colors.BORDER }]}
                       >
-                        <Text style={[styles.stepperText, { color: colors.TEXT_PRIMARY }]}>
+                        <Text
+                          style={[
+                            styles.stepperText,
+                            { color: colors.TEXT_PRIMARY },
+                          ]}
+                        >
                           +
                         </Text>
                       </Pressable>

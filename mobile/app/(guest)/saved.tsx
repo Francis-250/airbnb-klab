@@ -30,8 +30,12 @@ export default function Saved() {
 
   if (!isAuthenticated) {
     return (
-      <SafeAreaView style={[styles.screen, { backgroundColor: colors.BACKGROUND }]}>
-        <Text style={[styles.title, { color: colors.TEXT_PRIMARY }]}>Wishlist</Text>
+      <SafeAreaView
+        style={[styles.screen, { backgroundColor: colors.BACKGROUND }]}
+      >
+        <Text style={[styles.title, { color: colors.TEXT_PRIMARY }]}>
+          Wishlist
+        </Text>
         <View style={styles.centered}>
           <Heart size={28} color={COLORS.PRIMARY} />
           <Text style={[styles.emptyTitle, { color: colors.TEXT_PRIMARY }]}>
@@ -52,7 +56,9 @@ export default function Saved() {
   }
 
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: colors.BACKGROUND }]}>
+    <SafeAreaView
+      style={[styles.screen, { backgroundColor: colors.BACKGROUND }]}
+    >
       <FlatList
         data={favorites}
         keyExtractor={(listing) => listing.id}
@@ -70,20 +76,28 @@ export default function Saved() {
               <ActivityIndicator color={COLORS.PRIMARY} />
             ) : isError ? (
               <>
-                <Text style={[styles.emptyTitle, { color: colors.TEXT_PRIMARY }]}>
+                <Text
+                  style={[styles.emptyTitle, { color: colors.TEXT_PRIMARY }]}
+                >
                   Could not load wishlist
                 </Text>
-                <Text style={[styles.emptyText, { color: colors.TEXT_SECONDARY }]}>
+                <Text
+                  style={[styles.emptyText, { color: colors.TEXT_SECONDARY }]}
+                >
                   Pull down to try again.
                 </Text>
               </>
             ) : (
               <>
                 <Heart size={28} color={COLORS.PRIMARY} />
-                <Text style={[styles.emptyTitle, { color: colors.TEXT_PRIMARY }]}>
+                <Text
+                  style={[styles.emptyTitle, { color: colors.TEXT_PRIMARY }]}
+                >
                   No saved stays yet
                 </Text>
-                <Text style={[styles.emptyText, { color: colors.TEXT_SECONDARY }]}>
+                <Text
+                  style={[styles.emptyText, { color: colors.TEXT_SECONDARY }]}
+                >
                   Tap the heart on a listing to add it here.
                 </Text>
               </>
@@ -131,7 +145,10 @@ export default function Saved() {
               }}
               disabled={toggleFavorite.isPending}
               hitSlop={8}
-              style={[styles.removeBtn, { backgroundColor: colors.BACKGROUND_LIGHT }]}
+              style={[
+                styles.removeBtn,
+                { backgroundColor: colors.BACKGROUND_LIGHT },
+              ]}
             >
               <Heart size={17} color={COLORS.PRIMARY} fill={COLORS.PRIMARY} />
             </Pressable>

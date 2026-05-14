@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -21,7 +22,7 @@ export default function Trip() {
   const router = useRouter();
   const { colors } = useThemeColors();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const { data, isLoading, isError, refetch } = useBookings();
+  const { data, isLoading, isError, isRefetching, refetch } = useBookings();
 
   const bookings = useMemo(() => data?.data ?? [], [data?.data]);
   const groupedBookings = useMemo(
@@ -35,7 +36,9 @@ export default function Trip() {
 
   if (!isAuthenticated) {
     return (
-      <SafeAreaView style={[styles.screen, { backgroundColor: colors.BACKGROUND }]}>
+      <SafeAreaView
+        style={[styles.screen, { backgroundColor: colors.BACKGROUND }]}
+      >
         <View style={styles.centered}>
           <Heart size={28} color={COLORS.PRIMARY} />
           <Text style={[styles.emptyTitle, { color: colors.TEXT_PRIMARY }]}>
@@ -57,7 +60,9 @@ export default function Trip() {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.centered, { backgroundColor: colors.BACKGROUND }]}>
+      <SafeAreaView
+        style={[styles.centered, { backgroundColor: colors.BACKGROUND }]}
+      >
         <ActivityIndicator color={COLORS.PRIMARY} />
       </SafeAreaView>
     );
@@ -65,7 +70,9 @@ export default function Trip() {
 
   if (isError) {
     return (
-      <SafeAreaView style={[styles.centered, { backgroundColor: colors.BACKGROUND }]}>
+      <SafeAreaView
+        style={[styles.centered, { backgroundColor: colors.BACKGROUND }]}
+      >
         <Text style={[styles.emptyTitle, { color: colors.TEXT_PRIMARY }]}>
           Could not load trips
         </Text>
@@ -77,12 +84,24 @@ export default function Trip() {
   }
 
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: colors.BACKGROUND }]}>
+    <SafeAreaView
+      style={[styles.screen, { backgroundColor: colors.BACKGROUND }]}
+    >
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={refetch}
+            tintColor={COLORS.PRIMARY}
+            colors={[COLORS.PRIMARY]}
+          />
+        }
       >
-        <Text style={[styles.pageTitle, { color: colors.TEXT_PRIMARY }]}>Trips</Text>
+        <Text style={[styles.pageTitle, { color: colors.TEXT_PRIMARY }]}>
+          Trips
+        </Text>
 
         {bookings.length === 0 ? (
           <View style={styles.centeredBlock}>
@@ -178,10 +197,18 @@ function BookingSection({
             </View>
 
             <View style={styles.cardBody}>
-              <Text style={[styles.bookingTitle, { color: colors.TEXT_PRIMARY }]}>
-                {booking.listing.location.split(",")[0]?.trim() || booking.listing.title}
+              <Text
+                style={[styles.bookingTitle, { color: colors.TEXT_PRIMARY }]}
+              >
+                {booking.listing.location.split(",")[0]?.trim() ||
+                  booking.listing.title}
               </Text>
-              <Text style={[styles.bookingSubtitle, { color: colors.TEXT_SECONDARY }]}>
+              <Text
+                style={[
+                  styles.bookingSubtitle,
+                  { color: colors.TEXT_SECONDARY },
+                ]}
+              >
                 {booking.listing.title}
               </Text>
 
@@ -192,13 +219,19 @@ function BookingSection({
                 ]}
               >
                 <View style={styles.dateColumn}>
-                  <Text style={[styles.dateMonth, { color: colors.TEXT_PRIMARY }]}>
+                  <Text
+                    style={[styles.dateMonth, { color: colors.TEXT_PRIMARY }]}
+                  >
                     {formatMonth(booking.checkIn)}
                   </Text>
-                  <Text style={[styles.dateRange, { color: colors.TEXT_PRIMARY }]}>
+                  <Text
+                    style={[styles.dateRange, { color: colors.TEXT_PRIMARY }]}
+                  >
                     {formatDayRange(booking.checkIn, booking.checkOut)}
                   </Text>
-                  <Text style={[styles.dateYear, { color: colors.TEXT_SECONDARY }]}>
+                  <Text
+                    style={[styles.dateYear, { color: colors.TEXT_SECONDARY }]}
+                  >
                     {new Date(booking.checkIn).getFullYear()}
                   </Text>
                 </View>
@@ -209,10 +242,20 @@ function BookingSection({
                   ]}
                 />
                 <View style={styles.locationColumn}>
-                  <Text style={[styles.locationPrimary, { color: colors.TEXT_PRIMARY }]}>
+                  <Text
+                    style={[
+                      styles.locationPrimary,
+                      { color: colors.TEXT_PRIMARY },
+                    ]}
+                  >
                     {booking.listing.location}
                   </Text>
-                  <Text style={[styles.locationSecondary, { color: colors.TEXT_SECONDARY }]}>
+                  <Text
+                    style={[
+                      styles.locationSecondary,
+                      { color: colors.TEXT_SECONDARY },
+                    ]}
+                  >
                     ${booking.totalPrice.toFixed(0)} total
                   </Text>
                 </View>

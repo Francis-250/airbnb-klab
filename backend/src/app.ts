@@ -17,6 +17,7 @@ import { generalLimiter } from "./middleware/ratelimiter";
 
 const app = express();
 const PORT = Number(process.env.PORT) || 4000;
+const isProduction = process.env.NODE_ENV === "production";
 
 const allowedOrigins = [
   "http://localhost:4000",
@@ -24,14 +25,26 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:8081",
   "http://192.168.1.171:8081",
-];
+  process.env.FRONTEND_URL,
+  process.env.MOBILE_URL,
+].filter(Boolean) as string[];
+
+const devOriginPattern =
+  /^https?:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+|192\.168\.\d+\.\d+)(:\d+)?$/;
+
+function isAllowedOrigin(origin: string) {
+  return (
+    allowedOrigins.includes(origin) ||
+    (!isProduction && devOriginPattern.test(origin))
+  );
+}
 
 app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
 
-      if (allowedOrigins.includes(origin)) {
+      if (isAllowedOrigin(origin)) {
         callback(null, true);
       } else {
         console.log(`Blocked origin: ${origin}`);

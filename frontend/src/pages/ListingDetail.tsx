@@ -47,6 +47,7 @@ export default function ListingDetail() {
   const [isSaved, setIsSaved] = useState(false);
   const [sliderIndex, setSliderIndex] = useState(0);
   const [commentBody, setCommentBody] = useState("");
+  const [mapMode, setMapMode] = useState<"2d" | "3d">("2d");
 
   const {
     data: listing,
@@ -139,7 +140,7 @@ export default function ListingDetail() {
     .map((photo, index) => ({ photo, index }))
     .filter((item) => item.index !== sliderIndex)
     .slice(0, 3);
-  const mapUrl = getMapUrl(listing.location);
+  const mapUrl = getMapUrl(listing.location, mapMode);
 
   const prevSlide = () =>
     setSliderIndex((index) => (index === 0 ? images.length - 1 : index - 1));
@@ -350,13 +351,33 @@ export default function ListingDetail() {
             </section>
 
             <section className="border-b border-gray-200 py-7 dark:border-white/[0.08]">
-              <h2 className="text-xl font-semibold text-gray-950 dark:text-white">
-                Location
-              </h2>
-              <p className="mt-2 flex items-center gap-1.5 text-[14px] text-gray-500 dark:text-gray-400">
-                <MapPin className="h-4 w-4" />
-                {listing.location}
-              </p>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-950 dark:text-white">
+                    Location
+                  </h2>
+                  <p className="mt-2 flex items-center gap-1.5 text-[14px] text-gray-500 dark:text-gray-400">
+                    <MapPin className="h-4 w-4" />
+                    {listing.location}
+                  </p>
+                </div>
+                <div className="inline-flex rounded-lg border border-gray-200 bg-white p-1 dark:border-white/[0.08] dark:bg-[#111827]">
+                  {(["2d", "3d"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setMapMode(mode)}
+                      className={`h-8 rounded-md px-3 text-[12px] font-semibold transition-colors ${
+                        mapMode === mode
+                          ? "bg-gray-950 text-white dark:bg-white dark:text-gray-950"
+                          : "text-gray-500 hover:text-gray-950 dark:text-gray-400 dark:hover:text-white"
+                      }`}
+                    >
+                      {mode.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="mt-5 overflow-hidden rounded-xl border border-gray-200 bg-gray-100 dark:border-white/[0.08] dark:bg-white/[0.05]">
                 <iframe
                   title="Property location"
@@ -585,7 +606,14 @@ function formatRating(rating: number) {
   return rating.toFixed(2).replace(/0$/, "");
 }
 
-function getMapUrl(location: string) {
+function getMapUrl(location: string, mode: "2d" | "3d") {
   const encodedLocation = encodeURIComponent(location);
-  return `https://www.google.com/maps?q=${encodedLocation}&output=embed`;
+  const apiKey = import.meta.env.VITE_GOOGLE_MAP_API_KEY as string | undefined;
+  const mapType = mode === "3d" ? "satellite" : "roadmap";
+
+  if (!apiKey) {
+    return `https://www.google.com/maps?q=${encodedLocation}&output=embed`;
+  }
+
+  return `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodedLocation}&maptype=${mapType}&zoom=16`;
 }

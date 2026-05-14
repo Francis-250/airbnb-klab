@@ -14,6 +14,7 @@ import {
   StatusBar,
   Modal,
   TextInput,
+  Linking,
 } from "react-native";
 import { useListingById } from "@/hooks/useListing";
 import { useListingReviews } from "@/hooks/useReviews";
@@ -51,6 +52,7 @@ export default function ListingDetailScreen() {
   const [checkIn, setCheckIn] = useState(defaultDateOffset(1));
   const [checkOut, setCheckOut] = useState(defaultDateOffset(2));
   const [bookingMessage, setBookingMessage] = useState("");
+  const [mapMode, setMapMode] = useState<"2d" | "3d">("2d");
   const { data: listing, isLoading, isError } = useListingById(id as string);
   const { data: reviewsData, isLoading: reviewsLoading } = useListingReviews(
     id as string,
@@ -92,6 +94,7 @@ export default function ListingDetailScreen() {
   const totalReviews = reviewsData?.pagination.total ?? reviews.length;
   const comments = commentsData?.comments ?? [];
   const totalComments = commentsData?.pagination.total ?? comments.length;
+  const mapImageUrl = getStaticMapUrl(listing.location, mapMode);
 
   const handleSubmitComment = () => {
     const body = commentBody.trim();
@@ -319,21 +322,56 @@ export default function ListingDetailScreen() {
             ))}
           </View>
           <View style={styles.divider} />
-          <Text style={styles.sectionTitle}>Where you&apos;ll be</Text>
-          <View style={styles.mapCard}>
-            <View style={styles.mapGrid}>
-              <View style={[styles.mapRoad, styles.mapRoadHorizontal]} />
-              <View style={[styles.mapRoad, styles.mapRoadVertical]} />
-              <View style={[styles.mapRoad, styles.mapRoadDiagonal]} />
-              <View style={styles.mapPin}>
-                <Ionicons name="location-sharp" size={24} color="#fff" />
-              </View>
+          <View style={styles.mapHeader}>
+            <Text style={styles.sectionTitle}>Where you&apos;ll be</Text>
+            <View style={styles.mapModeSwitch}>
+              {(["2d", "3d"] as const).map((mode) => (
+                <TouchableOpacity
+                  key={mode}
+                  onPress={() => setMapMode(mode)}
+                  style={[
+                    styles.mapModeButton,
+                    mapMode === mode && styles.mapModeButtonActive,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.mapModeText,
+                      mapMode === mode && styles.mapModeTextActive,
+                    ]}
+                  >
+                    {mode.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </View>
+          </View>
+          <View style={styles.mapCard}>
+            {mapImageUrl ? (
+              <Image
+                source={{ uri: mapImageUrl }}
+                style={styles.mapImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <View style={styles.mapFallback}>
+                <Ionicons name="map-outline" size={30} color="#C9A96E" />
+                <Text style={styles.mapFallbackText}>
+                  Add EXPO_PUBLIC_GOOGLE_MAP_API_KEY to show the map.
+                </Text>
+              </View>
+            )}
             <View style={styles.mapFooter}>
               <Ionicons name="navigate-outline" size={16} color="#1A1A1A" />
               <Text style={styles.mapLocation} numberOfLines={1}>
                 {listing.location}
               </Text>
+              <TouchableOpacity
+                onPress={() => openGoogleMaps(listing.location, mapMode)}
+                style={styles.openMapButton}
+              >
+                <Text style={styles.openMapText}>Open</Text>
+              </TouchableOpacity>
             </View>
           </View>
           <View style={styles.divider} />
@@ -567,6 +605,35 @@ function formatTotalPrice(pricePerNight: number, checkIn: string, checkOut: stri
   return `$${(nights * pricePerNight).toFixed(0)} for ${nights} ${
     nights === 1 ? "night" : "nights"
   }`;
+}
+
+function getGoogleMapApiKey() {
+  return (
+    process.env.EXPO_PUBLIC_GOOGLE_MAP_API_KEY ||
+    process.env.EXPO_GOOGLE_MAP_API_KEY
+  );
+}
+
+function getStaticMapUrl(location: string, mode: "2d" | "3d") {
+  const apiKey = getGoogleMapApiKey();
+
+  if (!apiKey) {
+    return "";
+  }
+
+  const encodedLocation = encodeURIComponent(location);
+  const mapType = mode === "3d" ? "satellite" : "roadmap";
+
+  return `https://maps.googleapis.com/maps/api/staticmap?center=${encodedLocation}&zoom=16&size=640x360&scale=2&maptype=${mapType}&markers=color:red%7C${encodedLocation}&key=${apiKey}`;
+}
+
+function openGoogleMaps(location: string, mode: "2d" | "3d") {
+  const encodedLocation = encodeURIComponent(location);
+  const layer = mode === "3d" ? "&basemap=satellite" : "";
+
+  Linking.openURL(
+    `https://www.google.com/maps/search/?api=1&query=${encodedLocation}${layer}`,
+  );
 }
 
 const styles = StyleSheet.create({
@@ -828,6 +895,38 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     flex: 1,
   },
+  mapHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 12,
+  },
+  mapModeSwitch: {
+    flexDirection: "row",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#EBEBEB",
+    padding: 3,
+  },
+  mapModeButton: {
+    borderRadius: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  mapModeButtonActive: {
+    backgroundColor: "#1A1A1A",
+  },
+  mapModeText: {
+    color: "#777",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.8,
+  },
+  mapModeTextActive: {
+    color: "#fff",
+  },
   mapCard: {
     borderRadius: 16,
     overflow: "hidden",
@@ -835,51 +934,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#EBEBEB",
   },
-  mapGrid: {
+  mapImage: {
+    width: "100%",
     height: 170,
-    backgroundColor: "#E9EFE9",
-    position: "relative",
-    overflow: "hidden",
   },
-  mapRoad: {
-    position: "absolute",
-    backgroundColor: "#FFFFFF",
-    opacity: 0.92,
-  },
-  mapRoadHorizontal: {
-    left: -20,
-    right: -20,
-    top: 76,
-    height: 18,
-    transform: [{ rotate: "-8deg" }],
-  },
-  mapRoadVertical: {
-    top: -20,
-    bottom: -20,
-    left: 112,
-    width: 18,
-    transform: [{ rotate: "12deg" }],
-  },
-  mapRoadDiagonal: {
-    left: 165,
-    top: -50,
-    width: 16,
-    height: 270,
-    transform: [{ rotate: "52deg" }],
-  },
-  mapPin: {
-    position: "absolute",
-    top: 62,
-    left: "50%",
-    width: 44,
-    height: 44,
-    marginLeft: -22,
-    borderRadius: 22,
-    backgroundColor: COLORS.PRIMARY,
+  mapFallback: {
+    height: 170,
+    backgroundColor: "#F3EDE1",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 3,
-    borderColor: "#fff",
+    gap: 8,
+    paddingHorizontal: 24,
+  },
+  mapFallbackText: {
+    color: "#777",
+    fontSize: 13,
+    fontWeight: "600",
+    textAlign: "center",
+    lineHeight: 19,
   },
   mapFooter: {
     flexDirection: "row",
@@ -893,6 +965,17 @@ const styles = StyleSheet.create({
     color: "#1A1A1A",
     fontSize: 14,
     fontWeight: "600",
+  },
+  openMapButton: {
+    borderRadius: 8,
+    backgroundColor: "#1A1A1A",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  openMapText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "700",
   },
   reviewsHeader: {
     flexDirection: "row",

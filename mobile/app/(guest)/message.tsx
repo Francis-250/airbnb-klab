@@ -4,6 +4,7 @@ import {
   FlatList,
   Image,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   View,
@@ -29,6 +30,7 @@ export default function Message() {
     data: conversations = [],
     isLoading,
     isError,
+    isRefetching,
     refetch,
   } = useConversations(isAuthenticated);
 
@@ -121,8 +123,14 @@ export default function Message() {
         <FlatList
           data={conversations}
           keyExtractor={(item) => item.id}
-          refreshing={isLoading}
-          onRefresh={refetch}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={refetch}
+              tintColor={COLORS.PRIMARY}
+              colors={[COLORS.PRIMARY]}
+            />
+          }
           contentContainerStyle={[
             styles.listContent,
             conversations.length === 0 && styles.emptyList,
