@@ -35,3 +35,26 @@ export const useCreateBooking = () => {
     },
   });
 };
+
+export const useCancelBooking = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      bookingId,
+      cancellationReason,
+    }: {
+      bookingId: string;
+      cancellationReason: string;
+    }) => {
+      const response = await api.delete(
+        ENDPOINTS.BOOKINGS.BY_ID.replace(":id", bookingId),
+        { data: { cancellationReason } },
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+    },
+  });
+};

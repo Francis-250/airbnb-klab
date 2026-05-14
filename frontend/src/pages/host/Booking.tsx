@@ -44,6 +44,8 @@ interface Booking {
   checkIn: string;
   checkOut: string;
   status: string;
+  cancellationReason?: string | null;
+  cancelledAt?: string | null;
   totalPrice: number;
 }
 
@@ -67,12 +69,15 @@ export default function DashboardBooking() {
     mutationFn: async ({
       bookingId,
       status,
+      cancellationReason,
     }: {
       bookingId: string;
       status: string;
+      cancellationReason?: string;
     }) => {
       const response = await api.patch(`/bookings/${bookingId}/status`, {
         status,
+        cancellationReason,
       });
       return response.data;
     },
@@ -86,6 +91,20 @@ export default function DashboardBooking() {
   });
 
   const handleUpdateStatus = (bookingId: string, status: string) => {
+    if (status === "cancelled") {
+      const cancellationReason = window
+        .prompt("Reason for cancelling this booking?")
+        ?.trim();
+
+      if (!cancellationReason) {
+        toast.error("Cancellation reason is required");
+        return;
+      }
+
+      updateBookingMutation.mutate({ bookingId, status, cancellationReason });
+      return;
+    }
+
     updateBookingMutation.mutate({ bookingId, status });
   };
 
@@ -256,6 +275,12 @@ export default function DashboardBooking() {
                       <p className="text-xs text-[#AAAAAA]">
                         {booking.listing?.location}
                       </p>
+                      {booking.status === "cancelled" &&
+                        booking.cancellationReason && (
+                          <p className="mt-1 max-w-56 text-xs text-red-600">
+                            Reason: {booking.cancellationReason}
+                          </p>
+                        )}
                     </div>
                   </td>
                   <td className="py-3 px-4">
@@ -397,6 +422,12 @@ export default function DashboardBooking() {
                     <p className="text-xs text-[#AAAAAA]">
                       {booking.listing?.location}
                     </p>
+                    {booking.status === "cancelled" &&
+                      booking.cancellationReason && (
+                        <p className="mt-1 text-xs text-red-600">
+                          Reason: {booking.cancellationReason}
+                        </p>
+                      )}
                   </div>
                   <div className="flex justify-between items-center">
                     <div>

@@ -159,6 +159,9 @@ const updateBooking = async (req, res) => {
     const user = req.user;
     const role = req.role;
     const { status } = req.body;
+    const cancellationReason = typeof req.body.cancellationReason === "string"
+        ? req.body.cancellationReason.trim()
+        : "";
     try {
         const booking = await prisma_1.default.booking.findUnique({
             where: { id: id },
@@ -187,9 +190,18 @@ const updateBooking = async (req, res) => {
                 .status(403)
                 .json({ message: "Only hosts can update booking status" });
         }
+        if (status === client_1.BookingStatus.cancelled && !cancellationReason) {
+            return res
+                .status(400)
+                .json({ message: "Cancellation reason is required" });
+        }
         const updated = await prisma_1.default.booking.update({
             where: { id: id },
-            data: { status },
+            data: {
+                status,
+                cancellationReason: status === client_1.BookingStatus.cancelled ? cancellationReason : null,
+                cancelledAt: status === client_1.BookingStatus.cancelled ? new Date() : null,
+            },
         });
         await (0, resend_1.sendEmail)({
             to: booking.guest?.email,
@@ -206,6 +218,14 @@ exports.updateBooking = updateBooking;
 const deleteBooking = async (req, res) => {
     const { id } = req.params;
     const user = req.user;
+    const cancellationReason = typeof req.body.cancellationReason === "string"
+        ? req.body.cancellationReason.trim()
+        : "";
+    if (!cancellationReason) {
+        return res
+            .status(400)
+            .json({ message: "Cancellation reason is required" });
+    }
     try {
         const booking = await prisma_1.default.booking.findUnique({
             where: { id: id },
@@ -217,7 +237,17 @@ const deleteBooking = async (req, res) => {
                 .status(403)
                 .json({ message: "You can only cancel your own bookings" });
         }
-        await prisma_1.default.booking.delete({ where: { id: id } });
+        if (booking.status === client_1.BookingStatus.cancelled) {
+            return res.status(400).json({ message: "Booking is already cancelled" });
+        }
+        await prisma_1.default.booking.update({
+            where: { id: id },
+            data: {
+                status: client_1.BookingStatus.cancelled,
+                cancellationReason,
+                cancelledAt: new Date(),
+            },
+        });
         res.status(200).json({ message: "Booking cancelled successfully" });
     }
     catch (error) {

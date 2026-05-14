@@ -65,9 +65,13 @@ export default function Login() {
       }
       await signup(trimmedName, trimmedEmail, password);
     } catch (error) {
-      const axiosError = error as AxiosError<{ message?: string }>;
+      const axiosError = error as AxiosError<{
+        message?: string;
+        error?: string;
+      }>;
       setErrorMessage(
         axiosError.response?.data?.message ||
+          axiosError.response?.data?.error ||
           (type === "login"
             ? "Could not sign you in. Please try again."
             : "Could not create your account. Please try again."),

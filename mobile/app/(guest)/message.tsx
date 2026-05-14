@@ -32,7 +32,7 @@ export default function Message() {
     isError,
     isRefetching,
     refetch,
-  } = useConversations(isAuthenticated);
+  } = useConversations(isAuthenticated, activeTab === "messages");
 
   const unreadCount = useMemo(() => {
     return conversations.filter((conversation) => {

@@ -114,6 +114,8 @@ export interface Booking {
   checkOut: string;
   totalPrice: number;
   status: "pending" | "confirmed" | "cancelled";
+  cancellationReason?: string | null;
+  cancelledAt?: string | null;
   createdAt: string;
   guest: {
     name: string;

@@ -11,6 +11,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { isAxiosError } from "axios";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, Send } from "lucide-react-native";
@@ -30,8 +31,9 @@ export default function ConversationScreen() {
   const user = useAuthStore((state) => state.user);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const [draft, setDraft] = useState("");
+  const [sendError, setSendError] = useState("");
 
-  const { data: conversations = [] } = useConversations(isAuthenticated);
+  const { data: conversations = [] } = useConversations(isAuthenticated, true);
   const conversation = useMemo(
     () => conversations.find((item) => item.id === id),
     [conversations, id],
@@ -48,15 +50,25 @@ export default function ConversationScreen() {
     isLoading,
     isError,
     refetch,
-  } = useConversationMessages(id, isAuthenticated);
+  } = useConversationMessages(id, isAuthenticated, true);
   const sendMessage = useSendConversationMessage(id);
 
   const handleSend = async () => {
     const trimmed = draft.trim();
     if (!trimmed || sendMessage.isPending) return;
 
-    await sendMessage.mutateAsync(trimmed);
     setDraft("");
+    setSendError("");
+
+    try {
+      await sendMessage.mutateAsync(trimmed);
+    } catch (error) {
+      setDraft(trimmed);
+      const message = isAxiosError<{ message?: string; error?: string }>(error)
+        ? error.response?.data?.message || error.response?.data?.error
+        : undefined;
+      setSendError(message || "Could not send message. Please try again.");
+    }
   };
 
   return (
@@ -107,12 +119,17 @@ export default function ConversationScreen() {
               </View>
             )}
             <View style={styles.headerTextWrap}>
-              <Text style={[styles.headerTitle, { color: colors.TEXT_PRIMARY }]}>
+              <Text
+                style={[styles.headerTitle, { color: colors.TEXT_PRIMARY }]}
+              >
                 {otherUser?.name || "Conversation"}
               </Text>
               <Text
                 numberOfLines={1}
-                style={[styles.headerSubtitle, { color: colors.TEXT_SECONDARY }]}
+                style={[
+                  styles.headerSubtitle,
+                  { color: colors.TEXT_SECONDARY },
+                ]}
               >
                 {conversation?.listing.title || "Messages"}
               </Text>
@@ -131,10 +148,7 @@ export default function ConversationScreen() {
             </Text>
             <Pressable
               onPress={() => refetch()}
-              style={[
-                styles.retryButton,
-                { backgroundColor: colors.PRIMARY },
-              ]}
+              style={[styles.retryButton, { backgroundColor: colors.PRIMARY }]}
             >
               <Text style={styles.retryText}>Try again</Text>
             </Pressable>
@@ -183,18 +197,29 @@ export default function ConversationScreen() {
             <Pressable
               onPress={handleSend}
               disabled={!draft.trim() || sendMessage.isPending}
-              style={[
+              style={({ pressed }) => [
                 styles.sendButton,
                 {
-                  backgroundColor: draft.trim()
-                    ? colors.PRIMARY
-                    : colors.BORDER,
+                  backgroundColor:
+                    draft.trim() && !sendMessage.isPending
+                      ? colors.PRIMARY
+                      : colors.BORDER,
                 },
+                pressed && styles.sendButtonPressed,
               ]}
             >
-              <Send size={16} color={colors.TEXT_WHITE} />
+              {sendMessage.isPending ? (
+                <ActivityIndicator size="small" color={colors.TEXT_WHITE} />
+              ) : (
+                <Send size={16} color={colors.TEXT_WHITE} />
+              )}
             </Pressable>
           </View>
+          {!!sendError && (
+            <Text style={[styles.sendError, { color: colors.ERROR }]}>
+              {sendError}
+            </Text>
+          )}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -403,5 +428,14 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",
+  },
+  sendButtonPressed: {
+    opacity: 0.75,
+    transform: [{ scale: 0.96 }],
+  },
+  sendError: {
+    marginTop: 6,
+    fontSize: 12,
+    fontWeight: "600",
   },
 });

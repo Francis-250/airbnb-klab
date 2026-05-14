@@ -139,7 +139,8 @@ export const createBooking = async (req: Request, res: Response) => {
 
     if (overlappingBooking) {
       return res.status(409).json({
-        message: "These dates are unavailable because the listing is already booked",
+        message:
+          "These dates are unavailable because the listing is already booked",
       });
     }
 
@@ -174,6 +175,10 @@ export const updateBooking = async (req: Request, res: Response) => {
   const user = req.user;
   const role = req.role;
   const { status } = req.body;
+  const cancellationReason =
+    typeof req.body.cancellationReason === "string"
+      ? req.body.cancellationReason.trim()
+      : "";
 
   try {
     const booking = await prisma.booking.findUnique({
@@ -209,9 +214,20 @@ export const updateBooking = async (req: Request, res: Response) => {
         .json({ message: "Only hosts can update booking status" });
     }
 
+    if (status === BookingStatus.cancelled && !cancellationReason) {
+      return res
+        .status(400)
+        .json({ message: "Cancellation reason is required" });
+    }
+
     const updated = await prisma.booking.update({
       where: { id: id as string },
-      data: { status },
+      data: {
+        status,
+        cancellationReason:
+          status === BookingStatus.cancelled ? cancellationReason : null,
+        cancelledAt: status === BookingStatus.cancelled ? new Date() : null,
+      },
     });
 
     await sendEmail({
@@ -229,6 +245,14 @@ export const updateBooking = async (req: Request, res: Response) => {
 export const deleteBooking = async (req: Request, res: Response) => {
   const { id } = req.params;
   const user = req.user;
+  const cancellationReason =
+    typeof req.body.cancellationReason === "string"
+      ? req.body.cancellationReason.trim()
+      : "";
+
+  if (!cancellationReason) {
+    return res.status(400).json({ message: "Cancellation reason is required" });
+  }
 
   try {
     const booking = await prisma.booking.findUnique({
@@ -242,7 +266,18 @@ export const deleteBooking = async (req: Request, res: Response) => {
         .json({ message: "You can only cancel your own bookings" });
     }
 
-    await prisma.booking.delete({ where: { id: id as string } });
+    if (booking.status === BookingStatus.cancelled) {
+      return res.status(400).json({ message: "Booking is already cancelled" });
+    }
+
+    await prisma.booking.update({
+      where: { id: id as string },
+      data: {
+        status: BookingStatus.cancelled,
+        cancellationReason,
+        cancelledAt: new Date(),
+      },
+    });
     res.status(200).json({ message: "Booking cancelled successfully" });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });

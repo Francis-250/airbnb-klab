@@ -22,6 +22,8 @@ interface Booking {
   checkOut: string;
   totalPrice: number;
   status: "pending" | "confirmed" | "cancelled";
+  cancellationReason?: string | null;
+  cancelledAt?: string | null;
   createdAt: string;
   listing: {
     id: string;
@@ -76,6 +78,9 @@ export default function Bookings() {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<Tab>("upcoming");
+  const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
+  const [cancellationReason, setCancellationReason] = useState("");
+  const [cancelError, setCancelError] = useState("");
 
   const { data: bookings, isLoading } = useQuery({
     queryKey: ["guest-bookings", activeTab],
@@ -87,15 +92,38 @@ export default function Bookings() {
   });
 
   const cancelMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await api.delete(`/bookings/${id}`);
+    mutationFn: async ({
+      id,
+      cancellationReason,
+    }: {
+      id: string;
+      cancellationReason: string;
+    }) => {
+      const res = await api.delete(`/bookings/${id}`, {
+        data: { cancellationReason },
+      });
       return res.data;
     },
     onSuccess: () => {
       toast.success("Booking cancelled");
+      setBookingToCancel(null);
+      setCancellationReason("");
+      setCancelError("");
       queryClient.invalidateQueries({ queryKey: ["guest-bookings"] });
     },
-    onError: () => toast.error("Failed to cancel booking"),
+    onError: (error: unknown) => {
+      const message =
+        typeof error === "object" &&
+        error !== null &&
+        "response" in error &&
+        typeof (error as { response?: { data?: { message?: string } } })
+          .response?.data?.message === "string"
+          ? (error as { response: { data: { message: string } } }).response
+              .data.message
+          : "Failed to cancel booking";
+      setCancelError(message);
+      toast.error(message);
+    },
   });
 
   const bookingList = useMemo(() => bookings?.data ?? [], [bookings?.data]);
@@ -104,10 +132,25 @@ export default function Bookings() {
     0,
   );
 
-  const handleCancel = (id: string) => {
-    if (window.confirm("Cancel this reservation?")) {
-      cancelMutation.mutate(id);
+  const handleCancel = (booking: Booking) => {
+    setBookingToCancel(booking);
+    setCancellationReason("");
+    setCancelError("");
+  };
+
+  const submitCancellation = () => {
+    const reason = cancellationReason.trim();
+
+    if (!bookingToCancel) return;
+    if (!reason) {
+      setCancelError("Cancellation reason is required.");
+      return;
     }
+
+    cancelMutation.mutate({
+      id: bookingToCancel.id,
+      cancellationReason: reason,
+    });
   };
 
   if (!user) {
@@ -172,6 +215,49 @@ export default function Bookings() {
           </div>
         )}
       </div>
+      {bookingToCancel && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/35 px-4 py-6 sm:items-center">
+          <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-5 shadow-2xl dark:border-white/[0.08] dark:bg-[#111827]">
+            <h2 className="text-lg font-semibold text-gray-950 dark:text-white">
+              Cancel booking
+            </h2>
+            <p className="mt-2 text-[14px] leading-6 text-gray-500 dark:text-gray-400">
+              Tell the host why you are cancelling this reservation for{" "}
+              {bookingToCancel.listing.title}.
+            </p>
+            <textarea
+              value={cancellationReason}
+              onChange={(event) => setCancellationReason(event.target.value)}
+              rows={4}
+              placeholder="Reason for cancellation"
+              className="mt-4 w-full resize-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-3 text-[14px] leading-6 text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-(--color-primary) dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
+            />
+            {cancelError && (
+              <p className="mt-2 text-[12px] font-semibold text-red-500">
+                {cancelError}
+              </p>
+            )}
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setBookingToCancel(null)}
+                disabled={cancelMutation.isPending}
+                className="h-10 rounded-lg border border-gray-200 px-4 text-[13px] font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50 dark:border-white/[0.08] dark:text-gray-300 dark:hover:bg-white/[0.04]"
+              >
+                Keep booking
+              </button>
+              <button
+                type="button"
+                onClick={submitCancellation}
+                disabled={cancelMutation.isPending}
+                className="h-10 rounded-lg bg-red-600 px-4 text-[13px] font-semibold text-white transition-colors hover:bg-red-700 disabled:opacity-50"
+              >
+                {cancelMutation.isPending ? "Cancelling..." : "Cancel booking"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -206,7 +292,7 @@ function BookingRow({
   isCancelling,
 }: {
   booking: Booking;
-  onCancel: (id: string) => void;
+  onCancel: (booking: Booking) => void;
   isCancelling: boolean;
 }) {
   const status = statusStyle[booking.status];
@@ -264,6 +350,12 @@ function BookingRow({
             </p>
           </div>
         </div>
+        {booking.status === "cancelled" && booking.cancellationReason && (
+          <div className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-[13px] leading-5 text-red-700 dark:bg-red-500/10 dark:text-red-300">
+            <span className="font-semibold">Cancellation reason:</span>{" "}
+            {booking.cancellationReason}
+          </div>
+        )}
 
         <div className="mt-4 flex flex-col gap-3 border-t border-gray-100 pt-4 dark:border-white/[0.06] md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-gray-600 dark:text-gray-300">
@@ -278,9 +370,9 @@ function BookingRow({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {booking.status === "pending" && (
+            {booking.status !== "cancelled" && (
               <button
-                onClick={() => onCancel(booking.id)}
+                onClick={() => onCancel(booking)}
                 disabled={isCancelling}
                 className="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-red-200 px-3 text-[12px] font-semibold text-red-500 transition-colors hover:bg-red-50 disabled:opacity-50 dark:border-red-500/30 dark:hover:bg-red-500/10"
               >

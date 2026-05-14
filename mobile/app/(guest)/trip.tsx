@@ -1,12 +1,14 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
+  Modal,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -14,15 +16,20 @@ import { useRouter } from "expo-router";
 import { Heart } from "lucide-react-native";
 import { COLORS } from "@/constants/colors";
 import { useAuthStore } from "@/store/auth.store";
-import { useBookings } from "@/hooks/useBookings";
+import { useBookings, useCancelBooking } from "@/hooks/useBookings";
 import { Booking } from "@/types";
 import { useThemeColors } from "@/hooks/useThemeColors";
+import { isAxiosError } from "axios";
 
 export default function Trip() {
   const router = useRouter();
   const { colors } = useThemeColors();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const { data, isLoading, isError, isRefetching, refetch } = useBookings();
+  const cancelBooking = useCancelBooking();
+  const [bookingToCancel, setBookingToCancel] = useState<Booking | null>(null);
+  const [cancellationReason, setCancellationReason] = useState("");
+  const [cancelError, setCancelError] = useState("");
 
   const bookings = useMemo(() => data?.data ?? [], [data?.data]);
   const groupedBookings = useMemo(
@@ -33,6 +40,40 @@ export default function Trip() {
     }),
     [bookings],
   );
+
+  const closeCancelModal = () => {
+    if (cancelBooking.isPending) return;
+    setBookingToCancel(null);
+    setCancellationReason("");
+    setCancelError("");
+  };
+
+  const submitCancellation = async () => {
+    const reason = cancellationReason.trim();
+
+    if (!bookingToCancel) return;
+    if (!reason) {
+      setCancelError("Cancellation reason is required.");
+      return;
+    }
+
+    setCancelError("");
+
+    try {
+      await cancelBooking.mutateAsync({
+        bookingId: bookingToCancel.id,
+        cancellationReason: reason,
+      });
+      setBookingToCancel(null);
+      setCancellationReason("");
+      setCancelError("");
+    } catch (error) {
+      const message = isAxiosError<{ message?: string; error?: string }>(error)
+        ? error.response?.data?.message || error.response?.data?.error
+        : undefined;
+      setCancelError(message || "Could not cancel this booking.");
+    }
+  };
 
   if (!isAuthenticated) {
     return (
@@ -118,20 +159,74 @@ export default function Trip() {
               title="Pending"
               bookings={groupedBookings.pending}
               colors={colors}
+              onCancel={setBookingToCancel}
+              isCancelling={cancelBooking.isPending}
             />
             <BookingSection
               title="Confirmed"
               bookings={groupedBookings.confirmed}
               colors={colors}
+              onCancel={setBookingToCancel}
+              isCancelling={cancelBooking.isPending}
             />
             <BookingSection
               title="Cancelled"
               bookings={groupedBookings.cancelled}
               colors={colors}
+              onCancel={setBookingToCancel}
+              isCancelling={cancelBooking.isPending}
             />
           </>
         )}
       </ScrollView>
+      <Modal
+        visible={bookingToCancel != null}
+        transparent
+        animationType="slide"
+        onRequestClose={closeCancelModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.cancelSheet}>
+            <Text style={styles.cancelTitle}>Cancel booking</Text>
+            <Text style={styles.cancelSubtitle}>
+              Tell the host why you are cancelling this reservation.
+            </Text>
+            <TextInput
+              value={cancellationReason}
+              onChangeText={setCancellationReason}
+              placeholder="Reason for cancellation"
+              placeholderTextColor="#999"
+              multiline
+              textAlignVertical="top"
+              style={styles.reasonInput}
+            />
+            {!!cancelError && (
+              <Text style={styles.cancelError}>{cancelError}</Text>
+            )}
+            <View style={styles.cancelActions}>
+              <Pressable
+                onPress={closeCancelModal}
+                disabled={cancelBooking.isPending}
+                style={styles.secondaryBtn}
+              >
+                <Text style={styles.secondaryBtnText}>Keep booking</Text>
+              </Pressable>
+              <Pressable
+                onPress={submitCancellation}
+                disabled={cancelBooking.isPending}
+                style={[
+                  styles.dangerBtn,
+                  cancelBooking.isPending && styles.disabledBtn,
+                ]}
+              >
+                <Text style={styles.dangerBtnText}>
+                  {cancelBooking.isPending ? "Cancelling..." : "Cancel"}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -140,10 +235,14 @@ function BookingSection({
   title,
   bookings,
   colors,
+  onCancel,
+  isCancelling,
 }: {
   title: string;
   bookings: Booking[];
   colors: ReturnType<typeof useThemeColors>["colors"];
+  onCancel: (booking: Booking) => void;
+  isCancelling: boolean;
 }) {
   if (bookings.length === 0) {
     return null;
@@ -260,6 +359,26 @@ function BookingSection({
                   </Text>
                 </View>
               </View>
+              {booking.status === "cancelled" && booking.cancellationReason ? (
+                <View style={styles.reasonBox}>
+                  <Text style={styles.reasonLabel}>Reason</Text>
+                  <Text style={styles.reasonText}>
+                    {booking.cancellationReason}
+                  </Text>
+                </View>
+              ) : null}
+              {booking.status !== "cancelled" && (
+                <Pressable
+                  onPress={() => onCancel(booking)}
+                  disabled={isCancelling}
+                  style={[
+                    styles.cancelBookingBtn,
+                    isCancelling && styles.disabledBtn,
+                  ]}
+                >
+                  <Text style={styles.cancelBookingText}>Cancel booking</Text>
+                </Pressable>
+              )}
             </View>
           </View>
         ))}
@@ -438,5 +557,110 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontWeight: "700",
     fontSize: 14,
+  },
+  reasonBox: {
+    marginTop: 12,
+    borderRadius: 12,
+    backgroundColor: "#FDECEC",
+    padding: 10,
+  },
+  reasonLabel: {
+    color: "#B33A3A",
+    fontSize: 11,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
+  reasonText: {
+    color: "#7A2626",
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: "600",
+  },
+  cancelBookingBtn: {
+    marginTop: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#F2B8B5",
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  cancelBookingText: {
+    color: "#B33A3A",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.35)",
+  },
+  cancelSheet: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 22,
+    paddingBottom: 30,
+  },
+  cancelTitle: {
+    color: "#1A1A1A",
+    fontSize: 20,
+    fontWeight: "800",
+  },
+  cancelSubtitle: {
+    color: "#666",
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: 6,
+  },
+  reasonInput: {
+    minHeight: 110,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E4E4E4",
+    color: "#1A1A1A",
+    fontSize: 14,
+    lineHeight: 20,
+    padding: 12,
+    marginTop: 16,
+  },
+  cancelError: {
+    color: "#B33A3A",
+    fontSize: 12,
+    fontWeight: "700",
+    marginTop: 8,
+  },
+  cancelActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 18,
+  },
+  secondaryBtn: {
+    flex: 1,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#E4E4E4",
+    paddingVertical: 13,
+    alignItems: "center",
+  },
+  secondaryBtnText: {
+    color: "#1A1A1A",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  dangerBtn: {
+    flex: 1,
+    borderRadius: 14,
+    backgroundColor: "#B33A3A",
+    paddingVertical: 13,
+    alignItems: "center",
+  },
+  dangerBtnText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  disabledBtn: {
+    opacity: 0.55,
   },
 });
