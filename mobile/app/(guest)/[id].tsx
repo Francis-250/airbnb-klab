@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -23,11 +23,12 @@ import { useCreateBooking } from "@/hooks/useBookings";
 import { SafeAreaView } from "react-native-safe-area-context";
 import BookingDatePicker from "@/components/commonn/bookingDatePicker";
 import { Ionicons } from "@expo/vector-icons";
-import { Heart, Share2 } from "lucide-react-native";
+import { Bot, Heart, Share2 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { COLORS } from "@/constants/colors";
 import { useAuthStore } from "@/store/auth.store";
 import { isAxiosError } from "axios";
+import { useAIChat, useAIReviewSummary } from "@/hooks/useAi";
 
 const { width, height } = Dimensions.get("window");
 
@@ -53,6 +54,10 @@ export default function ListingDetailScreen() {
   const [checkOut, setCheckOut] = useState(defaultDateOffset(2));
   const [bookingMessage, setBookingMessage] = useState("");
   const [mapMode, setMapMode] = useState<"2d" | "3d">("2d");
+  const [aiQuestion, setAiQuestion] = useState("");
+  const [aiReply, setAiReply] = useState("");
+  const [aiError, setAiError] = useState("");
+  const aiSessionId = useMemo(() => `listing-${id}-${Date.now()}`, [id]);
   const { data: listing, isLoading, isError } = useListingById(id as string);
   const { data: reviewsData, isLoading: reviewsLoading } = useListingReviews(
     id as string,
@@ -62,9 +67,18 @@ export default function ListingDetailScreen() {
   );
   const createComment = useCreateComment(id as string);
   const createBooking = useCreateBooking();
+  const aiChat = useAIChat();
+  const { data: reviewSummary, error: reviewSummaryError } =
+    useAIReviewSummary(id as string, true);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
   const router = useRouter();
+
+  useEffect(() => {
+    setAiQuestion("");
+    setAiReply("");
+    setAiError("");
+  }, [id]);
 
   const handleImageScroll = (
     event: NativeSyntheticEvent<NativeScrollEvent>,
@@ -163,6 +177,32 @@ export default function ListingDetailScreen() {
         : undefined;
 
       setBookingMessage(message || "Could not create reservation.");
+    }
+  };
+
+  const askAI = async () => {
+    const message = aiQuestion.trim();
+
+    if (!message) {
+      setAiError("Ask a question first.");
+      return;
+    }
+
+    setAiError("");
+
+    try {
+      const response = await aiChat.mutateAsync({
+        sessionId: aiSessionId,
+        message,
+        listingId: listing.id,
+      });
+      setAiReply(response.response);
+      setAiQuestion("");
+    } catch (error) {
+      const message = isAxiosError<{ message?: string; error?: string }>(error)
+        ? error.response?.data?.message || error.response?.data?.error
+        : undefined;
+      setAiError(message || "AI assistant could not answer right now.");
     }
   };
 
@@ -305,6 +345,37 @@ export default function ListingDetailScreen() {
           <View style={styles.divider} />
           <Text style={styles.sectionTitle}>About this place</Text>
           <Text style={styles.description}>{listing.description}</Text>
+          <View style={styles.aiCard}>
+            <View style={styles.aiHeader}>
+              <View style={styles.aiIcon}>
+                <Bot size={18} color="#C9A96E" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.aiTitle}>Ask AI about this stay</Text>
+                <Text style={styles.aiSubtitle}>
+                  Get quick answers based on the listing details.
+                </Text>
+              </View>
+            </View>
+            <TextInput
+              value={aiQuestion}
+              onChangeText={setAiQuestion}
+              placeholder="Is this good for a family trip?"
+              placeholderTextColor="#AAA"
+              style={styles.aiInput}
+            />
+            {!!aiError && <Text style={styles.aiError}>{aiError}</Text>}
+            {!!aiReply && <Text style={styles.aiReply}>{aiReply}</Text>}
+            <TouchableOpacity
+              onPress={askAI}
+              disabled={aiChat.isPending}
+              style={[styles.aiAskButton, aiChat.isPending && styles.disabledButton]}
+            >
+              <Text style={styles.aiAskText}>
+                {aiChat.isPending ? "Asking..." : "Ask AI"}
+              </Text>
+            </TouchableOpacity>
+          </View>
           <View style={styles.divider} />
           <Text style={styles.sectionTitle}>What&apos;s included</Text>
           <View style={styles.amenitiesGrid}>
@@ -385,6 +456,31 @@ export default function ListingDetailScreen() {
               </Text>
             </View>
           </View>
+          {reviewSummary && (
+            <View style={styles.aiSummaryCard}>
+              <Text style={styles.aiSummaryTitle}>AI review summary</Text>
+              <Text style={styles.aiSummaryText}>{reviewSummary.summary}</Text>
+              <Text style={styles.aiSummaryMeta}>
+                {reviewSummary.averageRating}/5 from{" "}
+                {reviewSummary.totalReviews} reviews
+              </Text>
+              <View style={styles.aiSummaryList}>
+                {reviewSummary.positives.map((positive) => (
+                  <Text key={positive} style={styles.aiPositive}>
+                    + {positive}
+                  </Text>
+                ))}
+                {reviewSummary.negatives.map((negative) => (
+                  <Text key={negative} style={styles.aiNegative}>
+                    - {negative}
+                  </Text>
+                ))}
+              </View>
+            </View>
+          )}
+          {reviewSummaryError && reviews.length >= 3 && (
+            <Text style={styles.aiError}>Could not load AI review summary.</Text>
+          )}
           {reviewsLoading ? (
             <ActivityIndicator color="#C9A96E" style={styles.reviewsLoader} />
           ) : reviews.length === 0 ? (
@@ -858,6 +954,118 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     color: "#555",
     letterSpacing: 0.1,
+  },
+  aiCard: {
+    marginTop: 18,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#EBEBEB",
+    backgroundColor: "#FFFFFF",
+    padding: 14,
+  },
+  aiHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  aiIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: "#FAF5EC",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  aiTitle: {
+    color: "#1A1A1A",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  aiSubtitle: {
+    color: "#777",
+    fontSize: 12,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  aiInput: {
+    marginTop: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#EBEBEB",
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    color: "#1A1A1A",
+    fontSize: 13,
+  },
+  aiAskButton: {
+    marginTop: 10,
+    borderRadius: 12,
+    backgroundColor: "#1A1A1A",
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  aiAskText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  aiReply: {
+    marginTop: 10,
+    color: "#333",
+    fontSize: 13,
+    lineHeight: 20,
+    backgroundColor: "#F7F3EC",
+    borderRadius: 12,
+    padding: 10,
+  },
+  aiError: {
+    marginTop: 8,
+    color: "#B33A3A",
+    fontSize: 12,
+    fontWeight: "700",
+    lineHeight: 18,
+  },
+  aiSummaryCard: {
+    borderRadius: 16,
+    backgroundColor: "#F7F3EC",
+    padding: 14,
+    marginBottom: 14,
+  },
+  aiSummaryTitle: {
+    color: "#1A1A1A",
+    fontSize: 14,
+    fontWeight: "800",
+    marginBottom: 6,
+  },
+  aiSummaryText: {
+    color: "#444",
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  aiSummaryMeta: {
+    color: "#777",
+    fontSize: 12,
+    fontWeight: "700",
+    marginTop: 8,
+  },
+  aiSummaryList: {
+    gap: 5,
+    marginTop: 10,
+  },
+  aiPositive: {
+    color: "#1E7A45",
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: "700",
+  },
+  aiNegative: {
+    color: "#B33A3A",
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: "700",
+  },
+  disabledButton: {
+    opacity: 0.62,
   },
 
   amenitiesGrid: {

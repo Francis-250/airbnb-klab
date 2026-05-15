@@ -21,6 +21,7 @@ import {
   ChevronLeft,
   MapPin,
   Search,
+  Sparkles,
   X,
 } from "lucide-react-native";
 import { api } from "@/api/api";
@@ -28,6 +29,8 @@ import { ENDPOINTS } from "@/api/endpoints";
 import { Listing } from "@/types";
 import { useThemeColors } from "@/hooks/useThemeColors";
 import { categoryData } from "@/constants/data";
+import { useAIRecommendations, useAISearch } from "@/hooks/useAi";
+import { isAxiosError } from "axios";
 
 const featuredDestinations = ["Japan", "Southeast Asia", "Italy", "Kigali"];
 const destinationSuggestions = [
@@ -40,7 +43,7 @@ const destinationSuggestions = [
 const tripDays = Array.from({ length: 31 }, (_, index) => index + 1);
 const tripMonths = ["June", "July", "August", "September"];
 
-type FilterStep = "home" | "destination" | "trip";
+type FilterStep = "home" | "ai" | "destination" | "trip";
 type TripMode = "dates" | "months" | "flexible";
 
 export default function GuestScreen() {
@@ -67,6 +70,11 @@ export default function GuestScreen() {
   >(null);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState("");
+  const [aiFeedback, setAiFeedback] = useState("");
+  const [aiSuggestion, setAiSuggestion] = useState("");
+  const [aiReason, setAiReason] = useState("");
+  const aiSearch = useAISearch();
+  const aiRecommendations = useAIRecommendations();
 
   const baseListings = filteredListings ?? listings;
   const displayListings = useMemo(() => {
@@ -110,6 +118,9 @@ export default function GuestScreen() {
     setFilteredListings(null);
     setSelectedCategory(null);
     setSearchError("");
+    setAiFeedback("");
+    setAiSuggestion("");
+    setAiReason("");
     setFilterStep("home");
   };
 
@@ -121,10 +132,11 @@ export default function GuestScreen() {
       const trimmedQuery = searchQuery.trim();
 
       if (trimmedQuery) {
-        const response = await api.post(`${ENDPOINTS.AI.SEARCH}?limit=30`, {
-          query: trimmedQuery,
-        });
-        setFilteredListings(response.data.data ?? []);
+        const response = await aiSearch.mutateAsync(trimmedQuery);
+        setFilteredListings(response.data ?? []);
+        setAiFeedback(response.feedback ?? "");
+        setAiSuggestion(response.suggestion ?? "");
+        setAiReason("");
       } else {
         const params: Record<string, string | number> = { limit: 30 };
 
@@ -137,15 +149,16 @@ export default function GuestScreen() {
 
         const response = await api.get(ENDPOINTS.LISTING.SEARCH, { params });
         setFilteredListings(response.data.data ?? []);
+        setAiFeedback("");
+        setAiSuggestion("");
+        setAiReason("");
       }
 
       setFilterOpen(false);
       setFilterStep("home");
     } catch (searchError) {
       setSearchError(
-        searchError instanceof Error
-          ? searchError.message
-          : "Could not search listings.",
+        getApiMessage(searchError, "Could not search listings."),
       );
     } finally {
       setIsSearching(false);
@@ -155,6 +168,22 @@ export default function GuestScreen() {
   const handleRefresh = useCallback(() => {
     refetch();
   }, [refetch]);
+
+  const loadAIRecommendations = async () => {
+    setSearchError("");
+
+    try {
+      const response = await aiRecommendations.mutateAsync();
+      setFilteredListings(response.recommendations ?? []);
+      setAiFeedback(response.preferences ?? "");
+      setAiReason(response.reason ?? "");
+      setAiSuggestion("");
+      setFilterOpen(false);
+      setFilterStep("home");
+    } catch (error) {
+      setSearchError(getApiMessage(error, "Could not load AI recommendations."));
+    }
+  };
 
   if (isLoading) {
     return (
@@ -261,7 +290,7 @@ export default function GuestScreen() {
             >
               <Pressable
                 onPress={() => {
-                  if (filterStep === "home") {
+                  if (filterStep === "home" || filterStep === "ai") {
                     setFilterOpen(false);
                     return;
                   }
@@ -270,28 +299,47 @@ export default function GuestScreen() {
                 style={styles.closeBtn}
                 hitSlop={8}
               >
-                {filterStep === "home" ? (
+                {filterStep === "home" || filterStep === "ai" ? (
                   <X size={18} color={colors.TEXT_PRIMARY} />
                 ) : (
                   <ChevronLeft size={20} color={colors.TEXT_PRIMARY} />
                 )}
               </Pressable>
               <View style={styles.sheetTabs}>
-                <Text
-                  style={[
-                    styles.sheetTab,
-                    {
-                      color: colors.TEXT_PRIMARY,
-                      borderBottomColor: colors.TEXT_PRIMARY,
-                    },
-                    styles.activeSheetTab,
-                  ]}
-                >
-                  Stays
-                </Text>
-                <Text style={[styles.sheetTab, { color: colors.TEXT_LIGHT }]}>
-                  Experiences
-                </Text>
+                <Pressable onPress={() => setFilterStep("home")}>
+                  <Text
+                    style={[
+                      styles.sheetTab,
+                      filterStep !== "ai" && [
+                        styles.activeSheetTab,
+                        {
+                          color: colors.TEXT_PRIMARY,
+                          borderBottomColor: colors.TEXT_PRIMARY,
+                        },
+                      ],
+                      filterStep === "ai" && { color: colors.TEXT_LIGHT },
+                    ]}
+                  >
+                    Stays
+                  </Text>
+                </Pressable>
+                <Pressable onPress={() => setFilterStep("ai")}>
+                  <Text
+                    style={[
+                      styles.sheetTab,
+                      filterStep === "ai" && [
+                        styles.activeSheetTab,
+                        {
+                          color: colors.TEXT_PRIMARY,
+                          borderBottomColor: colors.TEXT_PRIMARY,
+                        },
+                      ],
+                      filterStep !== "ai" && { color: colors.TEXT_LIGHT },
+                    ]}
+                  >
+                    AI Search
+                  </Text>
+                </Pressable>
               </View>
               <View style={styles.closeBtn} />
             </View>
@@ -300,6 +348,109 @@ export default function GuestScreen() {
               showsVerticalScrollIndicator={false}
               contentContainerStyle={styles.sheetContent}
             >
+              {filterStep === "ai" && (
+                <View
+                  style={[
+                    styles.aiSearchCard,
+                    {
+                      backgroundColor: colors.BACKGROUND,
+                      shadowColor: colors.TEXT_PRIMARY,
+                    },
+                  ]}
+                >
+                  <View style={styles.aiCardHeader}>
+                    <Sparkles size={18} color={COLORS.PRIMARY} />
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[
+                          styles.aiCardTitle,
+                          { color: colors.TEXT_PRIMARY },
+                        ]}
+                      >
+                        Search with AI
+                      </Text>
+                      <Text
+                        style={[
+                          styles.aiCardSubtitle,
+                          { color: colors.TEXT_SECONDARY },
+                        ]}
+                      >
+                        Describe the stay you want.
+                      </Text>
+                    </View>
+                  </View>
+                  <TextInput
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    placeholder="Villa in Kigali under $200 for 4 guests"
+                    placeholderTextColor={colors.TEXT_LIGHT}
+                    returnKeyType="search"
+                    onSubmitEditing={runSearch}
+                    style={[
+                      styles.aiInlineInput,
+                      {
+                        borderColor: colors.BORDER,
+                        color: colors.TEXT_PRIMARY,
+                      },
+                    ]}
+                  />
+                  {(aiFeedback || aiSuggestion || aiReason || searchError) && (
+                    <View style={styles.aiInfo}>
+                      {!!aiFeedback && (
+                        <Text style={styles.aiInfoText}>{aiFeedback}</Text>
+                      )}
+                      {!!aiReason && (
+                        <Text style={styles.aiInfoText}>{aiReason}</Text>
+                      )}
+                      {!!aiSuggestion && (
+                        <Text style={styles.aiSuggestion}>{aiSuggestion}</Text>
+                      )}
+                      {!!searchError && (
+                        <Text style={styles.aiError}>{searchError}</Text>
+                      )}
+                    </View>
+                  )}
+                  <View style={styles.aiActions}>
+                    <Pressable
+                      onPress={runSearch}
+                      disabled={isSearching}
+                      style={[
+                        styles.aiButton,
+                        { backgroundColor: colors.TEXT_PRIMARY },
+                        isSearching && styles.aiDisabled,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.aiButtonText,
+                          { color: colors.BACKGROUND },
+                        ]}
+                      >
+                        {isSearching ? "Searching..." : "Search with AI"}
+                      </Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={loadAIRecommendations}
+                      disabled={aiRecommendations.isPending}
+                      style={[
+                        styles.aiOutlineButton,
+                        { borderColor: colors.BORDER_LIGHT },
+                        aiRecommendations.isPending && styles.aiDisabled,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.aiOutlineText,
+                          { color: colors.TEXT_PRIMARY },
+                        ]}
+                      >
+                        {aiRecommendations.isPending ? "Finding..." : "AI picks"}
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+              )}
+
               {filterStep === "home" && (
                 <>
                   <View
@@ -668,12 +819,17 @@ export default function GuestScreen() {
             <View style={styles.sheetFooter}>
               <Pressable
                 onPress={clearFilters}
-                disabled={filterStep !== "trip" && !hasActiveFilters}
+                disabled={
+                  filterStep !== "trip" &&
+                  filterStep !== "ai" &&
+                  !hasActiveFilters
+                }
               >
                 <Text
                   style={[
                     styles.clearAll,
                     filterStep !== "trip" &&
+                      filterStep !== "ai" &&
                       !hasActiveFilters &&
                       styles.disabledClear,
                   ]}
@@ -683,7 +839,7 @@ export default function GuestScreen() {
               </Pressable>
               <Pressable
                 onPress={
-                  filterStep === "home"
+                  filterStep === "home" || filterStep === "ai"
                     ? runSearch
                     : filterStep === "destination"
                       ? () => setFilterStep("trip")
@@ -715,6 +871,14 @@ export default function GuestScreen() {
   );
 }
 
+function getApiMessage(error: unknown, fallback: string) {
+  if (isAxiosError<{ message?: string; error?: string }>(error)) {
+    return error.response?.data?.message || error.response?.data?.error || fallback;
+  }
+
+  return error instanceof Error ? error.message : fallback;
+}
+
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
@@ -739,6 +903,95 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "700",
     textDecorationLine: "underline",
+  },
+  aiSearchCard: {
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 12,
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
+  },
+  aiCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  aiCardTitle: {
+    fontSize: 16,
+    fontWeight: "900",
+  },
+  aiCardSubtitle: {
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  aiInlineInput: {
+    minHeight: 46,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginTop: 14,
+    fontSize: 13,
+  },
+  aiActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 12,
+  },
+  aiButton: {
+    flex: 1,
+    height: 42,
+    borderRadius: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  aiButtonText: {
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  aiOutlineButton: {
+    height: 42,
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  aiOutlineText: {
+    fontSize: 13,
+    fontWeight: "800",
+  },
+  aiDisabled: {
+    opacity: 0.6,
+  },
+  aiInfo: {
+    marginTop: 10,
+    borderRadius: 14,
+    backgroundColor: "#F3EDE1",
+    padding: 12,
+    gap: 5,
+  },
+  aiInfoText: {
+    color: "#1A1A1A",
+    fontSize: 12,
+    fontWeight: "700",
+    lineHeight: 18,
+  },
+  aiSuggestion: {
+    color: "#7A5A22",
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  aiError: {
+    color: "#B33A3A",
+    fontSize: 12,
+    fontWeight: "700",
+    lineHeight: 18,
   },
   title: {
     color: "#1A1A1A",
