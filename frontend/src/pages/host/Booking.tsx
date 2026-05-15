@@ -293,6 +293,17 @@ export default function DashboardBooking() {
                       </p>
                     </div>
                   </td>
+
+                  <td className="py-3 px-4">
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${statusConfig[booking.status]?.class || "bg-gray-100 text-gray-700"}`}
+                    >
+                      {statusConfig[booking.status]?.label || booking.status}
+                    </span>
+                  </td>
+                  <td className="py-3 px-4">
+                    <p className="font-medium text-sm">${booking.totalPrice}</p>
+                  </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2">
                       {booking.status === "pending" && (
@@ -337,16 +348,6 @@ export default function DashboardBooking() {
                         </span>
                       )}
                     </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${statusConfig[booking.status]?.class || "bg-gray-100 text-gray-700"}`}
-                    >
-                      {statusConfig[booking.status]?.label || booking.status}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4">
-                    <p className="font-medium text-sm">${booking.totalPrice}</p>
                   </td>
                 </tr>
               ))

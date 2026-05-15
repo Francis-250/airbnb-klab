@@ -78,12 +78,12 @@ export const searchPriceRange = [
 ];
 
 export const bookingHeader = [
-  "Check-in",
-  "Check-out",
   "Guest",
   "Listing",
-  "total price",
+  "Check-in",
   "status",
+  "total price",
+  "actions",
 ];
 
 export const listingHeader = [
